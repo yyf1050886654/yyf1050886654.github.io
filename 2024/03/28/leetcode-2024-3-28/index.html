@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="leetcode-2024-3-28" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="刷题笔记, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/03/28/leetcode-2024-3-28/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>leetcode-2024-3-28 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      leetcode-2024-3-28
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-28
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1997-%E8%AE%BF%E9%97%AE%E5%AE%8C%E6%89%80%E6%9C%89%E6%88%BF%E9%97%B4%E7%9A%84%E7%AC%AC%E4%B8%80%E5%A4%A9%EF%BC%88Medium%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">1997 访问完所有房间的第一天（Medium）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E8%B6%85%E6%97%B6%EF%BC%9A%E7%AE%80%E9%99%8B%E7%9A%84%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">1.1.</span> <span class="toc-text">暴力超时：简陋的动态规划</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E7%89%88%EF%BC%9A%E5%89%8D%E7%BC%80%E5%92%8C"><span class="toc-number">1.2.</span> <span class="toc-text">优化版：前缀和</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#221-%E6%9C%80%E5%A4%A7%E6%AD%A3%E6%96%B9%E5%BD%A2%EF%BC%88Medium%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">221 最大正方形（Medium）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E7%BB%B4%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">2.1.</span> <span class="toc-text">二维动态规划</span></a></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <blockquote>
+<p>今天斗胆试了一下蓝桥杯的题，实在是感觉太难了，不暴力根本不会做，以后有机会再写题解吧。</p>
+<p>我觉得这种程序设计竞赛还是得好好研究算法才行，我这种野路子还有很长一段路要走</p>
+</blockquote>
+<h1 id="1997-访问完所有房间的第一天（Medium）"><a href="#1997-访问完所有房间的第一天（Medium）" class="headerlink" title="1997 访问完所有房间的第一天（Medium）"></a>1997 访问完所有房间的第一天（Medium）</h1><p>你需要访问 n 个房间，房间从 0 到 n - 1 编号。同时，每一天都有一个日期编号，从 0 开始，依天数递增。你每天都会访问一个房间。</p>
+<p>最开始的第 0 天，你访问 0 号房间。给你一个长度为 n 且 下标从 0 开始 的数组 nextVisit 。在接下来的几天中，你访问房间的 次序 将根据下面的 规则 决定：</p>
+<ul>
+<li>假设某一天，你访问 i 号房间。</li>
+<li>如果算上本次访问，访问 i 号房间的次数为 奇数 ，那么 第二天 需要访问 nextVisit[i] 所指定的房间，其中 0 &lt;&#x3D; nextVisit[i] &lt;&#x3D; i 。</li>
+<li>如果算上本次访问，访问 i 号房间的次数为 偶数 ，那么 第二天 需要访问 (i + 1) mod n 号房间。</li>
+</ul>
+<p>请返回你访问完所有房间的第一天的日期编号。题目数据保证总是存在这样的一天。由于答案可能很大，返回对 109 + 7 取余后的结果</p>
+<h2 id="暴力超时：简陋的动态规划"><a href="#暴力超时：简陋的动态规划" class="headerlink" title="暴力超时：简陋的动态规划"></a>暴力超时：简陋的动态规划</h2><blockquote>
+<p>虽然超时了但是思路跟答案是一样的。</p>
+<p>分析题意发现 nextVisited[i]的范围属于 [0,i]，意味着当你首次到达房间 i 时会回退到房间 nextVisited[i]。而只有访问过该房间偶数次时才会到达下一个房间，进而推断出到达 i 时，[0,i)的房间已经被访问过偶数次。</p>
+</blockquote>
+<blockquote>
+<p>定义 f[i] 表示从奇数次到房间 i，到奇数次到达房间 i+1 所需要的天数。以下用 to 代表 nextVisited[i]，回退到房间 to 时是奇数次访问，又需要花费 f[to] 才会到达房间 to+1。从 iii 访问 to 和 i+1 又分别需要花费一天，所以有转移方程:</p>
+</blockquote>
+<p>$$<br>f[i] &#x3D; \sum\limits_{j&#x3D;to}^{i-1}f[j]+2<br>$$<br><img src="/../img/2024_3_28_1.PNG"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">firstDayBeenInAllRooms</span><span class="params">(<span class="type">int</span>[] nextVisit)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[] dp = <span class="keyword">new</span> <span class="title class_">int</span>[nextVisit.length];</span><br><span class="line">        <span class="type">int</span> <span class="variable">MOD</span> <span class="operator">=</span> <span class="number">1000000007</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nextVisit.length; i++) &#123;</span><br><span class="line">            <span class="comment">//第一次进来然后去nextVisited[i]，第二次回来才变成偶数</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="number">2</span>;</span><br><span class="line">            <span class="comment">//访问到nextVisited[i]，把之后所有的都会再访问一遍，全部都加起来</span></span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> nextVisit[i]; j &lt; i; j++) &#123;</span><br><span class="line">                temp = (dp[j]+temp)%MOD;</span><br><span class="line">            &#125;</span><br><span class="line">            dp[i] = temp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//dp存放的只是这个节点的次数，要总体的还要全部加起来</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nextVisit.length-<span class="number">1</span>; i++) &#123;</span><br><span class="line">            ans=(dp[i]+ans)%MOD;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>时间复杂度o(n^2)，那肯定暴力超时</p>
+<h2 id="优化版：前缀和"><a href="#优化版：前缀和" class="headerlink" title="优化版：前缀和"></a>优化版：前缀和</h2><p>定义前缀和<br>$$<br>s[0]&#x3D;0,s[i+1] &#x3D; \sum\limits_{j&#x3D;0}^{i}f[i]<br>$$</p>
+<p>对于<br>$$<br>f[i] &#x3D; \sum\limits_{j&#x3D;to}^{i-1}f[j]+2<br>$$<br>可以化简为<br>$$<br>f[i] &#x3D; 2+s[i]-s[j]<br>$$<br>对于前缀和 s，有如下递推式<br>$$<br>s[i+1] &#x3D; 2*s[i]-s[j]+2<br>$$<br>这样我们就不用计算原先的dp数组，通过前缀和就得到答案。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">firstDayBeenInAllRooms</span><span class="params">(<span class="type">int</span>[] nextVisit)</span> &#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="type">long</span> <span class="variable">MOD</span> <span class="operator">=</span> <span class="number">1_000_000_007</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> nextVisit.length;</span><br><span class="line">        <span class="type">long</span>[] s = <span class="keyword">new</span> <span class="title class_">long</span>[n];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; n - <span class="number">1</span>; i++) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> nextVisit[i];</span><br><span class="line">            s[i + <span class="number">1</span>] = (s[i] * <span class="number">2</span> - s[j] + <span class="number">2</span> + MOD) % MOD; <span class="comment">// + MOD 避免算出负数</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> (<span class="type">int</span>) s[n - <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="221-最大正方形（Medium）"><a href="#221-最大正方形（Medium）" class="headerlink" title="221 最大正方形（Medium）"></a>221 最大正方形（Medium）</h1><p>在一个由 ‘0’ 和 ‘1’ 组成的二维矩阵内，找到只包含 ‘1’ 的最大正方形，并返回其面积。<br><img src="/../img/2024_3_28_3.png"></p>
+<blockquote>
+<p>由于是在上课的时候看的，没有自己动手写，直接看的答案。我估计自己写也是智能暴力解法</p>
+</blockquote>
+<h2 id="二维动态规划"><a href="#二维动态规划" class="headerlink" title="二维动态规划"></a>二维动态规划</h2><blockquote>
+<p>有点像“编辑距离”和某一天的那个截木块的每日一题，$dp[i][j]$表示以这个点为右下角的最大正方形的边长，那么如果$matrix[i][j]&#x3D;0$，那dp肯定也为0，我们考虑为1的情况。</p>
+<p>这里的状态转移方程是<br>$$<br>dp[i][j] &#x3D; min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1])+1<br>$$<br><img src="/../img/2024_3_28_2.png"></p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximalSquare</span><span class="params">(<span class="type">char</span>[][] matrix)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[matrix.length][matrix[<span class="number">0</span>].length];</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; dp.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; dp[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (i != <span class="number">0</span> || j !=<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[i][j] == <span class="string">&#x27;1&#x27;</span>)&#123;</span><br><span class="line">                        <span class="type">int</span> <span class="variable">left</span> <span class="operator">=</span> <span class="number">0</span>,up = <span class="number">0</span>,up_left = <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">if</span> (i-<span class="number">1</span> &gt;= <span class="number">0</span>)&#123;</span><br><span class="line">                            up = dp[i-<span class="number">1</span>][j];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (j-<span class="number">1</span> &gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                            left = dp[i][j-<span class="number">1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (i-<span class="number">1</span> &gt;=<span class="number">0</span> &amp;&amp; j-<span class="number">1</span>&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                            up_left = dp[i-<span class="number">1</span>][j-<span class="number">1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        dp[i][j] = Math.min(Math.min(left,up),up_left)+<span class="number">1</span>;</span><br><span class="line">                        ans = Math.max(ans,dp[i][j]);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[i][j] == <span class="string">&#x27;1&#x27;</span>)&#123;</span><br><span class="line">                        dp[i][j] = <span class="number">1</span>;</span><br><span class="line">                        ans = Math.max(ans,dp[i][j]);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">else</span> &#123;</span><br><span class="line">                        dp[i][j] = <span class="number">0</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.deepToString(dp));</span></span><br><span class="line">        <span class="keyword">return</span> ans*ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/03/28/leetcode-2024-3-28/">https://yyf1050886654.github.io/2024/03/28/leetcode-2024-3-28/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/">刷题笔记</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/03/27/leetcode-2024-3-27/">  
+        <span class="next-text nav-default">leetcode-2024-3-27</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
