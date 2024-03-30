@@ -242,7 +242,7 @@
 </blockquote>
 <p>给你一个下标从 0 开始的整数数组 coins，表示可用的硬币的面值，以及一个整数 target 。</p>
 <p>如果存在某个 coins 的子序列总和为 x，那么整数 x 就是一个 <strong>可取得的金额</strong> 。</p>
-<p>返回需要添加到数组中的 <strong>任意面值</strong> 硬币的 最小数量 ，使范围 $$[1, target]$$ 内的每个整数都属于 <strong>可取得的金额</strong> 。</p>
+<p>返回需要添加到数组中的 <strong>任意面值</strong> 硬币的 最小数量 ，使范围 $[1, target]$ 内的每个整数都属于 <strong>可取得的金额</strong> 。</p>
 <p>数组的 <strong>子序列</strong> 是通过删除原始数组的一些（<strong>可能不删除</strong>）元素而形成的新的 <strong>非空</strong> 数组，删除过程不会改变剩余元素的相对位置。</p>
 <p>示例 1：</p>
 <p>输入：coins &#x3D; [1,4,10], target &#x3D; 19</p>
@@ -253,11 +253,11 @@
 <p>自己想没想出来</p>
 </blockquote>
 <h2 id="官方解：贪心算法"><a href="#官方解：贪心算法" class="headerlink" title="官方解：贪心算法"></a>官方解：贪心算法</h2><p>为方便描述，把 0也算作可以得到的数。</p>
-<p>假设现在得到了区间 $$[0,s−1]$$ 中的所有整数，如果此时遍历到整数 $$x&#x3D;coins[i]$$，那么把 $$[0,s−1]$$ 中的每个整数都增加 x，我们就得到了区间 $$[x,s+x−1]$$ 中的所有整数。</p>
-<p>把 coins 从小到大排序，遍历 $$x&#x3D;coins[i]$$。分类讨论，看是否要添加数字：</p>
+<p>假设现在得到了区间 $[0,s−1]$ 中的所有整数，如果此时遍历到整数 $x&#x3D;coins[i]$，那么把 $[0,s−1]$ 中的每个整数都增加 x，我们就得到了区间 $[x,s+x−1]$ 中的所有整数。</p>
+<p>把 coins 从小到大排序，遍历 $x&#x3D;coins[i]$。分类讨论，看是否要添加数字：</p>
 <ul>
-<li>如果 x≤s，那么合并 $$[0,s−1]$$ 和 $$[x,s+x−1]$$这两个区间，我们可以得到 $$[0,s+x−1]$$ 中的所有整数。</li>
-<li>如果 x&gt;s，或者遍历完了 coins 数组，这意味着我们无法得到 s，那么就一定要把 s 加到数组中（加一个比 s 还小的数字就没法得到更大的数，不够贪），这样就可以得到了 $$[s,2s−1]$$ 中的所有整数，再与 $$[0,s−1]$$ 合并，可以得到 $$[0,2s−1]$$ 中的所有整数。然后再考虑 x 和 2s 的大小关系，继续分类讨论。<br>当 s&gt;targets 时，我们就得到了 $$[1,target]$$ 中的所有整数，退出循环。</li>
+<li>如果 x≤s，那么合并 $[0,s−1]$ 和 $[x,s+x−1]$这两个区间，我们可以得到 $[0,s+x−1]$ 中的所有整数。</li>
+<li>如果 x&gt;s，或者遍历完了 coins 数组，这意味着我们无法得到 s，那么就一定要把 s 加到数组中（加一个比 s 还小的数字就没法得到更大的数，不够贪），这样就可以得到了 $[s,2s−1]$ 中的所有整数，再与 $[0,s−1]$ 合并，可以得到 $[0,2s−1]$ 中的所有整数。然后再考虑 x 和 2s 的大小关系，继续分类讨论。<br>当 s&gt;targets 时，我们就得到了 $[1,target]$ 中的所有整数，退出循环。</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">minimumAddedCoins</span><span class="params">(<span class="type">int</span>[] coins, <span class="type">int</span> target)</span> &#123;</span><br><span class="line">        Arrays.sort(coins);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>, s = <span class="number">1</span>, i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (s &lt;= target) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i &lt; coins.length &amp;&amp; coins[i] &lt;= s) &#123;</span><br><span class="line">                s += coins[i++];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                s *= <span class="number">2</span>; <span class="comment">// 必须添加 s</span></span><br><span class="line">                ans++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
     
