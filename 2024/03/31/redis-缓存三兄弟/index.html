@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="redis-缓存三兄弟" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Redis, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/03/31/redis-缓存三兄弟/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>redis-缓存三兄弟 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      redis-缓存三兄弟
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-31
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F"><span class="toc-number">1.</span> <span class="toc-text">缓存穿透</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">1.1.</span> <span class="toc-text">解决方法</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E5%87%BB%E7%A9%BF"><span class="toc-number">2.</span> <span class="toc-text">缓存击穿</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95-1"><span class="toc-number">2.1.</span> <span class="toc-text">解决方法</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9"><span class="toc-number">3.</span> <span class="toc-text">缓存雪崩</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95%EF%BC%9A"><span class="toc-number">3.1.</span> <span class="toc-text">解决方法：</span></a></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><blockquote>
+<p>这里的redis可以全部想象成cache，数据库可以想象成cpu，穿透有点绕过redis的意思</p>
+</blockquote>
+<p><img src="/../img/Redis/img.png"><br>假设有一个请求api&#x2F;news&#x2F;getById&#x2F;1，但是这个id为1的键并<strong>不存在</strong>于数据库，所以也不会存在于缓存，那么如果有很多这种请求，那么都会绕过redis去查询数据库，造成数据库的负载。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
+<li>缓存空数据，就算是数据库找不到也要缓存一个空数据给redis，要不然就会一直会去绕过redis去找数据库。比如给的key&#x3D;1但是mysql没有相应数据，那么在redis上缓存一个key&#x3D;1，value&#x3D;null的键值对。</li>
+</ol>
+<ul>
+<li><strong>优点</strong>：非常简单，维护方便</li>
+<li><strong>缺点</strong>：会造成额外的内存消耗，因为redis是存在内存中的，有多少个没有的键就会有多少个空，浪费内存。还可能造成<strong>短期不一致</strong>问题，如果在redis里面存了这个空但是这个时候数据库更新了这个键值对，那么在这一段时间访问redis的还是null，就会造成不一致的问题</li>
+</ul>
+<ol start="2">
+<li>布隆过滤器<br>在客户端与Redis之间加了一个布隆过滤器，对于请求进行过滤。</li>
+</ol>
+<p><img src="/../img/Redis/img_1.png"></p>
+<blockquote>
+<p><strong>布隆过滤器</strong></p>
+<ul>
+<li>bitmap（位图）:bit位的数组，数组的元素是0或者1，所以布隆过滤器占用的内存小</li>
+<li><img src="/../img/Redis/img_2.png"></li>
+<li>作用：可以用来检索元素，相当于一种校验电路</li>
+<li>实现原理：类似hashmap，假设来了一个键，用三种不同的hash算法得到位图的三个位置，然后这些位置都置为1，这里要跟redis缓存的保持一致，在初始化的时候就要预热进布隆过滤器。那么就会有很多重复的，数组越大这种情况会越少。那么此时有一个<strong>确实不存在的元素</strong>，但是计算出来的三个哈希值就是都是1，那么还是会发生缓存穿透的现象</li>
+<li>判断不存在的时候一定不存在，也就是说3个地方一定都不为1</li>
+<li>判断存在的时候不一定存在，因为有可能会有误判</li>
+<li><strong>优点</strong>：内存占用小，没有多余key</li>
+<li><strong>缺点</strong>：实现比较复杂，存在误判，大概在5%左右，但是对于数据库也是可以接受的</li>
+</ul>
+</blockquote>
+<p>布隆过滤器的大致的原理：布隆过滤器中存放二进制位。数据库的数据通过hash算法计算其hash值并存放到布隆过滤器中，之后判断数据是否存在的时候，就是判断该hash值是0还是1。</p>
+<p>但是这个玩意是一种概率上的统计，当其判断不存在的时候就一定是不存在；当其判断存在的时候就不一定存在。所以有一定的穿透风险！！！</p>
+<h1 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h1><p>缓存击穿，指的是一个key在不断地支撑高并发，高并发持续对这个点进行访问，当这个点在失效的瞬间，50ms左右，大量的高并发就冲坡缓存请求数据库，造成数据库瘫痪。</p>
+<p>对于一般的网站而言很难有缓存击穿的级别，一般是热门网站或者秒杀瞬时高并发。</p>
+<h2 id="解决方法-1"><a href="#解决方法-1" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
+<li>互斥锁</li>
+</ol>
+<p><img src="/../img/Redis/img_3.png"></p>
+<p>类似pv操作，给临界区上互斥锁，一段时间只要一个线程在重建数据就行，但是这样会造成其他线程等待。通常是需要强一致性的应用需要这种策略。</p>
+<ul>
+<li><strong>优点</strong>：强一致性，在redis没有更新完之前都不许访问，只能要最新的，一般涉及钱的都会有这种逻辑</li>
+<li><strong>缺点</strong>：性能差</li>
+</ul>
+<ol start="2">
+<li>逻辑过期</li>
+</ol>
+<p><img src="/../img/Redis/img_4.png"></p>
+<p>逻辑过期就是在一个键值对的最后加上逻辑时间，并不真实设置过期时间。也就是说，不会真正的过期只会逻辑上的过期。</p>
+<p>当一个线程去访问一个逻辑时间到了的键值对，那么其实redis也还有这部分，他还是<strong>那这部分旧的数据</strong>，但是会开启一个新的线程来完成数据库到mysql的更新</p>
+<ul>
+<li><strong>优点</strong>：可用性强，性能强在不注重强一致性的场景，不会有其他线程等待的情况，但是拿的都是旧数据</li>
+<li><strong>缺点</strong>：一致性弱</li>
+</ul>
+<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><p>如果缓存集中在一段时间内过期，那么会有大量的缓存穿透，所有的查询都落在数据库上，造成缓存雪崩</p>
+<blockquote>
+<p>缓存雪崩和缓存击穿的区别：缓存击穿是针对某一个key，缓存雪崩是针对很多key集中过期，</p>
+</blockquote>
+<p><img src="/../img/Redis/img_5.png"></p>
+<h2 id="解决方法："><a href="#解决方法：" class="headerlink" title="解决方法："></a>解决方法：</h2><ol>
+<li>给不同的key的TTL添加随机值</li>
+<li>多个redis集群提高服务的可用性</li>
+</ol>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/">https://yyf1050886654.github.io/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Redis/">Redis</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/03/31/%E5%91%A8%E8%B5%9B2024-3-31/">  
+        <span class="next-text nav-default">周赛2024-3-31</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
