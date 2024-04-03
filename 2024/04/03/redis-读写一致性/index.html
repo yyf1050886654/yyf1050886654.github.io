@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="redis-读写一致性" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Redis, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/04/03/redis-读写一致性/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>redis-读写一致性 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      redis-读写一致性
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-03
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Mysql%E5%A6%82%E4%BD%95%E4%B8%8ERedis%E4%BF%9D%E6%8C%81%E5%90%8C%E6%AD%A5"><span class="toc-number">1.</span> <span class="toc-text">Mysql如何与Redis保持同步</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%EF%BC%8C%E5%86%8D%E6%9B%B4%E6%96%B0%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="toc-number">1.1.</span> <span class="toc-text">先删除缓存，再更新数据库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E6%9B%B4%E6%96%B0%E6%95%B0%E6%8D%AE%E5%BA%93%EF%BC%8C%E5%86%8D%E6%9B%B4%E6%96%B0%E7%BC%93%E5%AD%98"><span class="toc-number">1.2.</span> <span class="toc-text">先更新数据库，再更新缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="toc-number">1.3.</span> <span class="toc-text">解决方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8%E4%B8%8D%E9%82%A3%E4%B9%88%E8%A6%81%E6%B1%82%E5%BC%BA%E4%B8%80%E8%87%B4%E6%80%A7%E7%9A%84%E5%9C%BA%E6%99%AF"><span class="toc-number">1.4.</span> <span class="toc-text">在不那么要求强一致性的场景</span></a></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <h1 id="Mysql如何与Redis保持同步"><a href="#Mysql如何与Redis保持同步" class="headerlink" title="Mysql如何与Redis保持同步"></a>Mysql如何与Redis保持同步</h1><p><img src="/../img/Redis/img_24.png"></p>
+<p>类比计算机组成原理中的cache和内存，redis也就是mysql的缓存，那么保持读写一致性也是十分重要的，我们在修改数据库的同时，缓存中也要对应更新。</p>
+<ul>
+<li>读操作：缓存命中就直接返回，缓存未命中就查找数据库，然后更新缓存</li>
+<li>写操作：<strong>延迟双删</strong><br><img src="/../img/Redis/img_25.png"></li>
+</ul>
+<h2 id="先删除缓存，再更新数据库"><a href="#先删除缓存，再更新数据库" class="headerlink" title="先删除缓存，再更新数据库"></a>先删除缓存，再更新数据库</h2><ol>
+<li><strong>正常情况</strong></li>
+</ol>
+<p><img src="/../img/Redis/img_26.png"></p>
+<p>首先线程1删除缓存，然后更新数据库，此时没有任何线程来打扰，完成操作以后线程2再来查找缓存，这个时候由于线程1已经删除了缓存，那就会查找数据库找到刚刚更新的数据，最后写入缓存。这个过程不会出现读写一致性问题</p>
+<ol start="2">
+<li><strong>特殊情况</strong><blockquote>
+<p>其实下面先写后删除的特殊情况也适用于本例中，首先线程1查询到了一个过期key，去数据库找，暂时保存，但是没写进redis。此时另一个进程是写进程，先删除了这个key，随后更新，最后才轮到线程1，写回刚刚的旧数据到redis，同样会有数据不一致<br><img src="/../img/Redis/img_27.png"></p>
+</blockquote>
+</li>
+</ol>
+<p>我们假设线程1删除缓存之后，由于线程是并发的，线程2来查询，此时由于还没有更新数据库，找到的还是原来的数据，随后放回缓存，这个时候才轮到线程1，更新数据库，但是此时redis还是用的以前的数据，数据库的是刚刚更新的，就出现了读写一致性问题</p>
+<h2 id="先更新数据库，再更新缓存"><a href="#先更新数据库，再更新缓存" class="headerlink" title="先更新数据库，再更新缓存"></a>先更新数据库，再更新缓存</h2><blockquote>
+<p>那如果我们先更新数据库，在更新缓存是不是正确的呢？<strong>答案是还是会有读写一致性问题</strong></p>
+</blockquote>
+<ol>
+<li><strong>正常情况</strong></li>
+</ol>
+<p> <img src="/../img/Redis/img_28.png"><br>线程2先更新数据库，然后删除，跟上面的一样，只要两个操作是原子性的就不会有问题，但是只要是线程是并发的，那就肯定不一致</p>
+<ol start="2">
+<li><strong>特殊情况</strong></li>
+</ol>
+<p><img src="/../img/Redis/img_29.png"></p>
+<blockquote>
+<p>如果在不在这个刚刚过期的时间节点，那会怎么样呢？其实如果不是刚刚要过期，那就直接会拿走缓存中的数据，也不会删除缓存，那写进程后续先改再写redis也不会出现读写一致性问题，个人觉得核心的问题在于读进程的机制，没查到或者过期的缓存就会主动去数据库里调用，会扰乱正常的写进程导致不一致</p>
+<p>如果是命中的读进程，那就根本不会扰乱写进程，只是脏数据的问题，redis和mysql最终都是一致的。而这里讨论的刚好过期，才会导致读进程写redis，才会有不一致性的问题发生）</p>
+</blockquote>
+<p>线程1先去查询缓存，这个时候刚好key过期，就要去数据库找，在数据库找到的是旧数据，先保存下来，但是此时线程2更新了数据库，然后删除，最后才是线程1写回旧数据到redis，出现不一致。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ul>
+<li><strong>分布式锁</strong>：在更新缓存前先加个分布式锁，保证同一时间只运行一个请求更新缓存，就会不会产生并发问题了，当然引入了锁后，对于写入的性能就会带来影响。</li>
+<li><strong>延迟双删</strong>：针对「先删除缓存，再更新数据库」方案在「读 + 写」并发请求而造成缓存不一致的解决办法是「延迟双删」。</li>
+<li><ul>
+<li>为什么要双删？因为刚刚在[先删除缓存，再更新数据库]方案中会出现读写一致问题，这个时候只要再去删除一次缓存就可以了，下一个来的读请求会发现不存在对应的key，然后从数据库找，最终达到一致性</li>
+</ul>
+</li>
+<li><ul>
+<li>为什么要延迟？主要是为了确保请求 A 在睡眠的时候，请求 B 能够在这这一段时间完成「从数据库读取数据，再把缺失的缓存写入缓存」的操作，然后请求 A 睡眠完，再删除缓存。<br>所以，请求 A 的睡眠时间就需要大于请求 B 「从数据库读取数据 + 写入缓存」的时间。因为这个延时时间不好控制，在极端情况下还是会出现读写不一致的现象。</li>
+</ul>
+</li>
+<li><strong>使用「先更新数据库，再删除缓存」方案</strong>：其实这种方案的特殊情况很难遇见，因为<strong>缓存的写入通常要远远快于数据库的写入</strong>，所以在实际中很难出现请求 B 已经更新了数据库并且删除了缓存，请求 A 才更新完缓存的情况。<br>而一旦请求 A 早于请求 B 删除缓存之前更新了缓存，那么接下来的请求就会因为缓存不命中而从数据库中重新读取数据，所以不会出现这种不一致的情况。<strong>（意思是即使B先写了数据库，A再写旧的值，因为数据库涉及io（扯远点就是io中断）阻塞进程B直到时间片到了，进程会交替执行而io搁一边，可能当执行到A写完了旧值，更新才刚刚结束，这个时候B再执行删除，就可以保证一致性）</strong></li>
+</ul>
+<h2 id="在不那么要求强一致性的场景"><a href="#在不那么要求强一致性的场景" class="headerlink" title="在不那么要求强一致性的场景"></a>在不那么要求强一致性的场景</h2><p>有的时候可以容忍一瞬间的脏数据，但是要保持最终一致性的场景，可以使用以下两种方法：</p>
+<ul>
+<li>基于消息队列（例如kafka）：写入数据库后，发一个消息给mq通知redis更新缓存，这种方式的可靠性主要取决于mq，肯定是有一定的延时的，但是最终会保证一致</li>
+<li>基于阿里巴巴的Canal中间件：「先更新数据库，再删缓存」的策略的第一步是更新数据库，那么更新数据库成功，就会产生一条变更日志，记录在 binlog 里。<br>Canal 模拟 MySQL 主从复制的交互协议，把自己伪装成一个 MySQL 的从节点，向 MySQL 主节点发送 dump 请求，MySQL 收到请求后，就会开始推送 Binlog 给 Canal，Canal 解析 Binlog 字节流之后，转换为便于读取的结构化数据，供下游程序订阅使用。</li>
+</ul>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/04/03/redis-%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/">https://yyf1050886654.github.io/2024/04/03/redis-%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Redis/">Redis</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      <a class="prev" href="/2024/04/03/mysql-B-%E6%A0%91%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%9D%97/">  
+        <i class="iconfont icon-left"></i>  
+        <span class="prev-text nav-default">mysql-B+树与数据页</span>  
+        <span class="prev-text nav-mobile">上一篇</span>  
+      </a>  
+      
+      
+      <a class="next" href="/2024/04/02/leetcode-2024-4-2/">  
+        <span class="next-text nav-default">leetcode-2024-4-2</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
