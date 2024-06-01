@@ -288,6 +288,9 @@
 <h3 id="看门狗机制"><a href="#看门狗机制" class="headerlink" title="看门狗机制"></a>看门狗机制</h3><p>开启一个线程监视ttl，如果到了某个阈值程序还没结束就续期</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">WatchDogThread</span> <span class="keyword">extends</span> <span class="title class_">Thread</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String watchKey;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line">    WatchDogThread(StringRedisTemplate redisTemplate, String key) &#123;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = redisTemplate;</span><br><span class="line">        <span class="built_in">this</span>.watchKey = key;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">while</span> (!Thread.interrupted()) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="type">Long</span> <span class="variable">expire</span> <span class="operator">=</span> stringRedisTemplate.getExpire(watchKey, TimeUnit.MILLISECONDS);</span><br><span class="line">                <span class="comment">//5秒钟续2秒</span></span><br><span class="line">                <span class="keyword">if</span> (expire != <span class="literal">null</span> &amp;&amp; expire.intValue() &lt; <span class="number">300</span>) &#123;</span><br><span class="line">                    stringRedisTemplate.expire(watchKey, <span class="number">1</span>, TimeUnit.SECONDS);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            &#125; <span class="keyword">catch</span> (RedisSystemException e) &#123;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
+<blockquote>
+<p>剩下的内容我觉得他课程没啥用，自己用消息队列就解决了，没啥技术含量就不写，主要是解耦的操作。<br>改造后就变成了前面校验完全用lua脚本，保证原子性的同时也不用上锁了，因为redis是单线程。有订单的就mq，kafka处理。<br>课程也有可取之处，BlockingQueue是我第一次见，这就是一个简易版本的消息队列，在队列为空的时候会阻塞消费者进程，满的时候会阻塞生产者进程。</p>
+</blockquote>
 
     
   </div>
@@ -326,6 +329,12 @@
     
       
   <nav class="post-nav">  
+      
+      <a class="prev" href="/2024/06/01/redis%E9%A1%B9%E7%9B%AE-%E7%BC%93%E5%AD%98%E5%92%8C%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/">  
+        <i class="iconfont icon-left"></i>  
+        <span class="prev-text nav-default">redis项目-缓存和读写一致性</span>  
+        <span class="prev-text nav-mobile">上一篇</span>  
+      </a>  
       
       
       <a class="next" href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E7%99%BB%E5%BD%95%E9%80%BB%E8%BE%91/">  

@@ -212,6 +212,96 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/03/redis-%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/">redis-读写一致性</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-03
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="Mysql如何与Redis保持同步"><a href="#Mysql如何与Redis保持同步" class="headerlink" title="Mysql如何与Redis保持同步"></a>Mysql如何与Redis保持同步</h1><p><img src="/../img/Redis/img_24.png"></p>
+<p>类比计算机组成原理中的cache和内存，redis也就是mysql的缓存，那么保持读写一致性也是十分重要的，我们在修改数据库的同时，缓存中也要对应更新。</p>
+<ul>
+<li>读操作：缓存命中就直接返回，缓存未命中就查找数据库，然后更新缓存</li>
+<li>写操作：<strong>延迟双删</strong><br><img src="/../img/Redis/img_25.png"></li>
+</ul>
+<h2 id="先删除缓存，再更新数据库"><a href="#先删除缓存，再更新数据库" class="headerlink" title="先删除缓存，再更新数据库"></a>先删除缓存，再更新数据库</h2><ol>
+<li><strong>正常情况</strong></li>
+</ol>
+<p><img src="/../img/Redis/img_26.png"></p>
+<p>首先线程1删除缓存，然后更新数据库，此时没有任何线程来打扰，完成操作以后线程2再来查找缓存，这个时候由于线程1已经删除了缓存，那就会查找数据库找到刚刚更新的数据，最后写入缓存。这个过程不会出现读写一致性问题</p>
+<ol start="2">
+<li><strong>特殊情况</strong><blockquote>
+<p>其实下面先写后删除的特殊情况也适用于本例中，首先线程1查询到了一个过期key，去数据库找，暂时保存，但是没写进redis。此时另一个进程是写进程，先删除了这个key，随后更新，最后才轮到线程1，写回刚刚的旧数据到redis，同样会有数据不一致</p>
+</blockquote>
+</li>
+</ol>
+<p><img src="/../img/Redis/img_27.png"></p>
+<p>我们假设线程1删除缓存之后，由于线程是并发的，线程2来查询，此时由于还没有更新数据库，找到的还是原来的数据，随后放回缓存，这个时候才轮到线程1，更新数据库，但是此时redis还是用的以前的数据，数据库的是刚刚更新的，就出现了读写一致性问题</p>
+<h2 id="先更新数据库，再更新缓存"><a href="#先更新数据库，再更新缓存" class="headerlink" title="先更新数据库，再更新缓存"></a>先更新数据库，再更新缓存</h2><blockquote>
+<p>那如果我们先更新数据库，在更新缓存是不是正确的呢？<strong>答案是还是会有读写一致性问题</strong></p>
+</blockquote>
+<ol>
+<li><strong>正常情况</strong></li>
+</ol>
+<p> <img src="/../img/Redis/img_28.png"><br>线程2先更新数据库，然后删除，跟上面的一样，只要两个操作是原子性的就不会有问题，但是只要是线程是并发的，那就肯定不一致</p>
+<ol start="2">
+<li><strong>特殊情况</strong></li>
+</ol>
+<p><img src="/../img/Redis/img_29.png"></p>
+<blockquote>
+<p>如果在不在这个刚刚过期的时间节点，那会怎么样呢？其实如果不是刚刚要过期，那就直接会拿走缓存中的数据，也不会删除缓存，那写进程后续先改再写redis也不会出现读写一致性问题，个人觉得核心的问题在于读进程的机制，没查到或者过期的缓存就会主动去数据库里调用，会扰乱正常的写进程导致不一致</p>
+<p>如果是命中的读进程，那就根本不会扰乱写进程，只是脏数据的问题，redis和mysql最终都是一致的。而这里讨论的刚好过期，才会导致读进程写redis，才会有不一致性的问题发生）</p>
+</blockquote>
+<p>线程1先去查询缓存，这个时候刚好key过期，就要去数据库找，在数据库找到的是旧数据，先保存下来，但是此时线程2更新了数据库，然后删除，最后才是线程1写回旧数据到redis，出现不一致。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ul>
+<li><strong>分布式锁</strong>：在更新缓存前先加个分布式锁，保证同一时间只运行一个请求更新缓存，就会不会产生并发问题了，当然引入了锁后，对于写入的性能就会带来影响。</li>
+<li><strong>延迟双删</strong>：针对「先删除缓存，再更新数据库」方案在「读 + 写」并发请求而造成缓存不一致的解决办法是「延迟双删」。</li>
+<li><ul>
+<li>为什么要双删？因为刚刚在[先删除缓存，再更新数据库]方案中会出现读写一致问题，这个时候只要再去删除一次缓存就可以了，下一个来的读请求会发现不存在对应的key，然后从数据库找，最终达到一致性</li>
+</ul>
+</li>
+<li><ul>
+<li>为什么要延迟？主要是为了确保请求 A 在睡眠的时候，请求 B 能够在这这一段时间完成「从数据库读取数据，再把缺失的缓存写入缓存」的操作，然后请求 A 睡眠完，再删除缓存。<br>所以，请求 A 的睡眠时间就需要大于请求 B 「从数据库读取数据 + 写入缓存」的时间。因为这个延时时间不好控制，在极端情况下还是会出现读写不一致的现象。</li>
+</ul>
+</li>
+<li><strong>使用「先更新数据库，再删除缓存」方案</strong>：其实这种方案的特殊情况很难遇见，因为<strong>缓存的写入通常要远远快于数据库的写入</strong>，所以在实际中很难出现请求 B 已经更新了数据库并且删除了缓存，请求 A 才更新完缓存的情况。<br>而一旦请求 A 早于请求 B 删除缓存之前更新了缓存，那么接下来的请求就会因为缓存不命中而从数据库中重新读取数据，所以不会出现这种不一致的情况。<strong>（意思是即使B先写了数据库，A再写旧的值，因为数据库涉及io（扯远点就是io中断）阻塞进程B直到时间片到了，进程会交替执行而io搁一边，可能当执行到A写完了旧值，更新才刚刚结束，这个时候B再执行删除，就可以保证一致性）</strong></li>
+</ul>
+<h2 id="在不那么要求强一致性的场景"><a href="#在不那么要求强一致性的场景" class="headerlink" title="在不那么要求强一致性的场景"></a>在不那么要求强一致性的场景</h2><p>有的时候可以容忍一瞬间的脏数据，但是要保持最终一致性的场景，可以使用以下两种方法：</p>
+<ul>
+<li>基于消息队列（例如kafka）：写入数据库后，发一个消息给mq通知redis更新缓存，这种方式的可靠性主要取决于mq，肯定是有一定的延时的，但是最终会保证一致</li>
+<li>基于阿里巴巴的Canal中间件：「先更新数据库，再删缓存」的策略的第一步是更新数据库，那么更新数据库成功，就会产生一条变更日志，记录在 binlog 里。<br>Canal 模拟 MySQL 主从复制的交互协议，把自己伪装成一个 MySQL 的从节点，向 MySQL 主节点发送 dump 请求，MySQL 收到请求后，就会开始推送 Binlog 给 Canal，Canal 解析 Binlog 字节流之后，转换为便于读取的结构化数据，供下游程序订阅使用。</li>
+</ul>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/04/02/leetcode-2024-4-2/">leetcode-2024-4-2</a>
       
     </h1>
@@ -1108,89 +1198,6 @@
 <p>这里的状态转移方程是<br>$$<br>dp[i][j] &#x3D; min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1])+1<br>$$<br><img src="/../img/2024_3_28_2.png"></p>
 </blockquote>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximalSquare</span><span class="params">(<span class="type">char</span>[][] matrix)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[matrix.length][matrix[<span class="number">0</span>].length];</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; dp.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; dp[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (i != <span class="number">0</span> || j !=<span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[i][j] == <span class="string">&#x27;1&#x27;</span>)&#123;</span><br><span class="line">                        <span class="type">int</span> <span class="variable">left</span> <span class="operator">=</span> <span class="number">0</span>,up = <span class="number">0</span>,up_left = <span class="number">0</span>;</span><br><span class="line">                        <span class="keyword">if</span> (i-<span class="number">1</span> &gt;= <span class="number">0</span>)&#123;</span><br><span class="line">                            up = dp[i-<span class="number">1</span>][j];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (j-<span class="number">1</span> &gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                            left = dp[i][j-<span class="number">1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">if</span> (i-<span class="number">1</span> &gt;=<span class="number">0</span> &amp;&amp; j-<span class="number">1</span>&gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                            up_left = dp[i-<span class="number">1</span>][j-<span class="number">1</span>];</span><br><span class="line">                        &#125;</span><br><span class="line">                        dp[i][j] = Math.min(Math.min(left,up),up_left)+<span class="number">1</span>;</span><br><span class="line">                        ans = Math.max(ans,dp[i][j]);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[i][j] == <span class="string">&#x27;1&#x27;</span>)&#123;</span><br><span class="line">                        dp[i][j] = <span class="number">1</span>;</span><br><span class="line">                        ans = Math.max(ans,dp[i][j]);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">else</span> &#123;</span><br><span class="line">                        dp[i][j] = <span class="number">0</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.deepToString(dp));</span></span><br><span class="line">        <span class="keyword">return</span> ans*ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/27/leetcode-2024-3-27/">leetcode-2024-3-27</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-27
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="2580-统计将重叠区间合并成组的方案数（Medium）"><a href="#2580-统计将重叠区间合并成组的方案数（Medium）" class="headerlink" title="2580 统计将重叠区间合并成组的方案数（Medium）"></a>2580 统计将重叠区间合并成组的方案数（Medium）</h1><p>给你一个二维整数数组 ranges ，其中 ranges[i] &#x3D; [starti, endi] 表示 starti 到 endi 之间（包括二者）的所有整数都包含在第 i 个区间中。</p>
-<p>你需要将 ranges 分成 两个 组（可以为空），满足：</p>
-<p>每个区间只属于一个组。<br>两个有 交集 的区间必须在 同一个 组内。<br>如果两个区间有至少 一个 公共整数，那么这两个区间是 有交集 的。</p>
-<p>比方说，区间 [1, 3] 和 [2, 5] 有交集，因为 2 和 3 在两个区间中都被包含。<br>请你返回将 ranges 划分成两个组的 总方案数 。由于答案可能很大，将它对 109 + 7 取余 后返回。</p>
-<p>示例 1：</p>
-<p>输入：ranges &#x3D; [[6,10],[5,15]]<br>输出：2<br>解释：<br>两个区间有交集，所以它们必须在同一个组内。<br>所以有两种方案：</p>
-<ul>
-<li>将两个区间都放在第 1 个组中。</li>
-<li>将两个区间都放在第 2 个组中。</li>
-</ul>
-<h2 id="区间合并-组合数"><a href="#区间合并-组合数" class="headerlink" title="区间合并+组合数"></a>区间合并+组合数</h2><blockquote>
-<p>思路是将里面的区间先合并，得到长度。然后就相当于两个桶子，最终的结果为组合数相加，也就是一个杨辉三角，那么一行的总数就是2^n</p>
-</blockquote>
-<p><img src="/../img/2024_3_27_1.png"></p>
-<blockquote>
-<p>区间合并：设置一个动态数组，首先按照左括号排序，接着从后往前遍历，如果两个区间存在重合，就把后面的删除，前面的改成合并以后的新区间。</p>
-<p>这样主要是可以避免下标的影响，从前面遍历删除会乱序号</p>
-<p>但是这样还不够，比如这个例子[[2,3],[4,5],[6,7],[8,9],[1,10]]，排序以后[[1,10],[2,3],[4,5],[6,7],[8,9]]，这样以来排序也没用，结果是[[1,10],[4,5],[6,7],[8,9]]，面对这种情况需要多循环几次，每次减少1个，当长度不再变化的时候就停止</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">countWays</span><span class="params">(<span class="type">int</span>[][] ranges)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">MOD</span> <span class="operator">=</span> <span class="number">1000000007</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> merge(ranges).length;</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; length; i++) &#123;</span><br><span class="line">            ans = ans *<span class="number">2</span>%MOD;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 合并区间的代码</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> intervals</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[][] merge(<span class="type">int</span>[][] intervals)&#123;</span><br><span class="line">        <span class="type">int</span>[][] temp1 = mergeTemp(intervals);</span><br><span class="line">        <span class="type">int</span>[][] temp2 = mergeTemp(temp1);</span><br><span class="line">        <span class="keyword">while</span> (temp1.length != temp2.length)&#123;</span><br><span class="line">            temp1 = mergeTemp(temp2);</span><br><span class="line">            temp2 = mergeTemp(temp1);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> temp1;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[][] mergeTemp(<span class="type">int</span>[][] intervals) &#123;</span><br><span class="line">        <span class="comment">//先排序</span></span><br><span class="line">        Arrays.sort(intervals, <span class="keyword">new</span> <span class="title class_">Comparator</span>&lt;<span class="type">int</span>[]&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">compare</span><span class="params">(<span class="type">int</span>[] o1, <span class="type">int</span>[] o2)</span> &#123;</span><br><span class="line">                <span class="keyword">if</span>(o1[<span class="number">0</span>]==o2[<span class="number">0</span>])&#123;</span><br><span class="line">                    <span class="keyword">return</span> o1[<span class="number">1</span>] - o2[<span class="number">1</span>];</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> o1[<span class="number">0</span>] - o2[<span class="number">0</span>];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        List&lt;<span class="type">int</span>[]&gt; arrList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span> <span class="variable">rear</span> <span class="operator">=</span> intervals.length-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span>[] interval : intervals) &#123;</span><br><span class="line">            arrList.add(interval);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> (rear &gt; <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="type">int</span>[] front = arrList.get(rear-<span class="number">1</span>);</span><br><span class="line">            <span class="type">int</span>[] behind = arrList.get(rear);</span><br><span class="line">            <span class="type">int</span> temp;</span><br><span class="line">            <span class="keyword">if</span> (front[<span class="number">1</span>] &gt;= behind[<span class="number">0</span>])&#123;</span><br><span class="line">                temp = Math.max(front[<span class="number">1</span>],behind[<span class="number">1</span>]);</span><br><span class="line">                arrList.set(rear-<span class="number">1</span>,<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;</span><br><span class="line">                        arrList.get(rear-<span class="number">1</span>)[<span class="number">0</span>],temp</span><br><span class="line">                &#125;);</span><br><span class="line">                arrList.remove(rear);</span><br><span class="line">                rear--;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> rear--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span>[][] ans = <span class="keyword">new</span> <span class="title class_">int</span>[arrList.size()][<span class="number">2</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; arrList.size(); i++) &#123;</span><br><span class="line">            ans[i] = arrList.get(i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>当初在做合并区间的时候就有点侥幸了，这个题后续还要多看</p>
-</blockquote>
-<h1 id="25-K个一组翻转链表-Hard"><a href="#25-K个一组翻转链表-Hard" class="headerlink" title="25 K个一组翻转链表(Hard)"></a>25 K个一组翻转链表(Hard)</h1><p>给你链表的头节点 head ，每 k 个节点一组进行翻转，请你返回修改后的链表。</p>
-<p>k 是一个正整数，它的值小于或等于链表的长度。如果节点总数不是 k 的整数倍，那么请将最后剩余的节点保持原有顺序。</p>
-<p>你不能只是单纯的改变节点内部的值，而是需要实际进行节点交换</p>
-<p><img src="/../img/2024_3_27_2.png"></p>
-<blockquote>
-<p>其实也没那么Hard，就是麻烦了一点</p>
-</blockquote>
-<h2 id="模拟"><a href="#模拟" class="headerlink" title="模拟"></a>模拟</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">reverseKGroup</span><span class="params">(ListNode head, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">        <span class="comment">//如果间隔是1，那么就不进行下面的逻辑直接返回</span></span><br><span class="line">        <span class="keyword">if</span> (k==<span class="number">1</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> head;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">p</span> <span class="operator">=</span> head;</span><br><span class="line">        <span class="comment">//首先遍历统计节点数</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (p!=<span class="literal">null</span>)&#123;</span><br><span class="line">            count++;</span><br><span class="line">            p = p.next;</span><br><span class="line">        &#125;</span><br><span class="line">        p = head;</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">pre</span> <span class="operator">=</span> head;</span><br><span class="line">        List&lt;ListNode&gt; listNodes = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//对于每一个完整的组，不完整的直接接在尾部就行</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= count / k; i++) &#123;</span><br><span class="line">            <span class="comment">//pre找的是下一个的完整组的头节点，也就是下个p</span></span><br><span class="line">            pre = getNext(pre,k);</span><br><span class="line">            <span class="comment">//将反转后的头节点放进数组保存</span></span><br><span class="line">            listNodes.add(reverse(p,k));</span><br><span class="line">            p = pre;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//遍历数组，一段一段接起来</span></span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">temp</span> <span class="operator">=</span> listNodes.get(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; listNodes.size()-<span class="number">1</span>; i++) &#123;</span><br><span class="line">            temp= listNodes.get(i);</span><br><span class="line">            <span class="keyword">while</span> (temp.next != <span class="literal">null</span>)&#123;</span><br><span class="line">                temp = temp.next;</span><br><span class="line">            &#125;</span><br><span class="line">            temp.next = listNodes.get(i+<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//这里最后一段还没遍历，为了找到尾指针接上落单的那几个节点</span></span><br><span class="line">        <span class="keyword">while</span> (temp.next != <span class="literal">null</span>)&#123;</span><br><span class="line">            temp = temp.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//接上落单的几个节点</span></span><br><span class="line">        temp.next = pre;</span><br><span class="line">        <span class="comment">//返回最终的头节点</span></span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">ans</span> <span class="operator">=</span> listNodes.get(<span class="number">0</span>);</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">return</span> listNodes.get(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 返回下一段的头节点</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> p</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> k</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">getNext</span><span class="params">(ListNode p,<span class="type">int</span> k)</span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; k; i++) &#123;</span><br><span class="line">            p = p.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> p;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 反转当前段</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> head 原顺序的第一个节点</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> k 本段长多少</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 返回这一段反转完的头节点</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">reverse</span><span class="params">(ListNode head,<span class="type">int</span> k)</span>&#123;</span><br><span class="line">        <span class="comment">//首先返回的头节点肯定是动过的，头节点是最末尾那个，在这里是k-1次循环后的那个节点</span></span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">ans</span> <span class="operator">=</span> head;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; k - <span class="number">1</span>; i++) &#123;</span><br><span class="line">            ans = ans.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//执行倒序逻辑</span></span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">pre</span> <span class="operator">=</span><span class="literal">null</span>,p = head,pa;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; k; i++) &#123;</span><br><span class="line">            pa = p.next;</span><br><span class="line">            p.next = pre;</span><br><span class="line">            pre = p;</span><br><span class="line">            p = pa;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="136-只出现一次的数字（Easy）"><a href="#136-只出现一次的数字（Easy）" class="headerlink" title="136 只出现一次的数字（Easy）"></a>136 只出现一次的数字（Easy）</h1><p>给你一个 非空 整数数组 nums ，除了某个元素只出现一次以外，其余每个元素均出现两次。找出那个只出现了一次的元素。</p>
-<p>你必须设计并实现线性时间复杂度的算法来解决此问题，且该算法只使用常量额外空间。</p>
-<p>示例 1 ：</p>
-<p>输入：nums &#x3D; [2,2,1]</p>
-<p>输出：1</p>
-<h2 id="哈希表"><a href="#哈希表" class="headerlink" title="哈希表"></a>哈希表</h2><blockquote>
-<p>这里我的思路是遍历一次然后加入哈希表进行统计，再遍历一次哈希表找出其中为1的，这样时间空间复杂度肯定都0(n)了</p>
-</blockquote>
-<h2 id="技巧-位运算"><a href="#技巧-位运算" class="headerlink" title="技巧-位运算"></a>技巧-位运算</h2><blockquote>
-<p>通过异或，因为只有两个两个的，两个相同的异或结果就是0，0和任何异或都是自身，那么所有进行异或得到的就是落单的</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">singleNumber</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">single</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> num : nums) &#123;</span><br><span class="line">            single ^= num;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> single;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
 
     
     
