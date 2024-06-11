@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="redis项目-elasticsearch与mongodb" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/06/11/redis项目-elasticsearch与mongodb/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>redis项目-elasticsearch与mongodb - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      redis项目-elasticsearch与mongodb
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-06-11
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#elasticsearch"><span class="toc-number">1.</span> <span class="toc-text">elasticsearch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#mongodb"><span class="toc-number">2.</span> <span class="toc-text">mongodb</span></a></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <blockquote>
+<p>其实这个搜索的功能反倒跟redis没啥关系了，所以我也没归类在redis里。基于es的搜索也不无非是增删改查，先简单说一下项目里用到的这两个功能和api。后续我会详细学习</p>
+</blockquote>
+<h2 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h2><p>es是一个搜索器，具体怎么搜的我不知道（笑）。目前的理解是在新增blog的时候同时把这个对象给es服务器，它通过索引的方式进行缓存。后续查找的时候就可以根据field，也就是字段名来指定匹配位置。</p>
+<p>比如这里要搜索文章标题的关键字，就用title；如果是内容的，就用content。经过我的实验发现黑马给的分词器只能检索中文，我想要搜素字母“s”，都搜不到。</p>
+<p>项目里的应用也比较简单，就是上述的关键字搜索，然后返回前端的时候要标红，这个步骤是通过在前后加font标签完成的。</p>
+<p>首先是配置：</p>
+<p>这里用到的对象是RestHighLevelClient，我们只需要配置端口号和ip就可以了，这个客户端会使用es的restful端口进行增删改查。</p>
+<p>我们对其的增删改查操作就跟redistemplate一样的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ElasticSearchConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.host&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String host;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.port&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> Integer port;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     * 将该对象交给Spring容器去管理</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RestHighLevelClient <span class="title function_">restHighLevelClient</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RestHighLevelClient</span>(</span><br><span class="line">                RestClient.builder(</span><br><span class="line">                        <span class="comment">//若有多个，可以传一个数组</span></span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">HttpHost</span>(host, port, <span class="string">&quot;http&quot;</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>用这个RestHighLevelClient，传输的是一个httprequest，返回的是response。思路是创建一个request，查询标题和内容两个方面的关键词。<br>返回以后进行一个转换，返回的加上颜色标签的hits是一个数组，需要转换成字符串。最后向前端返回这个字符串。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">searchBlog</span><span class="params">(QueryBlogDto dto)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">    <span class="comment">//1.输入校验</span></span><br><span class="line">    <span class="keyword">if</span> (dto == <span class="literal">null</span>)&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (dto.getKeyWord() == <span class="literal">null</span> || dto.getKeyWord().isEmpty())&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入关键词为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//异步给mongo</span></span><br><span class="line">    insertSearchHistory(dto.getKeyWord());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.查询条件</span></span><br><span class="line">    <span class="type">SearchRequest</span> <span class="variable">searchRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchRequest</span>(<span class="string">&quot;hmdp_blogs&quot;</span>);</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">searchSourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.1布尔类型的查询</span></span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">builder</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.2 查询标题和内容两方面的关键词</span></span><br><span class="line">    <span class="type">QueryStringQueryBuilder</span> <span class="variable">queryStringQueryBuilder</span> <span class="operator">=</span> QueryBuilders.queryStringQuery(dto.getKeyWord()).field(<span class="string">&quot;content&quot;</span>).field(<span class="string">&quot;title&quot;</span>).defaultOperator(Operator.OR);</span><br><span class="line">    builder.must(queryStringQueryBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.3 文本高亮这个查找到的关键字</span></span><br><span class="line">    <span class="type">HighlightBuilder</span> <span class="variable">highlightBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HighlightBuilder</span>();</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">    <span class="comment">//2.3.1 标红</span></span><br><span class="line">    highlightBuilder.preTags(<span class="string">&quot;&lt;font style=&#x27;color: red; font-size: inherit;&#x27;&gt;&quot;</span>);</span><br><span class="line">    highlightBuilder.postTags(<span class="string">&quot;&lt;/font&gt;&quot;</span>);</span><br><span class="line">    searchSourceBuilder.highlighter(highlightBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.4 传给searchRequest</span></span><br><span class="line">    searchSourceBuilder.query(builder);</span><br><span class="line">    searchRequest.source(searchSourceBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.5 包装好了的request给客户端返回</span></span><br><span class="line">    <span class="type">SearchResponse</span> <span class="variable">response</span> <span class="operator">=</span> restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3 处理消息回应，一个gethits是一个类，要获取这个数组需要在这个包装类里面再获取。</span></span><br><span class="line">    SearchHit[] hits = response.getHits().getHits();</span><br><span class="line">    List&lt;Map&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (SearchHit hit : hits)&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> hit.getSourceAsString();</span><br><span class="line">        <span class="type">Map</span> <span class="variable">map</span> <span class="operator">=</span> JSONUtil.toBean(json, Map.class);</span><br><span class="line">        Map&lt;String, HighlightField&gt; highlightFields = hit.getHighlightFields();</span><br><span class="line">        <span class="keyword">if</span> (highlightFields != <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">title</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">content</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">            <span class="keyword">if</span> (title != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//title高亮</span></span><br><span class="line">                Text[] titleFragments = title.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(titleFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;title&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (content != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//content高亮</span></span><br><span class="line">                Text[] contentFragments = content.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(contentFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;content&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        list.add(map);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> Result.ok(list);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="mongodb"><a href="#mongodb" class="headerlink" title="mongodb"></a>mongodb</h2><p>登录用户的查询记录很多而且变化频繁。需要用非关系型数据库来存储。（其实我个人觉得没必要存在服务器上，这些缓存应该都是在客户端上保留的）</p>
+<p>mongodb的配置比较简单，甚至不用写配置类。直接看使用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 保存搜索记录</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> keyWord</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Async</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertSearchHistory</span><span class="params">(String keyWord)</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">Long</span> <span class="variable">userID</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">    <span class="comment">//1 先从db找这个数据</span></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID).and(<span class="string">&quot;keyWord&quot;</span>).is(keyWord));</span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">searchHistory</span> <span class="operator">=</span> mongoTemplate.findOne(query, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//2 如果又就更新创建时间</span></span><br><span class="line">    <span class="keyword">if</span> (searchHistory != <span class="literal">null</span>)&#123;</span><br><span class="line">        searchHistory.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3 没有就存进db</span></span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">dto</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">QueryBlogDto</span>();</span><br><span class="line">    dto.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    dto.setUserId(userID);</span><br><span class="line">    dto.setKeyWord(keyWord);</span><br><span class="line"></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query1</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID))</span><br><span class="line">            .with(Sort.by(Sort.Direction.DESC,<span class="string">&quot;createTime&quot;</span>));</span><br><span class="line">    List&lt;QueryBlogDto&gt; dtos = mongoTemplate.find(query1, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//3.1 如果数量少于10条就直接存</span></span><br><span class="line">    <span class="keyword">if</span> (dtos.size() &lt; <span class="number">10</span>)&#123;</span><br><span class="line">        mongoTemplate.save(dto);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3.2 如果多余10就要替换了</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">QueryBlogDto</span> <span class="variable">last</span> <span class="operator">=</span> dtos.get(dtos.size() - <span class="number">1</span>);</span><br><span class="line">        mongoTemplate.findAndReplace(Query.query(Criteria.where(<span class="string">&quot;keyWord&quot;</span>).is(last.getKeyWord())),dto);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>值得注意的是这里使用了@Async，gpt给我的答案是这个跟你新开一个线程没有区别，但是注意要在启动类上enable。这里query更像lambdaQueryWrapper那种。具体的增删改查语法以后再学。</p>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/">https://yyf1050886654.github.io/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/06/07/redis%E9%A1%B9%E7%9B%AE-kafkaStream%E6%94%B9%E9%80%A0/">  
+        <span class="next-text nav-default">redis项目-kafkaStream改造</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
