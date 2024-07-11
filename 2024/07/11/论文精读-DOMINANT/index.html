@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="论文精读-DOMINANT" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="科研论文, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/archives/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/07/11/论文精读-DOMINANT/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>归档 · YYF&#39;s Blog</title>
+  <title>论文精读-DOMINANT - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,224 +208,104 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      论文精读-DOMINANT
+      
+    </h1>
 
-<section id="archive" class="archive">
+    <div class="post-meta">
+      <span class="post-time">
+        2024-07-11
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
   
-  
-  <div class="archive-title">
-    <span class="archive-post-counter">
-      目前共计 38 篇日志
-    </span>
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Deep-Anomaly-Detection-on-Attributed-Networks"><span class="toc-number">1.</span> <span class="toc-text">Deep Anomaly Detection on Attributed Networks</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%BE%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C"><span class="toc-number">1.1.</span> <span class="toc-text">图卷积神经网络</span></a></li></ol></li></ol>
+    </div>
   </div>
   
-  
 
-  
-  
-  
-  
-  
-  
-  <div class="collection-title">
-    <h2 class="archive-year">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </h2>
+  <div class="post-content">
+    
+    <blockquote>
+<p>开发项目虽好，但是还是要毕业的嘛，正好今天做完了组会汇报ppt，趁热打铁写一篇读后感。</p>
+<p><strong>2024-7-11，我研究生生涯的第一篇论文，我会记住你的。</strong></p>
+</blockquote>
+<h1 id="Deep-Anomaly-Detection-on-Attributed-Networks"><a href="#Deep-Anomaly-Detection-on-Attributed-Networks" class="headerlink" title="Deep Anomaly Detection on Attributed Networks"></a>Deep Anomaly Detection on Attributed Networks</h1><blockquote>
+<p>在说明这篇文章之前，首先说一下图卷积神经网络（GSN）</p>
+</blockquote>
+<h2 id="图卷积神经网络"><a href="#图卷积神经网络" class="headerlink" title="图卷积神经网络"></a>图卷积神经网络</h2><p>&nbsp;&nbsp;图是一种数据结构，相比于离散的点，更具有特征的是边带来的结构上的关系。普通的卷积神经网络处理的主要是结构性数据，类似图片或者nlp任务，这一类任务的输入数据是有迹可循的，结构不会发生变化，图片可以拆为像素进行卷积核操作，nlp可以将词进行词嵌入。</p>
+<p>&nbsp;&nbsp;而图不一样，图的拓扑结构是无迹可寻的，这也意味着普通的cnn无法满足在图上的搜索，但是我们可以参考cnn的公式$Y&#x3D;XW+B$，结合图的规律探索出图的卷积神经网络。</p>
+<p>&nbsp;&nbsp;首先我们定义一个图，$\mathcal{G}&#x3D;(\mathcal{V},\epsilon,X)$，（1）$\mathcal{V}&#x3D;{\mathcal{v_1},\mathcal{v_n},\Idots,\mathcal{v_n}}$</p>
+
+    
   </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      07-11
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/" class="archive-post-link">
-        论文精读-DOMINANT
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-11
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/" class="archive-post-link">
-        redis项目-elasticsearch与mongodb
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/07/redis%E9%A1%B9%E7%9B%AE-kafkaStream%E6%94%B9%E9%80%A0/" class="archive-post-link">
-        redis项目-kafkaStream改造
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-04
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/04/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B-CompletableFuture/" class="archive-post-link">
-        java-多线程-CompletableFuture
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-01
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/01/redis%E9%A1%B9%E7%9B%AE-%E7%BC%93%E5%AD%98%E5%92%8C%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/" class="archive-post-link">
-        redis项目-缓存和读写一致性
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/" class="archive-post-link">
-        redis项目-分布式锁
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E7%99%BB%E5%BD%95%E9%80%BB%E8%BE%91/" class="archive-post-link">
-        redis项目-登录逻辑
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-08
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/08/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E4%B8%8A%EF%BC%89/" class="archive-post-link">
-        java-虚拟机（上）
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%88%E4%B8%AD/" class="archive-post-link">
-        java-多线程-ThreadLocal和线程池
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/" class="archive-post-link">
-        java-多线程-volatile，synchronized和lock
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/">https://yyf1050886654.github.io/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/%E7%A7%91%E7%A0%94%E8%AE%BA%E6%96%87/">科研论文</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
       
       
-      <a class="next" href="/archives/page/2/">  
-        <span class="next-text">下一页</span>  
+      <a class="next" href="/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/">  
+        <span class="next-text nav-default">redis项目-elasticsearch与mongodb</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
         <i class="iconfont icon-right"></i>  
       </a>  
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
@@ -520,6 +404,13 @@
     <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
   </div>
     
+    
+    
+    
+    
+    
+    
+  
 
   
 
