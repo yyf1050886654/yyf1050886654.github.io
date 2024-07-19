@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="新坑-代驾微服务项目" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Redis, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/07/19/新坑-代驾微服务项目/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>新坑-代驾微服务项目 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      新坑-代驾微服务项目
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-07-19
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">项目介绍</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8A%80%E6%9C%AF%E6%A0%88"><span class="toc-number">1.1.</span> <span class="toc-text">技术栈</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E4%BA%AE%E7%82%B9"><span class="toc-number">1.2.</span> <span class="toc-text">项目亮点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%AF%E4%BB%A5%E6%9C%89%E5%A2%9E%E9%87%8F%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="toc-number">1.3.</span> <span class="toc-text">可以有增量的地方</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E6%B5%81%E7%A8%8B"><span class="toc-number">1.4.</span> <span class="toc-text">业务流程</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B9%98%E5%AE%A2%E7%AB%AF%EF%BC%9A"><span class="toc-number">1.4.1.</span> <span class="toc-text">乘客端：</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8F%B8%E6%9C%BA%E7%AB%AF%EF%BC%9A"><span class="toc-number">1.4.2.</span> <span class="toc-text">司机端：</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <blockquote>
+<p>前言：一直都想做一个有点高级但是又重复度低的项目，正好让我遇上了这个尚硅谷刚发的《乐尚代驾》，做了一下感觉还是有学到很多东西的，不管以后放不放在简历里面，算是先开了一个小头，弄懂再说。</p>
+</blockquote>
+<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><p>该项目是模仿滴滴的一个代驾系统，前端是基于uniapp的微信小程序，分为三个端口：客户端，司机端和管理系统。业务很纯粹，就是乘客基于当前位置呼叫周围正在接单的司机，司机接单后对车辆的基本情况进行上传，然后就可以开始代驾了，到达终点后计算金额并用微信支付；此外还涉及到优惠券业务，也就是传统的那套秒杀逻辑，分布式锁+lua脚本那些。</p>
+<h3 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h3><ul>
+<li>SpringCloudAlibaba：包括nacos，openfeign，gateway这些，其实后续还可以做一些熔断和限流操作。</li>
+<li>redis：项目中主要是用到了geo数据结构，在司机开启抢单的时候将地理坐标上传到redis；此外也用到了redisson实现分布式锁和延迟队列（这里的延迟队列就是超时15分钟自动取消，其实也可以用rabbitmq实现）</li>
+<li>xxl-job：项目最核心的业务是通过xxl-job实现的，每次下单客户端都会创建一个新的任务调度，这个任务可以定时寻找周围司机。</li>
+<li>mongodb：在代驾订单进行过程中的地理坐标不好放在mysql里面，用mongodb存储地理坐标，考虑了其在实时性方面的优化</li>
+<li>rabbitmq：延迟队列，业务解耦和流量削峰</li>
+<li>Drools：第一次听说，规则引擎，就是把一些业务计算逻辑抽取出来，不硬编码在程序中，项目中用规则引擎定义了路程和费用的计算，还有最后算金额也用到了规则引擎，它有自己的一套语法。</li>
+<li>seata：分布式事务，在分布式系统中一个事务的回调是无法用@Transactional进行回调的，这里就用了阿里的这个分布式事务中间件完成，目前还没有太了解这个，只知道导入包只会加一个注释就能完成功能。</li>
+<li>minio：存储上传照片和音频文件</li>
+</ul>
+<h3 id="项目亮点"><a href="#项目亮点" class="headerlink" title="项目亮点"></a>项目亮点</h3><ul>
+<li>使用<strong>aop+注解+threadlocal</strong>的方式完成登录状态保存，微信小程序登录，做到了对业务代码的零入侵。</li>
+<li>在下单后用<strong>xxl-job</strong>进行任务调度，定时搜索周围司机，并基于<strong>redis的geo</strong>数据结构，提高附近司机的搜索速度，完成司乘对接。</li>
+<li>为了减小mysql访问压力使用<strong>mongodb</strong>记录沿途地理坐标，并使用基于<strong>rabbitmq</strong>的延迟队列将多次写请求合并为一次写入，再次减小了数据库操作。</li>
+<li>使用<strong>策略模式和规则引擎Drools</strong>，定义了业务执行过程中的多种流程，例如代驾费用计算，司机积分计算以及优惠卷最大优惠策略计算。</li>
+<li>使用<strong>Redisson分布式锁</strong>解决了高并发场景下的司机抢单和优惠卷超发问题，使用Redisson提供的<strong>延时队列</strong>完成了订单超出时间限制后自动取消。</li>
+<li>使用<strong>CompletableFuture</strong>完成了订单结束提交过程的异步编排，提高了响应效率，并使用<strong>seata</strong>来保证分布式事务的执行。</li>
+</ul>
+<h3 id="可以有增量的地方"><a href="#可以有增量的地方" class="headerlink" title="可以有增量的地方"></a>可以有增量的地方</h3><ul>
+<li>数据库分库分表，ShardingSphere可以尝试一下</li>
+<li>二级缓存，本地caffeine和redis二级缓存</li>
+<li>做限流和熔断，以及redis集群和哨兵</li>
+<li>点赞（set），评论，排行榜（zset），签到（bitmap）和UV统计（hyperloglog）都是可以用redis解决的</li>
+<li>kafka-stream还是没能找到应用的场景，</li>
+<li>binlog实现与mysql的持久化</li>
+<li>优惠卷兑换算法和优惠卷的最大优惠计算</li>
+</ul>
+<h3 id="业务流程"><a href="#业务流程" class="headerlink" title="业务流程"></a>业务流程</h3><h4 id="乘客端："><a href="#乘客端：" class="headerlink" title="乘客端："></a>乘客端：</h4><p>登录–选择代驾地址–呼叫代驾–等待接单–15分钟没有司机接单自动取消–15内有司机接单，司乘同显–账单支付</p>
+<ol>
+<li>登录：前端首先调用wx.login()，返回一串字符串，然后后端拿到这个去请求微信服务器得到当前登录的openid，也就是微信的唯一id（可以理解为wx.login()请求发出之后，wx的缓存中就保存了这个键值对，键是这个字符串，值是当前用户的结构，必须是连贯的动作，可能设置了失效时间，这也是为什么我后面拿postman同样请求得不到的原因）</li>
+<li>选择代驾地址：百度地图的api返回距离和时间，这个参数给后端规则引擎计算出费用</li>
+<li>等待接单：xxl-job新增一个订单任务，每隔一分钟根据redis的geo搜索周围的汽车，然后在附近开启接单的汽车的队列里面（通过redis的list实现）添加这个订单。</li>
+<li>15分钟没有司机接单自动取消：通过redisson实现或者rabbitmq的延迟队列实现</li>
+<li>15内有司机接单，司乘同显：当司机抢到了该订单后，订单状态改变，进入司乘同显模式，此后基本上没有乘客端什么事情了，前端会一直轮询订单当前状态，并根据司机端存在mongodb中的数据获取车的位置。</li>
+<li>账单支付：微信支付</li>
+</ol>
+<h4 id="司机端："><a href="#司机端：" class="headerlink" title="司机端："></a>司机端：</h4><p>登录–认证–开始接单–抢单–开始代驾–生成账单，发送乘客</p>
+<ol>
+<li>登录：逻辑类似</li>
+<li>认证：司机需要上传身份证驾驶证人脸等，通过腾讯云，我懒得注册这部分就跳过了</li>
+<li>开始接单：开始接单后会把当前的坐标上传到redis，然后每隔5s询问一次当前队列状态，当xxl-job把订单放在了该司机的队列里面，前端就会有显示可以抢单</li>
+<li>抢单：分布式锁，无需多言，抢单之后将订单状态改变，这样乘客端轮询这个订单的时候就会发现有司机已经接单了。</li>
+<li>到达乘客指定地点，这里会有一个刷单的校验，也就是说在距离地点1km之内才能有效</li>
+<li>上传车辆状况和车牌号：拍照上传minio</li>
+<li>开始代驾：每隔几秒钟将当前的坐标上传到mongodb中，实现与乘客端同步显示。</li>
+<li>生成账单：根据规则引擎分账，然后推送微信支付给乘客。</li>
+</ol>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/">https://yyf1050886654.github.io/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Redis/">Redis</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/">  
+        <span class="next-text nav-default">论文精读-DOMINANT</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>

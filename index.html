@@ -212,6 +212,94 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/">新坑-代驾微服务项目</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-07-19
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>前言：一直都想做一个有点高级但是又重复度低的项目，正好让我遇上了这个尚硅谷刚发的《乐尚代驾》，做了一下感觉还是有学到很多东西的，不管以后放不放在简历里面，算是先开了一个小头，弄懂再说。</p>
+</blockquote>
+<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><p>该项目是模仿滴滴的一个代驾系统，前端是基于uniapp的微信小程序，分为三个端口：客户端，司机端和管理系统。业务很纯粹，就是乘客基于当前位置呼叫周围正在接单的司机，司机接单后对车辆的基本情况进行上传，然后就可以开始代驾了，到达终点后计算金额并用微信支付；此外还涉及到优惠券业务，也就是传统的那套秒杀逻辑，分布式锁+lua脚本那些。</p>
+<h3 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h3><ul>
+<li>SpringCloudAlibaba：包括nacos，openfeign，gateway这些，其实后续还可以做一些熔断和限流操作。</li>
+<li>redis：项目中主要是用到了geo数据结构，在司机开启抢单的时候将地理坐标上传到redis；此外也用到了redisson实现分布式锁和延迟队列（这里的延迟队列就是超时15分钟自动取消，其实也可以用rabbitmq实现）</li>
+<li>xxl-job：项目最核心的业务是通过xxl-job实现的，每次下单客户端都会创建一个新的任务调度，这个任务可以定时寻找周围司机。</li>
+<li>mongodb：在代驾订单进行过程中的地理坐标不好放在mysql里面，用mongodb存储地理坐标，考虑了其在实时性方面的优化</li>
+<li>rabbitmq：延迟队列，业务解耦和流量削峰</li>
+<li>Drools：第一次听说，规则引擎，就是把一些业务计算逻辑抽取出来，不硬编码在程序中，项目中用规则引擎定义了路程和费用的计算，还有最后算金额也用到了规则引擎，它有自己的一套语法。</li>
+<li>seata：分布式事务，在分布式系统中一个事务的回调是无法用@Transactional进行回调的，这里就用了阿里的这个分布式事务中间件完成，目前还没有太了解这个，只知道导入包只会加一个注释就能完成功能。</li>
+<li>minio：存储上传照片和音频文件</li>
+</ul>
+<h3 id="项目亮点"><a href="#项目亮点" class="headerlink" title="项目亮点"></a>项目亮点</h3><ul>
+<li>使用<strong>aop+注解+threadlocal</strong>的方式完成登录状态保存，微信小程序登录，做到了对业务代码的零入侵。</li>
+<li>在下单后用<strong>xxl-job</strong>进行任务调度，定时搜索周围司机，并基于<strong>redis的geo</strong>数据结构，提高附近司机的搜索速度，完成司乘对接。</li>
+<li>为了减小mysql访问压力使用<strong>mongodb</strong>记录沿途地理坐标，并使用基于<strong>rabbitmq</strong>的延迟队列将多次写请求合并为一次写入，再次减小了数据库操作。</li>
+<li>使用<strong>策略模式和规则引擎Drools</strong>，定义了业务执行过程中的多种流程，例如代驾费用计算，司机积分计算以及优惠卷最大优惠策略计算。</li>
+<li>使用<strong>Redisson分布式锁</strong>解决了高并发场景下的司机抢单和优惠卷超发问题，使用Redisson提供的<strong>延时队列</strong>完成了订单超出时间限制后自动取消。</li>
+<li>使用<strong>CompletableFuture</strong>完成了订单结束提交过程的异步编排，提高了响应效率，并使用<strong>seata</strong>来保证分布式事务的执行。</li>
+</ul>
+<h3 id="可以有增量的地方"><a href="#可以有增量的地方" class="headerlink" title="可以有增量的地方"></a>可以有增量的地方</h3><ul>
+<li>数据库分库分表，ShardingSphere可以尝试一下</li>
+<li>二级缓存，本地caffeine和redis二级缓存</li>
+<li>做限流和熔断，以及redis集群和哨兵</li>
+<li>点赞（set），评论，排行榜（zset），签到（bitmap）和UV统计（hyperloglog）都是可以用redis解决的</li>
+<li>kafka-stream还是没能找到应用的场景，</li>
+<li>binlog实现与mysql的持久化</li>
+<li>优惠卷兑换算法和优惠卷的最大优惠计算</li>
+</ul>
+<h3 id="业务流程"><a href="#业务流程" class="headerlink" title="业务流程"></a>业务流程</h3><h4 id="乘客端："><a href="#乘客端：" class="headerlink" title="乘客端："></a>乘客端：</h4><p>登录–选择代驾地址–呼叫代驾–等待接单–15分钟没有司机接单自动取消–15内有司机接单，司乘同显–账单支付</p>
+<ol>
+<li>登录：前端首先调用wx.login()，返回一串字符串，然后后端拿到这个去请求微信服务器得到当前登录的openid，也就是微信的唯一id（可以理解为wx.login()请求发出之后，wx的缓存中就保存了这个键值对，键是这个字符串，值是当前用户的结构，必须是连贯的动作，可能设置了失效时间，这也是为什么我后面拿postman同样请求得不到的原因）</li>
+<li>选择代驾地址：百度地图的api返回距离和时间，这个参数给后端规则引擎计算出费用</li>
+<li>等待接单：xxl-job新增一个订单任务，每隔一分钟根据redis的geo搜索周围的汽车，然后在附近开启接单的汽车的队列里面（通过redis的list实现）添加这个订单。</li>
+<li>15分钟没有司机接单自动取消：通过redisson实现或者rabbitmq的延迟队列实现</li>
+<li>15内有司机接单，司乘同显：当司机抢到了该订单后，订单状态改变，进入司乘同显模式，此后基本上没有乘客端什么事情了，前端会一直轮询订单当前状态，并根据司机端存在mongodb中的数据获取车的位置。</li>
+<li>账单支付：微信支付</li>
+</ol>
+<h4 id="司机端："><a href="#司机端：" class="headerlink" title="司机端："></a>司机端：</h4><p>登录–认证–开始接单–抢单–开始代驾–生成账单，发送乘客</p>
+<ol>
+<li>登录：逻辑类似</li>
+<li>认证：司机需要上传身份证驾驶证人脸等，通过腾讯云，我懒得注册这部分就跳过了</li>
+<li>开始接单：开始接单后会把当前的坐标上传到redis，然后每隔5s询问一次当前队列状态，当xxl-job把订单放在了该司机的队列里面，前端就会有显示可以抢单</li>
+<li>抢单：分布式锁，无需多言，抢单之后将订单状态改变，这样乘客端轮询这个订单的时候就会发现有司机已经接单了。</li>
+<li>到达乘客指定地点，这里会有一个刷单的校验，也就是说在距离地点1km之内才能有效</li>
+<li>上传车辆状况和车牌号：拍照上传minio</li>
+<li>开始代驾：每隔几秒钟将当前的坐标上传到mongodb中，实现与乘客端同步显示。</li>
+<li>生成账单：根据规则引擎分账，然后推送微信支付给乘客。</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/">论文精读-DOMINANT</a>
       
     </h1>
@@ -1162,140 +1250,6 @@
 <li>io密集型：2n+1</li>
 <li>cpu密集型：n+1<br>这里的n都是当前机器的虚拟内核数量，io密集型主要都是io时间多，对于cpu负载并不大</li>
 </ul>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/">java-多线程-volatile，synchronized和lock</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-04-07
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>由于东西很多很乱，就按照Q&amp;A的方式整理以下</p>
-</blockquote>
-<h1 id="进程与线程的区别"><a href="#进程与线程的区别" class="headerlink" title="进程与线程的区别"></a>进程与线程的区别</h1><ul>
-<li>调度方面：在传统计算机中，进程是调度的基本单位，但是在引入线程之后，线程是调度的基本单位。同一个进程下的线程切换不会引起进程切换，但是不同的就会影响</li>
-<li>拥有资源方面：进程是拥有资源的单位，线程之间共享内存空间</li>
-<li>切换方面：进程切换要保存上下文程序计数器很多东西，而线程切换只用保存一些寄存器。开销远小于进程</li>
-<li>并发性：同一个进程下的线程可以并发，不同进程下的线程也可以并发</li>
-</ul>
-<h1 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h1><p>volatile是不稳定的意思，不止用于java，c++也有使用，声明了这个关键字的变量会禁用缓存，每一次都从内存找最新的值，这样就能保证可见性，但是不会保证原子性，例如下面这段代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VolatileAtomicityDemo</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="keyword">static</span> <span class="type">int</span> <span class="variable">inc</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">increase</span><span class="params">()</span> &#123;</span><br><span class="line">        inc++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">ExecutorService</span> <span class="variable">threadPool</span> <span class="operator">=</span> Executors.newFixedThreadPool(<span class="number">5</span>);</span><br><span class="line">        <span class="type">VolatileAtomicityDemo</span> <span class="variable">volatileAtomicityDemo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VolatileAtomicityDemo</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">            threadPool.execute(() -&gt; &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; <span class="number">500</span>; j++) &#123;</span><br><span class="line">                    volatileAtomicityDemo.increase();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 等待1.5秒，保证上面程序执行完成</span></span><br><span class="line">        Thread.sleep(<span class="number">1500</span>);</span><br><span class="line">        System.out.println(inc);</span><br><span class="line">        threadPool.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这里得不到结果的主要原因是，inc++不是一个原子操作，其实是由三个操作并成，先读取inc，再++，最后写回，可能两个线程同时都读到inc为100，这个时候再同时更改写回内存，这样就会达不到预期，所以volatile关键之<strong>只能保证可见性，不能保证原子性</strong></p>
-<p>如果要保证原子性，可以使用：</p>
-<ul>
-<li>synchronized关键字上锁increase方法</li>
-<li>既然可以用synchronized方法，那肯定也可以用ReentrantLock，关于这两者的区别后文再说</li>
-<li>ReentrantLock基于CAS和AQS，那肯定用CAS的原子方法也可以解决，后文再说</li>
-</ul>
-<h1 id="乐观锁和悲观锁"><a href="#乐观锁和悲观锁" class="headerlink" title="乐观锁和悲观锁"></a>乐观锁和悲观锁</h1><ul>
-<li>悲观锁：悲观的觉得临界区一定会有人来竞争，所以每次访问的时候一定要上锁，synchronized和ReentrantLock就是比较典型的悲观锁</li>
-<li>乐观锁：很投机的觉得，这段代码可能不会有别的线程访问，就算有我也不上锁，用其他的方法，例如队列，链表的方式，比较典型的就是CAS（其实我觉得MVCC多少也有点这种思想）<br>最大的区别就是锁的粒度不一样，悲观锁由于每一次都要上锁，肯定效率没有乐观锁高，反而言之，如果频繁发生冲突，乐观锁的效率也是很低的。总而言之，在读多写少的场景，可以使用乐观锁，写多读少的情况下，使用悲观锁。</li>
-</ul>
-<h1 id="CAS和自旋锁"><a href="#CAS和自旋锁" class="headerlink" title="CAS和自旋锁"></a>CAS和自旋锁</h1><h2 id="CAS"><a href="#CAS" class="headerlink" title="CAS"></a>CAS</h2><p>compare and swap，比较并且交换，主要思想是给出三个数据：要修改的数据的更新值，这个要修改的数据的预期值，要修改数据的实际值。什么意思呢，例如我们要把一个等于1的数据修改成6，我对于这个要修改数据的预期值就是1，当且仅当数据是1的时候，我才会把它修改成6.<br>这个思想怎么在并发的环境下体现呢？比如这个时候两个线程都要修改这个数据，有一个别的线程抢占先机，由于这个是由volatile修饰的，另一边立即会就看到修改成了另外一个值，不再是预期值1，这个时候cas就会失效，从而保证了并发。</p>
-<p><strong>为什么这样就能作为锁呢？</strong></p>
-<p>理由很简单，cas<strong>保证原子性</strong>，为什么他敢理直气壮的说自己是原子的。这就要涉及到一个神奇的类Unsafe，在实现java虚拟机的时候，由于jvm的隔离性，使得java很难接近底层操作系统，Unsafe这个类里面全都是native方法，也就是用的本地方法，对于cas而言，这个底层的方法不是java实现的，是由Unsafe调用dll动态库，也就是c++实现的，cas这条操作可以理解成汇编的一个原子指令，既然是一条指令，那么肯定是可以保证原子性的。</p>
-<p>那么问题来了，为什么不直接弄一条锁的原子指令，而这么拐弯抹角的用到这个语句间接完成乐观锁，小编也不知道</p>
-<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们有了这个CAS操作，到底怎么用到锁上面呢？我们先看一个用CAS的例子：</p>
-<p>AtomicInteger中调用unsafe进行自增操作的源码中的do-while循环就是一个自旋操作，如果修改数值失败则通过循环来执行自旋，直至修改成功。AtomicInteger是一个操作Integer类型的原子操作类，这里的getAndAddInt可以保证线程安全，获取Object对象在内存偏移量，然后在+i</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">getAndAddInt</span> <span class="params">(Object var1, Long var2, <span class="type">int</span> var4)</span> &#123;</span><br><span class="line">	<span class="type">int</span> var5;</span><br><span class="line">    <span class="comment">//自循环的思想，每一次循环都找Object的偏移量为var2的那个值，这个获得的就是预期值，</span></span><br><span class="line">    <span class="comment">//循环条件是如果跟他一样就断开，如果不一样，不阻塞，不释放CPU，但是也达到了锁的功能</span></span><br><span class="line">    <span class="comment">//能加就加，加不上就一只循环一直尝试</span></span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		var5 = <span class="built_in">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">	&#125; <span class="keyword">while</span>( !<span class="built_in">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4));</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>主要思想是加的上就加，加不上一直尝试，即使没有加锁，但是也达到了锁的功能。</p>
-<p>这种思想称为<strong>自旋</strong>，我们把这种dowhile的思想运用到类上就是<strong>自旋锁</strong>，我猜取这个名字的原因是因为一直循环，很像自己一个人在转</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SpinLock</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> AtomicReference&lt;Thread&gt; owner = <span class="keyword">new</span> <span class="title class_">AtomicReference</span>&lt;Thread&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">currentThread</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">        <span class="comment">// 如果锁未被占用，则设置当前线程为锁的拥有者</span></span><br><span class="line">        <span class="keyword">while</span> (!owner.compareAndSet(<span class="literal">null</span>, currentThread)) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">currentThread</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">        <span class="comment">// 只有锁的拥有者才能释放锁</span></span><br><span class="line">        owner.compareAndSet(currentThread, <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>AtomicReference是一个原子类，提供的compareAndSet方法封装了CAS方法，参数中前面是预期值，后面是要修改的值，如果预期值和实际值是一样的，那么就设置为修改值。</p>
-<p>上锁过程：owner这里空参数构造，所以我的预期值是空，如果这个时候只有一个线程，那么没有人上锁肯定也是空，所以实际值也是空，满足条件，那么就把空设置为当前线程。如果有两个线程，都同时要上锁，先进来的那个上了锁，下一个compareAndSet方法肯定是假，就会一直while，不会释放cpu</p>
-<p>解锁过程：预期值为当前线程，这个线程刚刚上锁了，所以实际值肯定存的也是这个，最后满足条件就把锁设置为null，此时第二个线程终于不用自旋了，就会获取锁。</p>
-<p>通过这个过程也看到了，自旋的优点和缺点都很明显，优点是如果时间短的话，可以免去线程的上下文切换时间；但是如果时间长，那就是很消耗cpu的，一直不释放，这个缺点有改进措施，可以用<strong>自适应自旋锁</strong>，也就说，不再是无限循环，可以设置一个最大循环次数，就不会导致死循环的情况。</p>
-<h2 id="ABA问题"><a href="#ABA问题" class="headerlink" title="ABA问题"></a>ABA问题</h2><p>CAS存在一个问题，判断实际值和预期值相同，其实不一定就能说明没改过，有可能预期值是A，实际值从A变成了B再变成了A，这个问题其实蛮严重的，如果是变量还好，如果在链表中，判断头节点没变化，不代表接下来的节点没有变化，就会导致完全不一样的结果。</p>
-<p>如何避免？</p>
-<p>加时间戳，上文用了AtomicReference，这回用AtomicStampedReference，这里使用了时间戳，只有当时间戳相同并且实际值等于预期值，才可以。</p>
-<h1 id="Synchronized关键字"><a href="#Synchronized关键字" class="headerlink" title="Synchronized关键字"></a>Synchronized关键字</h1><p>在 Java 早期版本中，synchronized 属于 重量级锁，效率低下。这是因为监视器锁（monitor）是依赖于底层的操作系统的 Mutex Lock 来实现的，Java 的线程是映射到操作系统的原生线程之上的。如果要挂起或者唤醒一个线程，都需要操作系统帮忙完成，而操作系统实现线程之间的切换时需要从用户态转换到内核态，这个状态之间的转换需要相对比较长的时间，时间成本相对较高。</p>
-<p>不过，在 Java 6 之后， synchronized 引入了大量的优化如自旋锁、适应性自旋锁、锁消除、锁粗化、偏向锁、轻量级锁等技术来减少锁操作的开销，这些优化让 synchronized 锁的效率提升了很多。因此， synchronized 还是可以在实际项目中使用的，像 JDK 源码、很多开源框架都大量使用了 synchronized 。</p>
-<p>关于偏向锁多补充一点：由于偏向锁增加了 JVM 的复杂性，同时也并没有为所有应用都带来性能提升。因此，在 JDK15 中，偏向锁被默认关闭（仍然可以使用 -XX:+UseBiasedLocking 启用偏向锁），在 JDK18 中，偏向锁已经被彻底废弃（无法通过命令行打开）。</p>
-<h2 id="如何使用Synchronized关键字？"><a href="#如何使用Synchronized关键字？" class="headerlink" title="如何使用Synchronized关键字？"></a>如何使用Synchronized关键字？</h2><ol>
-<li>修饰方法</li>
-<li>修饰静态方法（锁住当前类）：注意修饰静态方法是没有互斥性的，因为静态方法是放在进程中静态代码块那一部分的，所有线程共享，每一个线程都可以访问</li>
-<li>修饰代码块：</li>
-</ol>
-<ul>
-<li>synchronized(object) 表示进入同步代码库前要获得 给定对象的锁。</li>
-<li>synchronized(类.class) 表示进入同步代码前要获得 给定 Class 的锁</li>
-</ul>
-<p>总结：</p>
-<ul>
-<li>synchronized 关键字加到 static 静态方法和 synchronized(class) 代码块上都是是给 Class 类上锁；</li>
-<li>synchronized 关键字加到实例方法上是给对象实例上锁；</li>
-<li>尽量不要使用 synchronized(String a) 因为 JVM 中，字符串常量池具有缓存功能。</li>
-</ul>
-<h2 id="构造方法可以被Synchronized修饰吗》"><a href="#构造方法可以被Synchronized修饰吗》" class="headerlink" title="构造方法可以被Synchronized修饰吗》"></a>构造方法可以被Synchronized修饰吗》</h2><p>不可以，因为本身构造方法就已经是线程安全的了</p>
-<h2 id="Synchronized底层原理"><a href="#Synchronized底层原理" class="headerlink" title="Synchronized底层原理"></a>Synchronized底层原理</h2><p>基于jvm的monitor,在java编译的时候会给加锁代码加上monitorenter和两个monitorexit，在这中间的就是互斥的，为什么要有两个呢，线程有的时候会抛出异常或者错误，这个时候就会走第二个exit，用两个是为了保证一定能退出。</p>
-<p>monitor也是基于c++的，分为三个部分，一个是当前获取锁的对象，还有一个是等待队列，一个是阻塞队列。</p>
-<p>上锁成功的标志是monitor的拥有者为当前线程，当释放的时候会唤醒阻塞进程，有一点要说明的是这个过程是非公平，也就是运行不在队列里的新进程也来抢。</p>
-<h2 id="Synchronized锁升级原理"><a href="#Synchronized锁升级原理" class="headerlink" title="Synchronized锁升级原理"></a>Synchronized锁升级原理</h2><blockquote>
-<p>这一块暂时还没有细细研究。</p>
-</blockquote>
-<p>有四种锁等级，锁的重量依次递增：</p>
-<ol>
-<li>不加锁</li>
-<li>加偏向锁：一段很长的时间内都只被一个线程使用锁，可以使用了偏向锁，在第一次获得锁时，会有一个CAS操作，之后该线程再获取锁，只需要判断mark word中是否是自己的线程id即可，而不是开销相对较大的CAS命令。这也是某种投机行为，乐观锁思想，在很少有进程竞争的时候比较节约资源</li>
-<li>加轻度锁：也就是自旋锁等，每次操作都是cas，还是乐观锁思想，这个就比偏向锁稍微控制了一点</li>
-<li>重度锁，使用monitor那种悲观锁</li>
-</ol>
-<p>Synchronized发生竞争会依次升级锁，高并发下变成悲观锁</p>
-<h2 id="Synchronized和volatile什么区别"><a href="#Synchronized和volatile什么区别" class="headerlink" title="Synchronized和volatile什么区别"></a>Synchronized和volatile什么区别</h2><ol>
-<li>Synchronized修饰方法，静态方法，代码块等，而volatile修饰变量</li>
-<li>volatile是线程同步的轻量实现，具有可见性但是没有原子性，Synchronized可以保证可见性和原子性</li>
-<li>volatile性能肯定比Synchronized好，但是主要解决的是变量的问题，Synchronized解决方法的同步和互斥。</li>
-</ol>
-<h1 id="ReentrantLock"><a href="#ReentrantLock" class="headerlink" title="ReentrantLock"></a>ReentrantLock</h1><p>可重入锁，实现了Lock接口，相比Synchronized功能更多，实现了轮询，超时，中断，公平锁和非公平锁。</p>
-<p>公平和非公平锁主要是Sync里面实现的，而Sync继承自<strong>AQS</strong>，也就是说ReentrantLock用的就是AQS思想。</p>
-<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>主要数据结构是CLH，最早的CLH是一个虚拟的单向链表，为什么是虚拟的呢，因为甚至连指针都没有，一个CLH节点就包含两个结构，一个是当前线程，另外一个是一个bool变量，用来表示是否获得了锁。</p>
-<p><strong>那是怎么运作的呢？</strong></p>
-<p>初始化一个尾节点，线程那部分为空，bool部分为true，也就是说可以被上锁，每一个线程都用<strong>自旋的方式</strong>尝试获得来的时候的尾节点的bool值，那么这个时候来了一个线程，用CAS尝试获取现在的尾节点的bool，为真，那就可以上锁为false，同时自己的bool也为false，表示前面的节点都不能用，所以下一个也不能。</p>
-<p>来了一个线程2，现在的尾节点是线程1，他的bool是false，线程2会一直自旋的获取前一个节点的bool值，后面的也是，如果此时线程1好了，那么线程2监听到前面一个变成了true，那就会开始线程2，以此类推。</p>
-<p>优点很明显：如果时间短，那么获取和释放锁的开销小。CLH 的锁状态不再是单一的原子变量，而是分散在每个节点的状态中，降低了自旋锁在竞争激烈时频繁同步的开销。还有就是公平，先进先出</p>
-<p>这样的CLH有什么缺点呢，首先是都是自旋，如果时间短还好，长了那肯定浪费资源。功能单一，不能支持ReentrantLock的那些接口功能。</p>
-<p><strong>AQS对于CLH的改造</strong></p>
-<p>针对自旋，AQS都改造成了阻塞，还是不能用自旋。针对第二个功能单一的缺点，使用了双向链表和一个全局变量state（其实我觉得之前那种看上一个节点情况的机制还蛮好的，这不是又重新变成信号量那种机制了）</p>
-<p>state属性表示资源的状态，为0表示可以抢了，为1表示不能，为1时候来的线程进阻塞队列</p>
-<ul>
-<li>公平与非公平，公平就是直接每次都唤醒队列头的，非公平就是来的也一起竞争，但是可能会导致饥饿</li>
-<li>可重入：一个线程多次进入可以state自增，如果重入两次那么state就是2，但是要保证加锁几次就解锁几次，保证最终还是0</li>
-</ul>
-<h1 id="ReentrantLock和synchronized区别"><a href="#ReentrantLock和synchronized区别" class="headerlink" title="ReentrantLock和synchronized区别"></a>ReentrantLock和synchronized区别</h1><ol>
-<li>首先两者都是悲观锁，也都是可重入的，synchronized是一个关键字，基于jvm实现，ReentrantLock是一个是实现类，实现Lock接口，使用的时候需要声明。</li>
-<li>ReentrantLock功能比较多，实现了可中断（中断也就说如果得不到锁就去干别的事情了，synchronized不可中断），可超时（ReentrantLock实现了，如果超时多少就不去争抢锁了，syn实现不了），锁可以绑定多个条件（Condition类，就相当于不同的信号量，可以控制一部分Condition下的进程等待，另一部分的执行）</li>
-<li>没有竞争的时候synchronized优化很多，锁没有升级的时候性能很好；重度的时候Lock的性能比较好，因为底层还是用了cas的一部分乐观机制，相比synchronized的monitor还是好一点</li>
-</ol>
 
     
     
