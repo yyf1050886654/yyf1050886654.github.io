@@ -212,6 +212,43 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/07/19/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E7%AB%AF%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91/">代驾微服务项目-乘客端核心业务逻辑</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-07-19
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/">新坑-代驾微服务项目</a>
       
     </h1>
@@ -237,8 +274,8 @@
     <blockquote>
 <p>前言：一直都想做一个有点高级但是又重复度低的项目，正好让我遇上了这个尚硅谷刚发的《乐尚代驾》，做了一下感觉还是有学到很多东西的，不管以后放不放在简历里面，算是先开了一个小头，弄懂再说。</p>
 </blockquote>
-<h2 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h2><p>该项目是模仿滴滴的一个代驾系统，前端是基于uniapp的微信小程序，分为三个端口：客户端，司机端和管理系统。业务很纯粹，就是乘客基于当前位置呼叫周围正在接单的司机，司机接单后对车辆的基本情况进行上传，然后就可以开始代驾了，到达终点后计算金额并用微信支付；此外还涉及到优惠券业务，也就是传统的那套秒杀逻辑，分布式锁+lua脚本那些。</p>
-<h3 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h3><ul>
+<h1 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h1><p>该项目是模仿滴滴的一个代驾系统，前端是基于uniapp的微信小程序，分为三个端口：客户端，司机端和管理系统。业务很纯粹，就是乘客基于当前位置呼叫周围正在接单的司机，司机接单后对车辆的基本情况进行上传，然后就可以开始代驾了，到达终点后计算金额并用微信支付；此外还涉及到优惠券业务，也就是传统的那套秒杀逻辑，分布式锁+lua脚本那些。</p>
+<h2 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h2><ul>
 <li>SpringCloudAlibaba：包括nacos，openfeign，gateway这些，其实后续还可以做一些熔断和限流操作。</li>
 <li>redis：项目中主要是用到了geo数据结构，在司机开启抢单的时候将地理坐标上传到redis；此外也用到了redisson实现分布式锁和延迟队列（这里的延迟队列就是超时15分钟自动取消，其实也可以用rabbitmq实现）</li>
 <li>xxl-job：项目最核心的业务是通过xxl-job实现的，每次下单客户端都会创建一个新的任务调度，这个任务可以定时寻找周围司机。</li>
@@ -248,7 +285,7 @@
 <li>seata：分布式事务，在分布式系统中一个事务的回调是无法用@Transactional进行回调的，这里就用了阿里的这个分布式事务中间件完成，目前还没有太了解这个，只知道导入包只会加一个注释就能完成功能。</li>
 <li>minio：存储上传照片和音频文件</li>
 </ul>
-<h3 id="项目亮点"><a href="#项目亮点" class="headerlink" title="项目亮点"></a>项目亮点</h3><ul>
+<h2 id="项目亮点"><a href="#项目亮点" class="headerlink" title="项目亮点"></a>项目亮点</h2><ul>
 <li>使用<strong>aop+注解+threadlocal</strong>的方式完成登录状态保存，微信小程序登录，做到了对业务代码的零入侵。</li>
 <li>在下单后用<strong>xxl-job</strong>进行任务调度，定时搜索周围司机，并基于<strong>redis的geo</strong>数据结构，提高附近司机的搜索速度，完成司乘对接。</li>
 <li>为了减小mysql访问压力使用<strong>mongodb</strong>记录沿途地理坐标，并使用基于<strong>rabbitmq</strong>的延迟队列将多次写请求合并为一次写入，再次减小了数据库操作。</li>
@@ -256,7 +293,7 @@
 <li>使用<strong>Redisson分布式锁</strong>解决了高并发场景下的司机抢单和优惠卷超发问题，使用Redisson提供的<strong>延时队列</strong>完成了订单超出时间限制后自动取消。</li>
 <li>使用<strong>CompletableFuture</strong>完成了订单结束提交过程的异步编排，提高了响应效率，并使用<strong>seata</strong>来保证分布式事务的执行。</li>
 </ul>
-<h3 id="可以有增量的地方"><a href="#可以有增量的地方" class="headerlink" title="可以有增量的地方"></a>可以有增量的地方</h3><ul>
+<h2 id="可以有增量的地方"><a href="#可以有增量的地方" class="headerlink" title="可以有增量的地方"></a>可以有增量的地方</h2><ul>
 <li>数据库分库分表，ShardingSphere可以尝试一下</li>
 <li>二级缓存，本地caffeine和redis二级缓存</li>
 <li>做限流和熔断，以及redis集群和哨兵</li>
@@ -265,7 +302,9 @@
 <li>binlog实现与mysql的持久化</li>
 <li>优惠卷兑换算法和优惠卷的最大优惠计算</li>
 </ul>
-<h3 id="业务流程"><a href="#业务流程" class="headerlink" title="业务流程"></a>业务流程</h3><h4 id="乘客端："><a href="#乘客端：" class="headerlink" title="乘客端："></a>乘客端：</h4><p>登录–选择代驾地址–呼叫代驾–等待接单–15分钟没有司机接单自动取消–15内有司机接单，司乘同显–账单支付</p>
+<h2 id="业务流程"><a href="#业务流程" class="headerlink" title="业务流程"></a>业务流程</h2><h3 id="乘客端："><a href="#乘客端：" class="headerlink" title="乘客端："></a>乘客端：</h3><blockquote>
+<p>登录–选择代驾地址–呼叫代驾–等待接单–15分钟没有司机接单自动取消–15内有司机接单，司乘同显–账单支付</p>
+</blockquote>
 <ol>
 <li>登录：前端首先调用wx.login()，返回一串字符串，然后后端拿到这个去请求微信服务器得到当前登录的openid，也就是微信的唯一id（可以理解为wx.login()请求发出之后，wx的缓存中就保存了这个键值对，键是这个字符串，值是当前用户的结构，必须是连贯的动作，可能设置了失效时间，这也是为什么我后面拿postman同样请求得不到的原因）</li>
 <li>选择代驾地址：百度地图的api返回距离和时间，这个参数给后端规则引擎计算出费用</li>
@@ -274,7 +313,9 @@
 <li>15内有司机接单，司乘同显：当司机抢到了该订单后，订单状态改变，进入司乘同显模式，此后基本上没有乘客端什么事情了，前端会一直轮询订单当前状态，并根据司机端存在mongodb中的数据获取车的位置。</li>
 <li>账单支付：微信支付</li>
 </ol>
-<h4 id="司机端："><a href="#司机端：" class="headerlink" title="司机端："></a>司机端：</h4><p>登录–认证–开始接单–抢单–开始代驾–生成账单，发送乘客</p>
+<h3 id="司机端："><a href="#司机端：" class="headerlink" title="司机端："></a>司机端：</h3><blockquote>
+<p>登录–认证–开始接单–抢单–开始代驾–生成账单，发送乘客</p>
+</blockquote>
 <ol>
 <li>登录：逻辑类似</li>
 <li>认证：司机需要上传身份证驾驶证人脸等，通过腾讯云，我懒得注册这部分就跳过了</li>
@@ -1173,83 +1214,6 @@
 <li>不重复加载类</li>
 </ul>
 <h1 id="打破双亲委派"><a href="#打破双亲委派" class="headerlink" title="打破双亲委派"></a>打破双亲委派</h1><p>tomcat，重写了loadClass方法</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/04/07/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%88%E4%B8%AD/">java-多线程-ThreadLocal和线程池</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-04-07
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="ThreadLocal"><a href="#ThreadLocal" class="headerlink" title="ThreadLocal"></a>ThreadLocal</h1><p>通常情况下，我们创建的变量是可以被任何一个线程访问并修改的。如果想实现每一个线程都有自己的专属本地变量该如何解决呢？</p>
-<p>JDK 中自带的ThreadLocal类正是为了解决这样的问题。 ThreadLocal类主要解决的就是让每个线程绑定自己的值，可以将ThreadLocal类形象的比喻成存放数据的盒子，盒子中可以存储每个线程的私有数据。</p>
-<p>如果你创建了一个ThreadLocal变量，那么访问这个变量的每个线程都会有这个变量的本地副本，这也是ThreadLocal变量名的由来。他们可以使用 get() 和 set() 方法来获取默认值或将其值更改为当前线程所存的副本的值，从而避免了线程安全问题。</p>
-<p>再举个简单的例子：两个人去宝屋收集宝物，这两个共用一个袋子的话肯定会产生争执，但是给他们两个人每个人分配一个袋子的话就不会出现这样的问题。如果把这两个人比作线程的话，那么 ThreadLocal 就是用来避免这两个线程竞争的。</p>
-<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p><img src="/../img/Java/img_5.png"></p>
-<p>其实不是ThreadLocal有这个数据结构，是Thread持有的，有一个ThreadLocalMap的数组，专门放键值对，K为ThreadLocal的类对象，V为ThreadLocal泛型的数据。</p>
-<p>也就是说，在一个线程中，如果有多个ThreadLocal，查找Map键为这个ThreadLocal变量，就可以很轻松拿到存的值。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">set</span><span class="params">(T value)</span> &#123;</span><br><span class="line">    <span class="comment">//获取当前请求的线程</span></span><br><span class="line">    <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">    <span class="comment">//取出 Thread 类内部的 threadLocals 变量(哈希表结构)</span></span><br><span class="line">    <span class="type">ThreadLocalMap</span> <span class="variable">map</span> <span class="operator">=</span> getMap(t);</span><br><span class="line">    <span class="keyword">if</span> (map != <span class="literal">null</span>)</span><br><span class="line">        <span class="comment">// 将需要存储的值放入到这个哈希表中</span></span><br><span class="line">        map.set(<span class="built_in">this</span>, value);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        createMap(t, value);</span><br><span class="line">&#125;</span><br><span class="line">ThreadLocalMap <span class="title function_">getMap</span><span class="params">(Thread t)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> t.threadLocals;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="内存泄露问题"><a href="#内存泄露问题" class="headerlink" title="内存泄露问题"></a>内存泄露问题</h2><p>这个Map里面，Key是弱引用的，也就是说每次gc都会回收key，而value是强引用的。这个时候就会出现，key被gc回收了为null，value还有的情况。这个时候就会产生内存泄露。</p>
-<p>解决方法：释放的时候手动remove。</p>
-<h1 id="线程池的四个种类"><a href="#线程池的四个种类" class="headerlink" title="线程池的四个种类"></a>线程池的四个种类</h1><ol>
-<li>newCachedThreadPool创建一个可缓存的线程池，默认阻塞队列是SynchronousQueue</li>
-<li>newFixedThreadPool创建一个定长的线程池，默认阻塞队列是LinkedBlockingQueue</li>
-<li>newSingleThreadExecutor创建一个单例线程，默认也是LinkedBlockingQueue</li>
-<li>newScheduled创建一个可以设置定时任务的线程</li>
-</ol>
-<h1 id="线程池的核心参数"><a href="#线程池的核心参数" class="headerlink" title="线程池的核心参数"></a>线程池的核心参数</h1><p>除了上面四种封装好的，还可以自己创建</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用给定的初始参数创建一个新的ThreadPoolExecutor。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">ThreadPoolExecutor</span><span class="params">(<span class="type">int</span> corePoolSize,//线程池的核心线程数量</span></span><br><span class="line"><span class="params">                          <span class="type">int</span> maximumPoolSize,//线程池的最大线程数</span></span><br><span class="line"><span class="params">                          <span class="type">long</span> keepAliveTime,//当线程数大于核心线程数时，多余的空闲线程存活的最长时间</span></span><br><span class="line"><span class="params">                          TimeUnit unit,//时间单位</span></span><br><span class="line"><span class="params">                          BlockingQueue&lt;Runnable&gt; workQueue,//任务队列，用来储存等待执行任务的队列</span></span><br><span class="line"><span class="params">                          ThreadFactory threadFactory,//线程工厂，用来创建线程，一般默认即可</span></span><br><span class="line"><span class="params">                          RejectedExecutionHandler handler//拒绝策略，当提交的任务过多而不能及时处理时，我们可以定制策略来处理任务</span></span><br><span class="line"><span class="params">                           )</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (corePoolSize &lt; <span class="number">0</span> ||</span><br><span class="line">        maximumPoolSize &lt;= <span class="number">0</span> ||</span><br><span class="line">        maximumPoolSize &lt; corePoolSize ||</span><br><span class="line">        keepAliveTime &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    <span class="keyword">if</span> (workQueue == <span class="literal">null</span> || threadFactory == <span class="literal">null</span> || handler == <span class="literal">null</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    <span class="built_in">this</span>.corePoolSize = corePoolSize;</span><br><span class="line">    <span class="built_in">this</span>.maximumPoolSize = maximumPoolSize;</span><br><span class="line">    <span class="built_in">this</span>.workQueue = workQueue;</span><br><span class="line">    <span class="built_in">this</span>.keepAliveTime = unit.toNanos(keepAliveTime);</span><br><span class="line">    <span class="built_in">this</span>.threadFactory = threadFactory;</span><br><span class="line">    <span class="built_in">this</span>.handler = handler;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>七个核心参数：</p>
-<ol>
-<li>核心线程数量</li>
-<li>最大线程数量</li>
-<li>过期时间：如果线程池的线程数量大于核心线程数量，如果没有新的任务提交，那么已经到期的线程不会立刻销毁，而是等一段时间销毁</li>
-<li>过期时间单位：可以是秒，毫秒</li>
-<li>阻塞队列：刚刚提的那些，后面还会说</li>
-<li>饱和缩略</li>
-<li>线程工厂类：一般都是默认的，可以定制线程对象的创建，例如设置线程名字、是否是守护线程等</li>
-</ol>
-<h1 id="饱和策略"><a href="#饱和策略" class="headerlink" title="饱和策略"></a>饱和策略</h1><p>当阻塞队列满了，而且最大线程数量也满了，就会触发饱和策略</p>
-<ol>
-<li>抛出异常，不让加了</li>
-<li>线程不走线程池，提交线程的那个线程自己来运行</li>
-<li>不报错，直接丢弃</li>
-<li>丢弃队列最前面那个，然后加进队列</li>
-</ol>
-<h1 id="如何确定线程数量"><a href="#如何确定线程数量" class="headerlink" title="如何确定线程数量"></a>如何确定线程数量</h1><ul>
-<li>io密集型：2n+1</li>
-<li>cpu密集型：n+1<br>这里的n都是当前机器的虚拟内核数量，io密集型主要都是io时间多，对于cpu负载并不大</li>
-</ul>
 
     
     
