@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="代驾微服务项目-乘客下单" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Redis, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/07/21/代驾微服务项目-乘客下单/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>代驾微服务项目-乘客下单 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      代驾微服务项目-乘客下单
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-07-21
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B9%98%E5%AE%A2%E4%B8%8B%E5%8D%95"><span class="toc-number">1.</span> <span class="toc-text">乘客下单</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B0%E5%BB%BA%E8%AE%A2%E5%8D%95"><span class="toc-number">1.1.</span> <span class="toc-text">新建订单</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#POST%E2%80%9D-order-submitOrder%E2%80%9D"><span class="toc-number">1.1.1.</span> <span class="toc-text">POST”&#x2F;order&#x2F;submitOrder”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%B8%E6%9C%BA%E5%92%8C%E4%B9%98%E5%AE%A2%E6%9F%A5%E8%AF%A2%E8%AE%A2%E5%8D%95%E7%8A%B6%E6%80%81GET%E2%80%9D-getOrderStatus-orderId-%E2%80%9D"><span class="toc-number">1.1.2.</span> <span class="toc-text">司机和乘客查询订单状态GET”&#x2F;getOrderStatus&#x2F;{orderId}”</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#xxl-job%E5%92%8Credis%E5%AE%8C%E6%88%90%E5%8F%B8%E6%9C%BA%E6%90%9C%E7%B4%A2%E8%B0%83%E5%BA%A6"><span class="toc-number">1.2.</span> <span class="toc-text">xxl-job和redis完成司机搜索调度</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#POST%E2%80%9D-searchNearByDriver%E2%80%9D"><span class="toc-number">1.2.1.</span> <span class="toc-text">POST”&#x2F;searchNearByDriver”</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <h1 id="乘客下单"><a href="#乘客下单" class="headerlink" title="乘客下单"></a>乘客下单</h1><p>主要业务是从乘客选择起始地点和终止地点之后，也就是初步计算了估计价格然后点击呼叫司机之后的过程。等到附近的司机抢单成功，该业务执行完毕。</p>
+<p>流程大致是：</p>
+<ol>
+<li>在乘客点击下单之后，向数据库增加了一个order，前端每5s询问一次order的当前状态是否为接单，在这期间就没有客户端的事情了。</li>
+<li>这个下单的动作会激活xxl-job的一个任务调度，给附近已经开启接单的司机的队列中加上这个order的id</li>
+<li>等到司机端前端检查队列发现了这个订单，就会弹窗问是否需要接取，随后就是一个加锁然后抢票的逻辑了，需要有高并发的支持。</li>
+<li>这个司机抢到了之后就会update这个订单，把司机的id变为自己的，状态改变。</li>
+<li>等到乘客5s轮询发现改变了状态，此时接单成功。</li>
+</ol>
+<p>其中，最重要的过程是xxl-job的这个任务如何找到周围的司机。平时使用xxl-job都是在web新建的，这里要求每一个订单自动给xxl-job，也就是要对xxl-job的接口做调整，使其能够继承springboot新建任务。<br>那么周围的司机如何找，每一个司机在接单的时候都会把自己的地理纬度上传到redis，用redis的数据结构geo快速完成计算。</p>
+<h2 id="新建订单"><a href="#新建订单" class="headerlink" title="新建订单"></a>新建订单</h2><h3 id="POST”-order-submitOrder”"><a href="#POST”-order-submitOrder”" class="headerlink" title="POST”&#x2F;order&#x2F;submitOrder”"></a>POST”&#x2F;order&#x2F;submitOrder”</h3><p>由前端调用百度的api得到的初始位置和结束位置，以及乘客的id来在order数据库中新建一个订单。</p>
+<p><strong>对外接口</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Operation(summary = &quot;乘客下单&quot;)</span></span><br><span class="line"><span class="meta">@GuiguLogin</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/submitOrder&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result&lt;Long&gt; <span class="title function_">submitOrder</span><span class="params">(<span class="meta">@RequestBody</span> SubmitOrderForm submitOrderForm)</span> &#123;</span><br><span class="line">   submitOrderForm.setCustomerId(AuthContextHolder.getUserId());</span><br><span class="line">   <span class="keyword">return</span> Result.ok(orderService.submitOrder(submitOrderForm));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是在数据库中这个表是需要有估计里程和估计价格的，也就是说还要再去调用一次map微服务和rule微服务。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> OrderInfoFeignClient orderInfoFeignClient;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Long <span class="title function_">submitOrder</span><span class="params">(SubmitOrderForm submitOrderForm)</span> &#123;</span><br><span class="line">    <span class="comment">//1.重新计算驾驶线路</span></span><br><span class="line">    <span class="type">CalculateDrivingLineForm</span> <span class="variable">calculateDrivingLineForm</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CalculateDrivingLineForm</span>();</span><br><span class="line">    BeanUtils.copyProperties(submitOrderForm, calculateDrivingLineForm);</span><br><span class="line">    <span class="type">DrivingLineVo</span> <span class="variable">drivingLineVo</span> <span class="operator">=</span> mapFeignClient.calculateDrivingLine(calculateDrivingLineForm).getData();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.重新计算订单费用</span></span><br><span class="line">    <span class="type">FeeRuleRequestForm</span> <span class="variable">calculateOrderFeeForm</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FeeRuleRequestForm</span>();</span><br><span class="line">    calculateOrderFeeForm.setDistance(drivingLineVo.getDistance());</span><br><span class="line">    calculateOrderFeeForm.setStartTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    calculateOrderFeeForm.setWaitMinute(<span class="number">0</span>);</span><br><span class="line">    <span class="type">FeeRuleResponseVo</span> <span class="variable">feeRuleResponseVo</span> <span class="operator">=</span> feeRuleFeignClient.calculateOrderFee(calculateOrderFeeForm).getData();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3.封装订单信息对象</span></span><br><span class="line">    <span class="type">OrderInfoForm</span> <span class="variable">orderInfoForm</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">OrderInfoForm</span>();</span><br><span class="line">    <span class="comment">//订单位置信息</span></span><br><span class="line">    BeanUtils.copyProperties(submitOrderForm, orderInfoForm);</span><br><span class="line">    <span class="comment">//预估里程</span></span><br><span class="line">    orderInfoForm.setExpectDistance(drivingLineVo.getDistance());</span><br><span class="line">    orderInfoForm.setExpectAmount(feeRuleResponseVo.getTotalAmount());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.保存订单信息</span></span><br><span class="line">    <span class="type">Long</span> <span class="variable">orderId</span> <span class="operator">=</span> orderInfoFeignClient.saveOrderInfo(orderInfoForm).getData();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//TODO启动任务调度</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> orderId;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>订单微服务</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> OrderInfoService orderInfoService;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Operation(summary = &quot;保存订单信息&quot;)</span></span><br><span class="line"><span class="meta">@PostMapping(&quot;/saveOrderInfo&quot;)</span></span><br><span class="line"><span class="keyword">public</span> Result&lt;Long&gt; <span class="title function_">saveOrderInfo</span><span class="params">(<span class="meta">@RequestBody</span> OrderInfoForm orderInfoForm)</span> &#123;</span><br><span class="line">   <span class="keyword">return</span> Result.ok(orderInfoService.saveOrderInfo(orderInfoForm));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>设置订单的信息，状态为正在等待接单，给redis设置一个标识，说明正在接单。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> OrderInfoMapper orderInfoMapper;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> OrderStatusLogMapper orderStatusLogMapper;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> RedisTemplate redisTemplate;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = &#123;Exception.class&#125;)</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Long <span class="title function_">saveOrderInfo</span><span class="params">(OrderInfoForm orderInfoForm)</span> &#123;</span><br><span class="line">   <span class="type">OrderInfo</span> <span class="variable">orderInfo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">OrderInfo</span>();</span><br><span class="line">   BeanUtils.copyProperties(orderInfoForm, orderInfo);</span><br><span class="line">   <span class="type">String</span> <span class="variable">orderNo</span> <span class="operator">=</span> UUID.randomUUID().toString().replaceAll(<span class="string">&quot;-&quot;</span>,<span class="string">&quot;&quot;</span>);</span><br><span class="line">   orderInfo.setStatus(OrderStatus.WAITING_ACCEPT.getStatus());</span><br><span class="line">   orderInfo.setOrderNo(orderNo);</span><br><span class="line">   orderInfoMapper.insert(orderInfo);</span><br><span class="line"></span><br><span class="line">   <span class="comment">//记录日志</span></span><br><span class="line">   <span class="built_in">this</span>.log(orderInfo.getId(), orderInfo.getStatus());</span><br><span class="line"></span><br><span class="line">   <span class="comment">//接单标识，标识不存在了说明不在等待接单状态了</span></span><br><span class="line">   redisTemplate.opsForValue().set(RedisConstant.ORDER_ACCEPT_MARK, <span class="string">&quot;0&quot;</span>, RedisConstant.ORDER_ACCEPT_MARK_EXPIRES_TIME, TimeUnit.MINUTES);</span><br><span class="line">   <span class="keyword">return</span> orderInfo.getId();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">log</span><span class="params">(Long orderId, Integer status)</span> &#123;</span><br><span class="line">   <span class="type">OrderStatusLog</span> <span class="variable">orderStatusLog</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">OrderStatusLog</span>();</span><br><span class="line">   orderStatusLog.setOrderId(orderId);</span><br><span class="line">   orderStatusLog.setOrderStatus(status);</span><br><span class="line">   orderStatusLog.setOperateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">   orderStatusLogMapper.insert(orderStatusLog);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="司机和乘客查询订单状态GET”-getOrderStatus-orderId-”"><a href="#司机和乘客查询订单状态GET”-getOrderStatus-orderId-”" class="headerlink" title="司机和乘客查询订单状态GET”&#x2F;getOrderStatus&#x2F;{orderId}”"></a>司机和乘客查询订单状态GET”&#x2F;getOrderStatus&#x2F;{orderId}”</h3><p>乘客下完单后，订单状态为1，乘客端小程序会轮询订单状态，当订单状态为2时，说明已经有司机接单了，那么页面进行跳转，进行下一步操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Integer <span class="title function_">getOrderStatus</span><span class="params">(Long orderId)</span> &#123;</span><br><span class="line">   LambdaQueryWrapper&lt;OrderInfo&gt; queryWrapper = <span class="keyword">new</span> <span class="title class_">LambdaQueryWrapper</span>&lt;&gt;();</span><br><span class="line">   queryWrapper.eq(OrderInfo::getId, orderId);</span><br><span class="line">   queryWrapper.select(OrderInfo::getStatus);</span><br><span class="line">   <span class="type">OrderInfo</span> <span class="variable">orderInfo</span> <span class="operator">=</span> orderInfoMapper.selectOne(queryWrapper);</span><br><span class="line">   <span class="keyword">if</span>(<span class="literal">null</span> == orderInfo) &#123;</span><br><span class="line">      <span class="comment">//返回null，feign解析会抛出异常，给默认值，后续会用</span></span><br><span class="line">      <span class="keyword">return</span> OrderStatus.NULL_ORDER.getStatus();</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> orderInfo.getStatus();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>乘客端是一下单就一直询问这个接口有没有改变；司机端得是抢到单了然后才能有订单的id，再去用这个id请求方法</p>
+</blockquote>
+<h2 id="xxl-job和redis完成司机搜索调度"><a href="#xxl-job和redis完成司机搜索调度" class="headerlink" title="xxl-job和redis完成司机搜索调度"></a>xxl-job和redis完成司机搜索调度</h2><p>xxl-job定时任务查询附近司机，开启接单的司机会把地理坐标传到redis</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> RedisTemplate redisTemplate;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Boolean <span class="title function_">updateDriverLocation</span><span class="params">(UpdateDriverLocationForm updateDriverLocationForm)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *  Redis GEO 主要用于存储地理位置信息，并对存储的信息进行相关操作，该功能在 Redis 3.2 版本新增。</span></span><br><span class="line"><span class="comment">     *  后续用在，乘客下单后寻找5公里范围内开启接单服务的司机，通过Redis GEO进行计算</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Point</span> <span class="variable">point</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Point</span>(updateDriverLocationForm.getLongitude().doubleValue(), updateDriverLocationForm.getLatitude().doubleValue());</span><br><span class="line">    redisTemplate.opsForGeo().add(RedisConstant.DRIVER_GEO_LOCATION, point, updateDriverLocationForm.getDriverId().toString());</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Boolean <span class="title function_">removeDriverLocation</span><span class="params">(Long driverId)</span> &#123;</span><br><span class="line">    redisTemplate.opsForGeo().remove(RedisConstant.DRIVER_GEO_LOCATION, driverId.toString());</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="POST”-searchNearByDriver”"><a href="#POST”-searchNearByDriver”" class="headerlink" title="POST”&#x2F;searchNearByDriver”"></a>POST”&#x2F;searchNearByDriver”</h3><p>司机端的小程序开启接单服务后，开始实时上传司机的定位信息到redis的GEO缓存，前面乘客已经下单，现在我们就要查找附近适合接单的司机，如果有对应的司机，那就给司机发送新订单消息。</p>
+<p>首先是配置经纬度点和距离，作为中心和半径传入redis的arg，得到了一个升序排序的位置表，然后根据这些待选司机的一些配置（比如超过多少距离不予配送）筛选出符合的一队司机，作为结果返回。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> DriverInfoFeignClient driverInfoFeignClient;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> List&lt;NearByDriverVo&gt; <span class="title function_">searchNearByDriver</span><span class="params">(SearchNearByDriverForm searchNearByDriverForm)</span> &#123;</span><br><span class="line">    <span class="comment">// 搜索经纬度位置5公里以内的司机</span></span><br><span class="line">    <span class="comment">//定义经纬度点</span></span><br><span class="line">    <span class="type">Point</span> <span class="variable">point</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Point</span>(searchNearByDriverForm.getLongitude().doubleValue(), searchNearByDriverForm.getLatitude().doubleValue());</span><br><span class="line">    <span class="comment">//定义距离：5公里(系统配置)</span></span><br><span class="line">    <span class="type">Distance</span> <span class="variable">distance</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Distance</span>(SystemConstant.NEARBY_DRIVER_RADIUS, RedisGeoCommands.DistanceUnit.KILOMETERS);</span><br><span class="line">    <span class="comment">//定义以point点为中心，distance为距离这么一个范围</span></span><br><span class="line">    <span class="type">Circle</span> <span class="variable">circle</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Circle</span>(point, distance);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//定义GEO参数</span></span><br><span class="line">    RedisGeoCommands.<span class="type">GeoRadiusCommandArgs</span> <span class="variable">args</span> <span class="operator">=</span> RedisGeoCommands.GeoRadiusCommandArgs.newGeoRadiusArgs()</span><br><span class="line">            .includeDistance() <span class="comment">//包含距离</span></span><br><span class="line">            .includeCoordinates() <span class="comment">//包含坐标</span></span><br><span class="line">            .sortAscending(); <span class="comment">//排序：升序</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1.GEORADIUS获取附近范围内的信息</span></span><br><span class="line">    GeoResults&lt;RedisGeoCommands.GeoLocation&lt;String&gt;&gt; result = <span class="built_in">this</span>.redisTemplate.opsForGeo().radius(RedisConstant.DRIVER_GEO_LOCATION, circle, args);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.收集信息，存入list</span></span><br><span class="line">    List&lt;GeoResult&lt;RedisGeoCommands.GeoLocation&lt;String&gt;&gt;&gt; content = result.getContent();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3.返回计算后的信息</span></span><br><span class="line">    List&lt;NearByDriverVo&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>();</span><br><span class="line">    <span class="keyword">if</span>(!CollectionUtils.isEmpty(content)) &#123;</span><br><span class="line">        Iterator&lt;GeoResult&lt;RedisGeoCommands.GeoLocation&lt;String&gt;&gt;&gt; iterator = content.iterator();</span><br><span class="line">        <span class="keyword">while</span> (iterator.hasNext()) &#123;</span><br><span class="line">            GeoResult&lt;RedisGeoCommands.GeoLocation&lt;String&gt;&gt; item = iterator.next();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//司机id</span></span><br><span class="line">            <span class="type">Long</span> <span class="variable">driverId</span> <span class="operator">=</span> Long.parseLong(item.getContent().getName());</span><br><span class="line">            <span class="comment">//当前距离</span></span><br><span class="line">            <span class="type">BigDecimal</span> <span class="variable">currentDistance</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BigDecimal</span>(item.getDistance().getValue()).setScale(<span class="number">2</span>, RoundingMode.HALF_UP);</span><br><span class="line">            log.info(<span class="string">&quot;司机：&#123;&#125;，距离：&#123;&#125;&quot;</span>,driverId, item.getDistance().getValue());</span><br><span class="line"></span><br><span class="line">            <span class="comment">//获取司机接单设置参数</span></span><br><span class="line">            <span class="type">DriverSet</span> <span class="variable">driverSet</span> <span class="operator">=</span> driverInfoFeignClient.getDriverSet(driverId).getData();</span><br><span class="line">            <span class="comment">//接单里程判断，acceptDistance==0：不限制，</span></span><br><span class="line">            <span class="keyword">if</span>(driverSet.getAcceptDistance().doubleValue() != <span class="number">0</span> &amp;&amp; driverSet.getAcceptDistance().subtract(currentDistance).doubleValue() &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//订单里程判断，orderDistance==0：不限制</span></span><br><span class="line">            <span class="keyword">if</span>(driverSet.getOrderDistance().doubleValue() != <span class="number">0</span> &amp;&amp; driverSet.getOrderDistance().subtract(searchNearByDriverForm.getMileageDistance()).doubleValue() &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//满足条件的附近司机信息</span></span><br><span class="line">            <span class="type">NearByDriverVo</span> <span class="variable">nearByDriverVo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">NearByDriverVo</span>();</span><br><span class="line">            nearByDriverVo.setDriverId(driverId);</span><br><span class="line">            nearByDriverVo.setDistance(currentDistance);</span><br><span class="line">            list.add(nearByDriverVo);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> list;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>xxl-job这里配置就不做介绍了，主要梳理业务</p>
+</blockquote>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/07/21/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E4%B8%8B%E5%8D%95/">https://yyf1050886654.github.io/2024/07/21/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E4%B8%8B%E5%8D%95/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Redis/">Redis</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/07/19/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E7%AB%AF%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91/">  
+        <span class="next-text nav-default">代驾微服务项目-乘客端核心业务逻辑</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
