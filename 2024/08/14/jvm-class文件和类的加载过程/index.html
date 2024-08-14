@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="jvm-class文件和类的加载过程" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/08/14/jvm-class文件和类的加载过程/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>jvm-class文件和类的加载过程 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      jvm-class文件和类的加载过程
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-08-14
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#class%E6%96%87%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">class文件</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#class%E6%96%87%E4%BB%B6%E7%9A%84%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.</span> <span class="toc-text">class文件的结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%AD%94%E6%95%B0%E5%92%8C%E5%A4%A7%E5%B0%8F%E7%89%88%E6%9C%AC%E5%8F%B7"><span class="toc-number">1.1.1.</span> <span class="toc-text">魔数和大小版本号</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E9%87%8F%E6%B1%A0"><span class="toc-number">1.1.2.</span> <span class="toc-text">常量池</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%AE%BF%E9%97%AE%E6%A0%87%E5%BF%97"><span class="toc-number">1.1.3.</span> <span class="toc-text">访问标志</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BD%93%E5%89%8D%E7%B1%BB%EF%BC%8C%E7%88%B6%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%B4%A2%E5%BC%95"><span class="toc-number">1.1.4.</span> <span class="toc-text">当前类，父类和接口索引</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AD%97%E6%AE%B5%E8%A1%A8"><span class="toc-number">1.1.5.</span> <span class="toc-text">字段表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%96%B9%E6%B3%95%E8%A1%A8"><span class="toc-number">1.1.6.</span> <span class="toc-text">方法表</span></a></li></ol></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <!-- TOC -->
+<ul>
+<li><a href="#class%E6%96%87%E4%BB%B6">class文件</a><ul>
+<li><a href="#class%E6%96%87%E4%BB%B6%E7%9A%84%E7%BB%93%E6%9E%84">class文件的结构</a><ul>
+<li><a href="#%E9%AD%94%E6%95%B0%E5%92%8C%E5%A4%A7%E5%B0%8F%E7%89%88%E6%9C%AC%E5%8F%B7">魔数和大小版本号</a></li>
+<li><a href="#%E5%B8%B8%E9%87%8F%E6%B1%A0">常量池</a></li>
+<li><a href="#%E8%AE%BF%E9%97%AE%E6%A0%87%E5%BF%97">访问标志</a></li>
+<li><a href="#%E5%BD%93%E5%89%8D%E7%B1%BB%E7%88%B6%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%B4%A2%E5%BC%95">当前类，父类和接口索引</a></li>
+<li><a href="#%E5%AD%97%E6%AE%B5%E8%A1%A8">字段表</a></li>
+<li><a href="#%E6%96%B9%E6%B3%95%E8%A1%A8">方法表</a><!-- TOC --></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="class文件"><a href="#class文件" class="headerlink" title="class文件"></a>class文件</h1><p>java所推出的口号是：一次编译，处处执行。这种跨平台性主要就是由屏蔽操作系统底层的jvm所实现的，java程序从编译到执行有几个阶段，首先是java程序被javac编译器编译成.class的字节码文件，jvm加载并运行这一个中间文件，再通过jvm自身的接近底层的方法，实现在window，macos和linux上的跨平台。</p>
+<p>我的个人理解是，java为了保证跨平台性牺牲了一部分效率，这部分牺牲主要体现在要多一个通用的字节码文件的编译，而不是直接就从java变成机器能够执行的汇编了。</p>
+<h2 id="class文件的结构"><a href="#class文件的结构" class="headerlink" title="class文件的结构"></a>class文件的结构</h2><p>字节码文件主要有几个部分构成：</p>
+<ol>
+<li>魔数和大小版本号：“cafebabe”，大版本号码就是-44，比如jdk8的版本号是52</li>
+<li>常量池：最核心的部分，主要是字面量和符号引用，注意：在class文件中的都是符号引用，可以想象成逻辑地址，而在类加载的<strong>解析</strong>过程中，才会变为物理地址的引用。</li>
+<li>字段表：当前类的变量</li>
+<li>方法表：当前类的方法</li>
+<li>属性：很复杂的一个表示</li>
+</ol>
+<p>案例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ClassFile</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">J</span> <span class="operator">=</span> <span class="string">&quot;2222222&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> k;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getK</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> k;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setK</span><span class="params">(<span class="type">int</span> k)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="built_in">this</span>.k = k;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalStateException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="魔数和大小版本号"><a href="#魔数和大小版本号" class="headerlink" title="魔数和大小版本号"></a>魔数和大小版本号</h3><p>首先，改变一个文件的后缀名是不会改变其文件本身的编码结构的，jvm不能仅仅是校验后缀是不是.class来判断是否为一个字节码文件，所以在文件内容的开头有一个cafebabe的校验，只有以这个为开头的才是jvm所需要的字节码文件，当然也不仅仅是要满足这一点，在后续类加载过程的<strong>校验过程</strong>中会详细说明。<br>其次大版本号码就是当前jdk版本+44，还有小版本，这一部分是为了jvm在校验的过程中判断当前的class是否能够兼容版本，一般当然是只能向下兼容。、</p>
+<h3 id="常量池"><a href="#常量池" class="headerlink" title="常量池"></a>常量池</h3><blockquote>
+<p>在常量池之前，需要补充一下各种名以及描述符</p>
+<ul>
+<li>全限定名和非限定名：<strong>Class文件中的类和接口，都是使用全限定名，又被称作Class的二进制名称</strong>。例如“com&#x2F;ikang&#x2F;JVM&#x2F;classfile”是这个类的全限定名，仅仅是把类全名中的“.”替换成了“&#x2F;”而已，为了使连续的多个全限定名之间不产生混淆，在使用时最后一般会加入一个“;”表示全限定名结束。<br><strong>非限定名又被称作简单名称</strong>，Class文件中的方法、字段、局部变量、形参名称，都是使用简单名称，没有类型和参数修饰，例如这个类中的getK()方法和k字段的简单名称分别是“getK”和“m”。<br>非限定名不得包含ASCII字符. ; [ &#x2F; ，此外方法名称除了特殊方法名称&lt; init &gt;和&lt; clinit &gt;方法之外，它们不能包含ASCII字符&lt;或&gt;，字段名称或接口方法名称可以是&lt; init &gt;或&lt; clinit &gt;，但是没有方法调用指令可以引用&lt; clinit &gt;，只有invokespecial指令可以引用&lt; init &gt;。</li>
+<li>描述符：在class文件里的方法和基本数据类型也有特定的写法，一般来说基本数据类型都是首字母大写作为描述，比如int就为I，<strong>其中long特殊，描述为J</strong>，void为V，引用类型为L+类的全限定名，对于数组类型，每一维度将使用一个前置的“[”字符来描述，如一个定义为“java.lang.String[][]”类型的二维数组，将被记录为：“[[Ljava&#x2F;lang&#x2F;String；”，一个整型数组“int[]”将被记录为“[I”<br>方法描述符的写法看一眼就会，比如Object m(int i, double d, Thread t) {… }则描述符为(IDLjava&#x2F;lang&#x2F;Thread;)Ljava&#x2F;lang&#x2F;Object;</li>
+</ul>
+</blockquote>
+<p>言归正传，常量池有两部分内容：字面量和符号引用。字面量就是一个变量的对应值，符号引用就是名称，主要有三部分名称：类与接口的全限定名，字段的名称和描述符（NameAndType），方法的名称和描述符（NameAndType）。<br>每一个字段都有自己的结构，具体见<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/105310047?ops_request_misc=&request_id=&biz_id=102&utm_term=class%E6%96%87%E4%BB%B6&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-0-105310047.142%5Ev100%5Epc_search_result_base4&spm=1018.2226.3001.4187">这篇博客</a>。<br>说几个比较重要的：</p>
+<ol>
+<li>CONSTANT_Utf8_info和CONSTANT_String_info：前者是真正存储字符串本体的，而后者的结构只包含引用utf8的索引位置，为什么这样设计？当多个String名字不同但是值相同的时候，就可以只创建一条CONSTANT_Utf8_info常量，多个String可以引用，从而节省空间；其次是有可能符号引用也是当前值，例如声明了String a &#x3D; “a”，这样多少也能节约空间。</li>
+<li>CONSTANT_NameAndType_info：name就是字段或者方法的非限定名，type是其描述符，这个同样是引用类型，放的是CONSTANT_Utf8_info的索引。例如println:(Ljava&#x2F;lang&#x2F;String;)V</li>
+<li>CONSTANT_Fieldref_info和CONSTANT_Methodref_info：两个字段，前者是这个字段或者方法的名字引用，后者是CONSTANT_Methodref_info的引用 <div style="text-align: center;">
+   <img src="../img/jvm/img.png" alt="" />
+ </div></li>
+<li>CONSTANT_Class_info：类的全限定名，注意所有的类都会有java&#x2F;lang&#x2F;Object这个类的class常量，因为除了Object本身，其余都是继承自它。</li>
+</ol>
+<h3 id="访问标志"><a href="#访问标志" class="headerlink" title="访问标志"></a>访问标志</h3><p>用2字节作为访问标志，其中16位的某些位置可能代表了某些修饰词，例如public，final，interface等</p>
+<h3 id="当前类，父类和接口索引"><a href="#当前类，父类和接口索引" class="headerlink" title="当前类，父类和接口索引"></a>当前类，父类和接口索引</h3><p>类索引用于确定这个类的全限定名，父类索引用于确定这个类的父类的全限定名，由于 Java 语言的单继承，所以父类索引只有一个，除了 java.lang.Object 之外，所有的 Java 类都有父类，因此除了 java.lang.Object 外，所有 Java 类的父类索引都不为 0。接口索引集合用来描述这个类实现了那些接口，这些被实现的接口将按 implements (如果这个类本身是接口的话则是extends) 后的接口顺序从左到右排列在接口索引集合中。</p>
+<h3 id="字段表"><a href="#字段表" class="headerlink" title="字段表"></a>字段表</h3><ul>
+<li>access_flags: 字段的作用域（public ,private,protected修饰符），是实例变量还是类变量（static修饰符）,可否被序列化（transient 修饰符）,可变性（final）,可见性（volatile 修饰符，是否强制从主内存读写）。</li>
+<li>name_index: 对常量池的引用，表示的字段的名称；</li>
+<li>descriptor_index: 对常量池的引用，表示字段和方法的描述符；</li>
+<li>attributes_count: 一个字段还会拥有一些额外的属性，attributes_count 存放属性的个数；</li>
+<li>attributes[attributes_count]: 存放具体属性具体内容。</li>
+</ul>
+<blockquote>
+<p>这里说一下字段里面常见的属性：<br>ConstantValue：一个字段有了这个说明是被static修饰了的。目前Sun Javac编译器的选择是：如果同时使用final和static来修饰一个变量（按照习惯，这里称“常量”更贴切），并且这个变量的数据类型是基本类型或者java.lang.String的话，就生成ConstantValue属性来进行初始化，即编译的时候；如果这个变量没有被final修饰，或者并非基本类型及字符串，则将会选择在＜clinit＞方法中进行初始化，即类加载的时候。</p>
+</blockquote>
+<h3 id="方法表"><a href="#方法表" class="headerlink" title="方法表"></a>方法表</h3><p>内容基本上与上面一致，也是有访问标志，name，descriptor和属性，这里的属性只要方法内不为空都会有code这个属性</p>
+<p>方法里常见的属性：</p>
+<ul>
+<li>Code：Java方法体里面的代码经过Javac编译之后，最终变为字节码指令存储在Code属性内，Code属性出现在在method_info结构的attributes表中，但在接口或抽象类中就不存在Code属性（JDK1.8可以出现了）。一个方法中的Code属性值有一个。在整个Class文件中，Code属性用于描述代码，所有的其他数据项目都用于描述元数据。在字节码指令之后的是这个方法的显式异常处理表（下文简称异常表）集合，异常表对于Code属性来说并不是必须存在的。</li>
+<li>LineNumberTable：位于Code属性中，描述Java源码行号与字节码行号（字节码的偏移量）之间的对应关系。主要是如果抛出异常时，编译器会显示行号，比如调试程序时展示的行号，就是这个属性的作用。Code属性表中，LineNumberTable可以属性可以按照任意顺序出现。在Code属性 attributes表中，可以有不止一个LineNumberTable属性对应于源文件中的同一行。也就是说，多个LineNumberTable属性可以合起来表示源文件中的某行代码，属性与源文件的代码行之间不必有一一对应的关系。</li>
+<li>exception_table： <strong>在Java虚拟机中，处理异常（catch语句）不是由字节码指令来实现的，而是采用异常表来完成的。</strong> 异常表中每一个数据由4部分组成，分别是start_pc、end_pc、handler_pc和catch_type。这4项表示从方法字节码的start_pc偏移量开始（包括）到end_pc 偏移量为止（不包括）的这段代码中，如果遇到了catch_type所指定的异常， 那么代码就跳转到handler_pc的位置执行，handler_pc即一个异常处理器的起点。在这4项中， start_pc、end_pc和handlerpc 都是字节码的编译量， 也就是在code[code_length]中的位置， 而catch_type为指向常量池的索引，它指向一个CONSTANT_Class_info 类，表示需要处理的异常类型。如果catch_type值为0,那么将会在所有异常抛出时都调用这个异常处理器，这被用于实现finally语句</li>
+</ul>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/08/14/jvm-class%E6%96%87%E4%BB%B6%E5%92%8C%E7%B1%BB%E7%9A%84%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/">https://yyf1050886654.github.io/2024/08/14/jvm-class%E6%96%87%E4%BB%B6%E5%92%8C%E7%B1%BB%E7%9A%84%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/07/21/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E4%B8%8B%E5%8D%95/">  
+        <span class="next-text nav-default">代驾微服务项目-乘客下单</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
