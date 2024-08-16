@@ -239,7 +239,7 @@
     
     <blockquote>
 <p>经过一天的冲业绩终于上了200题，说实话有点追求数量不追求质量了。但是我确实也感觉记性没以前那么好了，菜就多练。</p>
-<p><img src="/../img/2024_3_29_2.png"></p>
+<p><img src="/../img/coding/2024_3_29_2.png"></p>
 </blockquote>
 <h1 id="2908-元素和最小的山形三元组（Eazy）"><a href="#2908-元素和最小的山形三元组（Eazy）" class="headerlink" title="2908 元素和最小的山形三元组（Eazy）"></a>2908 元素和最小的山形三元组（Eazy）</h1><p>给你一个下标从 0 开始的整数数组 nums 。</p>
 <p>如果下标三元组$ (i, j, k) $满足下述全部条件，则认为它是一个 <strong>山形三元组</strong> ：</p>
@@ -312,7 +312,7 @@
 </blockquote>
 <h1 id="84-柱状图中最大的矩形（Hard）"><a href="#84-柱状图中最大的矩形（Hard）" class="headerlink" title="84 柱状图中最大的矩形（Hard）"></a>84 柱状图中最大的矩形（Hard）</h1><p>给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1 。</p>
 <p>求在该柱状图中，能够勾勒出来的矩形的最大面积。</p>
-<p><img src="/../img/2024_3_29_3.png"></p>
+<p><img src="/../img/coding/2024_3_29_3.png"></p>
 <h2 id="单调栈-1"><a href="#单调栈-1" class="headerlink" title="单调栈"></a>单调栈</h2><blockquote>
 <p>假设当前元素nums[i]，我只要找到在他左边第一个比当前元素小，和右边第一个比当前元素小的，那么他们围成的矩形的高度就是nums[i]，长度就是右边-左边-1（因为实际上不能到比它小的位置），</p>
 <p>这样问题就简化了，有了左边右边这些元素，只需要遍历一次，计算（右边-左边-1）*当前元素，找到最大值就是答案。</p>
@@ -326,7 +326,7 @@
 </blockquote>
 <p>时间复杂度：o(n)<br>空间复杂度：o(n)</p>
 <h1 id="接雨水（Hard）"><a href="#接雨水（Hard）" class="headerlink" title="接雨水（Hard）"></a>接雨水（Hard）</h1><p>给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。</p>
-<p><img src="/../img/2024_3_29_4.png"></p>
+<p><img src="/../img/coding/2024_3_29_4.png"></p>
 <h2 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h2><blockquote>
 <p>其实也用了上一题的思想</p>
 </blockquote>
@@ -341,7 +341,7 @@
 </ul>
 <p>因此可以正向遍历数组 height 得到数组 leftMax 的每个元素值，反向遍历数组 height 得到数组 rightMax 的每个元素值。</p>
 <p>在得到数组 leftMax 和 rightMax 的每个元素值之后，对于 0≤i&lt;n，下标 i 处能接的雨水量等于 $min(leftMax[i],rightMax[i])−height[i]$。遍历每个下标位置即可得到能接的雨水总量。</p>
-<p><img src="/../img/2024_3_29_5.png"></p>
+<p><img src="/../img/coding/2024_3_29_5.png"></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">trap</span><span class="params">(<span class="type">int</span>[] height)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[] left = <span class="keyword">new</span> <span class="title class_">int</span>[height.length];</span><br><span class="line">        left[<span class="number">0</span>] = height[<span class="number">0</span>];</span><br><span class="line">        <span class="type">int</span>[] right = <span class="keyword">new</span> <span class="title class_">int</span>[height.length];</span><br><span class="line">        right[height.length-<span class="number">1</span>] = height[height.length-<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt; height.length; i++) &#123;</span><br><span class="line">            left[i] = Math.max(left[i-<span class="number">1</span>],height[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> height.length-<span class="number">2</span>; i &gt;=<span class="number">0</span> ; i--) &#123;</span><br><span class="line">            right[i] = Math.max(right[i+<span class="number">1</span>],height[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; height.length; i++) &#123;</span><br><span class="line">            ans += Math.min(left[i],right[i])-height[i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <h2 id="单调栈-2"><a href="#单调栈-2" class="headerlink" title="单调栈"></a>单调栈</h2><blockquote>
