@@ -237,22 +237,7 @@
 
   <div class="post-content">
     
-    <!-- TOC -->
-<ul>
-<li><a href="#class%E6%96%87%E4%BB%B6">class文件</a><ul>
-<li><a href="#class%E6%96%87%E4%BB%B6%E7%9A%84%E7%BB%93%E6%9E%84">class文件的结构</a><ul>
-<li><a href="#%E9%AD%94%E6%95%B0%E5%92%8C%E5%A4%A7%E5%B0%8F%E7%89%88%E6%9C%AC%E5%8F%B7">魔数和大小版本号</a></li>
-<li><a href="#%E5%B8%B8%E9%87%8F%E6%B1%A0">常量池</a></li>
-<li><a href="#%E8%AE%BF%E9%97%AE%E6%A0%87%E5%BF%97">访问标志</a></li>
-<li><a href="#%E5%BD%93%E5%89%8D%E7%B1%BB%E7%88%B6%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3%E7%B4%A2%E5%BC%95">当前类，父类和接口索引</a></li>
-<li><a href="#%E5%AD%97%E6%AE%B5%E8%A1%A8">字段表</a></li>
-<li><a href="#%E6%96%B9%E6%B3%95%E8%A1%A8">方法表</a><!-- TOC --></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="class文件"><a href="#class文件" class="headerlink" title="class文件"></a>class文件</h1><p>java所推出的口号是：一次编译，处处执行。这种跨平台性主要就是由屏蔽操作系统底层的jvm所实现的，java程序从编译到执行有几个阶段，首先是java程序被javac编译器编译成.class的字节码文件，jvm加载并运行这一个中间文件，再通过jvm自身的接近底层的方法，实现在window，macos和linux上的跨平台。</p>
+    <h1 id="class文件"><a href="#class文件" class="headerlink" title="class文件"></a>class文件</h1><p>java所推出的口号是：一次编译，处处执行。这种跨平台性主要就是由屏蔽操作系统底层的jvm所实现的，java程序从编译到执行有几个阶段，首先是java程序被javac编译器编译成.class的字节码文件，jvm加载并运行这一个中间文件，再通过jvm自身的接近底层的方法，实现在window，macos和linux上的跨平台。</p>
 <p>我的个人理解是，java为了保证跨平台性牺牲了一部分效率，这部分牺牲主要体现在要多一个通用的字节码文件的编译，而不是直接就从java变成机器能够执行的汇编了。</p>
 <h2 id="class文件的结构"><a href="#class文件的结构" class="headerlink" title="class文件的结构"></a>class文件的结构</h2><p>字节码文件主要有几个部分构成：</p>
 <ol>
