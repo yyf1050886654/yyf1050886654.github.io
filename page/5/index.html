@@ -212,6 +212,108 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/03/21/leetcode-2024-3-21/">leetcode-2024-3-21</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-21
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="2671-频率跟踪器-Medium"><a href="#2671-频率跟踪器-Medium" class="headerlink" title="2671 频率跟踪器(Medium)"></a>2671 频率跟踪器(Medium)</h1><p>请你设计并实现一个能够对其中的值进行跟踪的数据结构，并支持对频率相关查询进行应答。</p>
+<p>实现 FrequencyTracker 类：</p>
+<p>FrequencyTracker()：使用一个空数组初始化 FrequencyTracker 对象。</p>
+<p>void add(int number)：添加一个 number 到数据结构中。</p>
+<p>void deleteOne(int number)：从数据结构中删除一个 number 。数据结构 可能不包含 number ，在这种情况下不删除任何内容。</p>
+<p>bool hasFrequency(int frequency): 如果数据结构中存在出现 frequency 次的数字，则返回 true，否则返回 false。</p>
+<p>示例 1：</p>
+<p>输入</p>
+<p>[“FrequencyTracker”, “add”, “add”, “hasFrequency”]</p>
+<p>[[], [3], [3], [2]]</p>
+<p>输出</p>
+<p>[null, null, null, true]</p>
+<p>解释</p>
+<p>FrequencyTracker frequencyTracker &#x3D; new FrequencyTracker();</p>
+<p>frequencyTracker.add(3); &#x2F;&#x2F; 数据结构现在包含 [3]</p>
+<p>frequencyTracker.add(3); &#x2F;&#x2F; 数据结构现在包含 [3, 3]</p>
+<p>frequencyTracker.hasFrequency(2); &#x2F;&#x2F; 返回 true ，因为 3 出现 2 次</p>
+<h2 id="双哈希"><a href="#双哈希" class="headerlink" title="双哈希"></a>双哈希</h2><blockquote>
+<p>一个用来存频率，一个用来存频率的频率</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">FrequencyTracker</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> HashMap&lt;Integer,Integer&gt; hashMap;</span><br><span class="line">    <span class="keyword">private</span> TreeMap&lt;Integer,Integer&gt; treeMap;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">FrequencyTracker</span><span class="params">()</span> &#123;</span><br><span class="line">        hashMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        treeMap = <span class="keyword">new</span> <span class="title class_">TreeMap</span>&lt;&gt;();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> number)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!hashMap.containsKey(number))&#123;</span><br><span class="line">            hashMap.put(number,<span class="number">1</span>);</span><br><span class="line">            treeMap.put(<span class="number">1</span>,treeMap.getOrDefault(<span class="number">1</span>,<span class="number">0</span>)+<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">integer</span> <span class="operator">=</span> hashMap.get(number);</span><br><span class="line">            hashMap.put(number,integer+<span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (treeMap.containsKey(integer))&#123;</span><br><span class="line">                <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> treeMap.get(integer);</span><br><span class="line">                <span class="keyword">if</span> (count == <span class="number">1</span>)&#123;</span><br><span class="line">                    treeMap.remove(integer);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span>&#123;</span><br><span class="line">                    treeMap.replace(integer,count-<span class="number">1</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                treeMap.put(integer+<span class="number">1</span>,treeMap.getOrDefault(integer+<span class="number">1</span>,<span class="number">0</span>)+<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">deleteOne</span><span class="params">(<span class="type">int</span> number)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (hashMap.containsKey(number))&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">i1</span> <span class="operator">=</span> hashMap.get(number);</span><br><span class="line">            <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> treeMap.get(i1);</span><br><span class="line">            <span class="keyword">if</span> (temp == <span class="number">1</span>)&#123;</span><br><span class="line">                treeMap.remove(i1);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                treeMap.replace(i1,temp-<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (i1-<span class="number">1</span> !=<span class="number">0</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (treeMap.containsKey(i1-<span class="number">1</span>))&#123;</span><br><span class="line">                    treeMap.put(i1-<span class="number">1</span>,treeMap.get(i1-<span class="number">1</span>)+<span class="number">1</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    treeMap.put(i1-<span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (i1 == <span class="number">1</span>)&#123;</span><br><span class="line">                hashMap.remove(number);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                hashMap.put(number,i1-<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">hasFrequency</span><span class="params">(<span class="type">int</span> frequency)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (treeMap.containsKey(frequency))&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> treeMap.get(frequency);</span><br><span class="line">            <span class="keyword">if</span> (temp &gt; <span class="number">0</span>)&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">FrequencyTracker</span> <span class="variable">frequencyTracker</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FrequencyTracker</span>();</span><br><span class="line"></span><br><span class="line">        frequencyTracker.add(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">        frequencyTracker.add(<span class="number">7</span>);</span><br><span class="line"></span><br><span class="line">        frequencyTracker.add(<span class="number">7</span>);</span><br><span class="line">        frequencyTracker.add(<span class="number">3</span>);</span><br><span class="line">        frequencyTracker.add(<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">        frequencyTracker.deleteOne(<span class="number">7</span>);</span><br><span class="line">        frequencyTracker.deleteOne(<span class="number">7</span>);</span><br><span class="line">        System.out.println(frequencyTracker.hasFrequency(<span class="number">2</span>));</span><br><span class="line">        System.out.println(frequencyTracker.hasFrequency(<span class="number">1</span>));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/03/20/redis%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81-%E5%88%9D%E8%A7%81%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">redis实现分布式锁-初见分布式锁</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-20
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="什么是分布式锁"><a href="#什么是分布式锁" class="headerlink" title="什么是分布式锁"></a>什么是分布式锁</h1><p>分布式锁是控制分布式系统之间同步访问共享资源的一种方式，通过互斥来保持一致性。</p>
+<p>了解分布式锁之前先了解下线程锁和进程锁：</p>
+<p><strong>线程锁</strong>：主要用来给方法、代码块加锁。当某个方法或代码使用锁，在同一时刻仅有一个线程执行该方法或该代码段。线程锁只在同一JVM中有效果，因为线程锁的实现在根本上是依靠线程之间共享内存实现的，比如Synchronized、Lock等</p>
+<p><strong>进程锁</strong>：控制同一操作系统中多个进程访问某个共享资源，因为进程具有独立性，各个进程无法访问其他进程的资源，因此无法通过synchronized等线程锁实现进程锁</p>
+<p>比如Golang语言中的sync包就提供了基本的同步基元，如互斥锁</p>
+<p>但是以上两种适合在单体架构应用，但是分布式系统中多个服务节点，多个进程分散部署在不同节点机器中，此时对于资源的竞争，上诉两种对节点本地资源的锁就无效了。</p>
+<p>这个时候就需要分布式锁来对分布式系统多进程访问资源进行控制，因此分布式锁是为了解决分布式互斥问题！</p>
+<p><img src="/../img/coding/2024_3_20_2.png" alt="img.png"></p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/20/leetcode-2024-3-20/">leetcode-2024-3-20</a>
       
     </h1>

@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="jvm-面试篇" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/archives/page/2/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/06/jvm-面试篇/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>归档 · YYF&#39;s Blog</title>
+  <title>jvm-面试篇 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,221 +208,110 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      jvm-面试篇
+      
+    </h1>
 
-<section id="archive" class="archive">
-  
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-06
+      </span>
+      
+      
+      
+    </div>
+  </header>
 
   
-  
-  
-  
-  
-  
-  <div class="collection-title">
-    <h2 class="archive-year">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </h2>
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E7%A0%81%E6%96%87%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">字节码文件</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E6%9C%89%E5%AD%97%E8%8A%82%E7%A0%81%E6%96%87%E4%BB%B6"><span class="toc-number">1.1.</span> <span class="toc-text">为什么会有字节码文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%97%E8%8A%82%E7%A0%81%E6%96%87%E4%BB%B6-1"><span class="toc-number">1.2.</span> <span class="toc-text">字节码文件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F"><span class="toc-number">2.</span> <span class="toc-text">内存区域</span></a></li></ol>
+    </div>
   </div>
   
-  
 
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-04
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/04/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B-CompletableFuture/" class="archive-post-link">
-        java-多线程-CompletableFuture
-      </a>
-    </span>
+  <div class="post-content">
+    
+    <h1 id="字节码文件"><a href="#字节码文件" class="headerlink" title="字节码文件"></a>字节码文件</h1><h2 id="为什么会有字节码文件"><a href="#为什么会有字节码文件" class="headerlink" title="为什么会有字节码文件"></a>为什么会有字节码文件</h2><p>Java的特性是跨平台，一次编译处处运行，为了能够实现这种特性需要一种中间表达，使得不管是javac还是kotlinc还是groovyc编译出来的都能够运行，这个中间表达就是.class也就是字节码文件，字节码文件是运行在java虚拟机上的，并不是直接的机器或者汇编语言，不针对特定的某一种机器或者操作系统。java通过jvm屏蔽了底层操作系统的差异使得能够跨平台。</p>
+<h2 id="字节码文件-1"><a href="#字节码文件-1" class="headerlink" title="字节码文件"></a>字节码文件</h2><ol>
+<li>魔数：CAFEBABE，为了校验是否为一个字节码文件</li>
+<li>大小版本号：大版本为当前jdk版本+44，jdk8就是52，在类加载中有一个校验的过程，只有大小版本号在某个区间才能符合当前jvm的要求，当然高版本jdk编译出来的是不能在低版本的jvm上运行的。</li>
+<li>常量池：包含字面量和符号引用：字面量可以认为是一些常量，比如int a&#x3D;10，这个10就是字面量，符号引用分为三种：类和接口的全限定名，字段的名称和描述符和方法的名称与描述符。类和接口的全限定名就是类从根目录下的.改成&#x2F;再加;,字段的名称和描述符比如int[] i,字段名称为i，描述符为[I，方法的描述符比如Object m(int i,double j)，描述符为(ID)Ljava&#x2F;lang&#x2F;Object;</li>
+<li>访问标志，父类和接口</li>
+<li>字段</li>
+<li>方法</li>
+<li>属性</li>
+</ol>
+<h1 id="内存区域"><a href="#内存区域" class="headerlink" title="内存区域"></a>内存区域</h1>
+    
   </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      06-01
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/01/redis%E9%A1%B9%E7%9B%AE-%E7%BC%93%E5%AD%98%E5%92%8C%E8%AF%BB%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7/" class="archive-post-link">
-        redis项目-缓存和读写一致性
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/" class="archive-post-link">
-        redis项目-分布式锁
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E7%99%BB%E5%BD%95%E9%80%BB%E8%BE%91/" class="archive-post-link">
-        redis项目-登录逻辑
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-08
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/08/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E4%B8%8A%EF%BC%89/" class="archive-post-link">
-        java-虚拟机（上）
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%88%E4%B8%AD/" class="archive-post-link">
-        java-多线程-ThreadLocal和线程池
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/" class="archive-post-link">
-        java-多线程-volatile，synchronized和lock
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-05
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/05/mysql-%E7%B4%A2%E5%BC%95%E5%92%8C%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88/" class="archive-post-link">
-        mysql-索引和索引失效
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-05
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/05/mysql-Buffer-Pool/" class="archive-post-link">
-        mysql-Buffer Pool
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-05
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/05/mysql-%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8EMVCC/" class="archive-post-link">
-        mysql-事务隔离级别与MVCC
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/09/06/jvm-%E9%9D%A2%E8%AF%95%E7%AF%87/">https://yyf1050886654.github.io/2024/09/06/jvm-%E9%9D%A2%E8%AF%95%E7%AF%87/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
       
-      <a class="prev" href="/archives/">  
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      <a class="prev" href="/2024/09/10/%E9%9B%86%E5%90%88%E6%80%BB%E7%BB%93/">  
         <i class="iconfont icon-left"></i>  
-        <span class="prev-text">上一页</span>  
+        <span class="prev-text nav-default">集合总结</span>  
+        <span class="prev-text nav-mobile">上一篇</span>  
       </a>  
       
       
-      <a class="next" href="/archives/page/3/">  
-        <span class="next-text">下一页</span>  
+      <a class="next" href="/2024/08/16/jvm-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%92%8C%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/">  
+        <span class="next-text nav-default">jvm-类加载器和双亲委派机制</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
         <i class="iconfont icon-right"></i>  
       </a>  
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
@@ -517,6 +410,13 @@
     <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
   </div>
     
+    
+    
+    
+    
+    
+    
+  
 
   
 
