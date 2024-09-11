@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="多线程总结" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/10/多线程总结/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>多线程总结 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      多线程总结
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-10
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9B%E7%A8%8B%E5%92%8C%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="toc-number">1.</span> <span class="toc-text">进程和线程的区别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Java%E7%9A%84%E7%BA%BF%E7%A8%8B%E5%92%8C%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB"><span class="toc-number">2.</span> <span class="toc-text">Java的线程和操作系统的线程有什么区别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%96%B9%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">创建线程的方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Future%E5%92%8CFutureTask"><span class="toc-number">4.</span> <span class="toc-text">Future和FutureTask</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0%E7%9A%84submit%E5%92%8Cexecute%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">线程池的submit和execute什么区别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%8A%B6%E6%80%81"><span class="toc-number">6.</span> <span class="toc-text">线程的状态</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AD%BB%E9%94%81%E7%9A%84%E5%9B%9B%E4%B8%AA%E6%9D%A1%E4%BB%B6%EF%BC%8C%E9%80%9A%E8%BF%87%E4%BB%80%E4%B9%88%E6%96%B9%E6%B3%95%E8%A7%A3%E5%86%B3"><span class="toc-number">7.</span> <span class="toc-text">死锁的四个条件，通过什么方法解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#volatile%E5%85%B3%E9%94%AE%E5%AD%97"><span class="toc-number">8.</span> <span class="toc-text">volatile关键字</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#synchronized"><span class="toc-number">9.</span> <span class="toc-text">synchronized</span></a></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><ol>
+<li>资源分配的角度来看：进程是资源分配的最小单位，线程的切换仅仅保存了较少的寄存器，线程不是资源分配的最小单位</li>
+<li>调度的角度：没有引入线程的时候，进程是调度的最小单位，有了线程之后操作系统调度的就是线程了。</li>
+<li>切换开销来看：线程的切换开销较小，只用保存较少的寄存器，进程切换的开销较大</li>
+<li>并发的角度来看：同一个进程的线程可以并发，不同进程的线程之间也可以并发</li>
+</ol>
+<h2 id="Java的线程和操作系统的线程有什么区别"><a href="#Java的线程和操作系统的线程有什么区别" class="headerlink" title="Java的线程和操作系统的线程有什么区别"></a>Java的线程和操作系统的线程有什么区别</h2><p>在jdk1.2以前，java的线程是用户级线程，也就是一对多模型，向下操作系统申请一个线程，这个线程来轮询java的操作，在用户层面看上去是有多线程，但这样效率并没有提升</p>
+<p>在此之后java的线程可以直接用内核级线程，也就是java创建的线程就是操作系统认可的一个线程。</p>
+<h2 id="创建线程的方法"><a href="#创建线程的方法" class="headerlink" title="创建线程的方法"></a>创建线程的方法</h2><p>网上都说有四五种方法，但是其实只用一种就是thread.start()方法，但是为了完整性还是说一下这四种方法：</p>
+<ol>
+<li>继承Thread</li>
+<li>实现Runnable接口:run方法不允许有返回值，也不能抛出异常</li>
+<li>实现Callable接口：call可以有返回值，可以抛出异常</li>
+<li>线程池</li>
+</ol>
+<blockquote>
+<p>什么时候实现runnable接口什么时候继承thread：由于java是单继承的，如果有继承别的类就不能继承Thread了，此时就要使用Runnable接口<br>runnable和callable只是两个接口而已，直接运行对应的run和call是不能成为一个线程的，start是Thread类才有的方法，所以要真正运行起来线程需要new Thread(),这里面传入的是一个Runnable参数，Callable不行，需要用futureTask包装</p>
+</blockquote>
+<blockquote>
+<p>callable怎么用？</p>
+<ol>
+<li>callable和futureTask:由于new Thread要传一个Runnable参数，Callable不是；所以要用futureTask包装</li>
+<li>callable和线程池：submit给线程池返回一个future对象</li>
+</ol>
+</blockquote>
+<h2 id="Future和FutureTask"><a href="#Future和FutureTask" class="headerlink" title="Future和FutureTask"></a>Future和FutureTask</h2><p>future是异步编程的一个体现，当前线程正在执行，我需要取到程序运行结束的结果，也就是未来的结果。具有取消任务，查看任务执行情况，获取任务执行结果等功能。而futureTask是其的一个实现类，同时实现了future和runnable接口，由于new Thread只能传Runnable接口，futureTask正式为了搭配Callable接口，使用的时候new Thread(new FutureTask(new Callable))</p>
+<h2 id="线程池的submit和execute什么区别"><a href="#线程池的submit和execute什么区别" class="headerlink" title="线程池的submit和execute什么区别"></a>线程池的submit和execute什么区别</h2><ol>
+<li>submit返回值为Future，可以执行Callable和Runnable任务，但是如果是runnable那future.get返回就是null，也可以抛出异常</li>
+<li>execute返回值为空，只能执行Runnable任务</li>
+</ol>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>类似原来408学的线程状态，但是在java中这些状态略有不同，相比于底层操作系统，这些状态更加高层次，因为不涉及到io操作阻塞进程：</p>
+<ul>
+<li>NEW:初始状态，一般是new Thread()，创建出来但是还没有执行start方法</li>
+<li>RUNNABLE:运行状态，执行了start方法</li>
+<li>BLOCKED:被synchronized方法阻塞了，没有抢到锁就进入这个状态，等到锁释放就变为RUNNABLE</li>
+<li>WAITING:一般是线程之间通讯，调用了wait方法变成waiting状态，而等到notify或者notifyAll变为运行态</li>
+<li>TIME_WAITING:具有具体时间的等待状态</li>
+<li>TERMINATED:线程终止</li>
+</ul>
+<p><strong>BLOCKED和WAITING的区别</strong></p>
+<ul>
+<li>触发条件：线程没有获取到监视器锁（synchronized）就BLOCKING，WAITING是获取到了synchronized锁但是锁对象wait了，也就是释放了锁，主要用于线程通讯</li>
+<li>唤醒条件：获取到锁了之后会解除BLOCKING，而别的线程对锁对象.notify或者notifyAll之后会唤醒waiting线程，但是要继续执行还是要获取锁</li>
+</ul>
+<p><strong>notify和notifyAll的区别</strong></p>
+<ul>
+<li>notify随机唤醒一个（这个是hotspot的机制，可能别的虚拟机是指定的）</li>
+<li>notifyAll，当前锁对象下所有的WAITING线程，共同争抢。唤醒的线程在被 notify() 或 notifyAll() 唤醒后，仍然需要重新争抢对象的锁。它会从 WAITING 状态转换到 BLOCKED 状态，等待对象的锁释放。</li>
+</ul>
+<p><strong>wait和sleep方法的区别</strong></p>
+<ul>
+<li>wait是Object的方法，sleep是Thread的方法</li>
+<li>wait释放锁，sleep不释放锁</li>
+<li>wait需要notify唤醒而sleep到时间就唤醒了</li>
+<li>wait主要用于进程同步，sleep延时</li>
+</ul>
+<blockquote>
+<p>为什么wait定义在object里面而sleep定义在Thread里面：<br>与他们使用的场合有关，wait需要在synchronized方法中运用，而代码块的锁正是object，操作的并不是线程<br>而sleep的作用是让线程睡眠一段时间，这显然跟锁没什么关系，就定义在线程中</p>
+</blockquote>
+<h2 id="死锁的四个条件，通过什么方法解决"><a href="#死锁的四个条件，通过什么方法解决" class="headerlink" title="死锁的四个条件，通过什么方法解决"></a>死锁的四个条件，通过什么方法解决</h2><ul>
+<li>互斥条件：一个资源同时刻只能有一个线程访问</li>
+<li>不剥夺条件：一个线程的资源不可以被别的线程剥夺</li>
+<li>占有且等待条件：一个线程获取不到更多的资源，原来持有的资源也不会释放</li>
+<li>循环等待条件：资源的请求变成了一个环，大家都拿不到对应的资源</li>
+</ul>
+<blockquote>
+<p>破坏这四个条件是<strong>死锁预防</strong>要做的事情。此外还有死锁避免（银行家算法），死锁检测和恢复（有向图检测方法）。这三个大的方法性能由低到高，对死锁的控制由严格到松。</p>
+</blockquote>
+<ul>
+<li>破坏互斥条件：多增加临界资源的数量（虚拟化）</li>
+<li>破坏不剥夺条件：抢占式调度（还有一种是协同式调度，是等到当前线程结束才进行线程调度），得不到资源就释放</li>
+<li>破坏占有等待条件：可以先申请，检查当前系统剩余资源是否能够让线程运行，一次性全拿而不是一次拿一点</li>
+<li>循环等待条件：编号，类似TCP的同步号</li>
+</ul>
+<h2 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h2><ol>
+<li>在多线程环境中，每个线程都有自己的 CPU 缓存，线程在读写变量时可能会先将变量的值缓存在自己的工作内存中，而不是直接从主内存中读取或写入。使用volatile关键字就告诉程序这个变量是不稳定的，禁用cpu缓存，每次找这个变量都需要去主存取，</li>
+<li>在jvm的执行优化中可能出现指令重排序，也就是123条指令，可能实际变成132，volatile关键字能够在其中加上内存屏障，禁止指令重排序（主要用在双校验单例模式）<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Singleton</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Singleton singleton;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Singleton</span><span class="params">()</span>&#123;&#125;</span><br><span class="line">    <span class="keyword">public</span> Singleton <span class="title function_">getSingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="built_in">this</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">                    singleton = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> singleton;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>能保证可见性，但不能保证原子性，例如再出现i++这种操作的时候，即使volatile i，还是会有线程安全问题。因为i++其实是三个操作，从内存取出i，对这个副本+1，再把其写回内存。此时两个线程来操作就会少一次+1。（可以加锁synchronized,reentrantlock或者用AtomicInteger的cas操作）</li>
+</ol>
+<blockquote>
+<p>内存屏障：</p>
+<ul>
+<li>写 volatile 变量时： 当一个线程写入 volatile 变量时，JVM 会在写操作后插入一个写内存屏障（Store Memory Barrier），确保所有在 volatile 变量写操作之前的内存操作都已经完成，并且这些操作的结果对其他线程可见。 在 Java 内存模型中，写 volatile 变量时会确保该写入操作之前的所有变量修改都被刷新到主内存中，然后将 volatile 变量的值写入主内存。 </li>
+<li>读 volatile 变量时：当一个线程读取 volatile 变量时，JVM 会在读操作前插入一个读内存屏障（Load Memory Barrier），确保所有在 volatile 变量读操作之后的内存操作都不会被重排序到它之前。 在 Java 内存模型中，读 volatile 变量时，会确保在读取这个 volatile 变量之后，线程能够看到所有其他线程在写入该 volatile 变量之前对其他变量的修改。</li>
+</ul>
+</blockquote>
+<h2 id="synchronized"><a href="#synchronized" class="headerlink" title="synchronized"></a>synchronized</h2><ol>
+<li>可以修饰实例方法，锁住当前对象</li>
+<li>修饰静态方法，锁住当前类。这里就会有个有意思的事情，修饰在静态方法上的synchronized和实例方法上的<strong>不互斥</strong>，因为静态方法锁住的是当前类，实例方法锁住的是对象</li>
+<li>修饰代码块，这个比较灵活<blockquote>
+<p>注意这里不能修饰构造函数，构造函数本身就是线程安全的</p>
+</blockquote>
+</li>
+</ol>
+<p><strong>原理</strong><br>基于jvm的monitor，在代码块进入前加上monitorenter，退出的时候加上monitorexit，也是可重入的，底层是监视器维护了一个state字段，有锁进来就+1，重入多次就+n，退出-1，同时也会有维护一个队列存放未获取锁的对象，等到释放了就会唤醒（BLOCKED）</p>
+<p><strong>锁升级</strong></p>
+<ul>
+<li>不加锁：</li>
+<li>偏向锁：</li>
+<li>轻度锁：</li>
+<li>重度锁：</li>
+</ul>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/09/10/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%BB%E7%BB%93/">https://yyf1050886654.github.io/2024/09/10/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%BB%E7%BB%93/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      <a class="prev" href="/2024/09/10/redis%E6%80%BB%E7%BB%93/">  
+        <i class="iconfont icon-left"></i>  
+        <span class="prev-text nav-default">redis总结</span>  
+        <span class="prev-text nav-mobile">上一篇</span>  
+      </a>  
+      
+      
+      <a class="next" href="/2024/09/10/%E9%9B%86%E5%90%88%E6%80%BB%E7%BB%93/">  
+        <span class="next-text nav-default">集合总结</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>

@@ -371,6 +371,9 @@
 <li>HashTable：直接锁整个表</li>
 </ol>
 <h2 id="concurrentHashMap和HashTable的区别"><a href="#concurrentHashMap和HashTable的区别" class="headerlink" title="concurrentHashMap和HashTable的区别"></a>concurrentHashMap和HashTable的区别</h2><p>concurrentHashMap在jdk1.7以前是segment+hashEntry+链表构成，给每个segment上锁，默认支持16的并发（前提是每一个线程访问的数据都不在一个segment上）；在jdk1.8以后通过synchronized+cas+node完成了并发控制，直接在hashmap进行锁操作，用synchronized锁住头节点，cas锁住添加操作。HashTable是方法全加synchronized的哈希表，效果肯定是不如cas的</p>
+<blockquote>
+<p>concurrentHashMap什么时候用synchronized什么时候用cas，当Entry是空节点的时候就用自旋锁，当不为空就不用</p>
+</blockquote>
 <h2 id="HashSet"><a href="#HashSet" class="headerlink" title="HashSet"></a>HashSet</h2><p>HashSet是基于HashMap的，由于HashMap的特性会替换重复的key，HashSet直接把当前元素作为key，这样就可以达到去重的目的</p>
 <h1 id="未完待续。。。。。"><a href="#未完待续。。。。。" class="headerlink" title="未完待续。。。。。"></a>未完待续。。。。。</h1>
     
@@ -411,9 +414,15 @@
       
   <nav class="post-nav">  
       
+      <a class="prev" href="/2024/09/10/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%BB%E7%BB%93/">  
+        <i class="iconfont icon-left"></i>  
+        <span class="prev-text nav-default">多线程总结</span>  
+        <span class="prev-text nav-mobile">上一篇</span>  
+      </a>  
       
-      <a class="next" href="/2024/09/06/jvm-%E9%9D%A2%E8%AF%95%E7%AF%87/">  
-        <span class="next-text nav-default">jvm-面试篇</span>  
+      
+      <a class="next" href="/2024/08/16/jvm-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%92%8C%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/">  
+        <span class="next-text nav-default">jvm-类加载器和双亲委派机制</span>  
         <span class="prev-text nav-mobile">下一篇</span>  
         <i class="iconfont icon-right"></i>  
       </a>  

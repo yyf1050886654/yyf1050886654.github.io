@@ -212,6 +212,182 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/10/redis%E6%80%BB%E7%BB%93/">redis总结</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-10
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/09/10/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%BB%E7%BB%93/">多线程总结</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-10
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><ol>
+<li>资源分配的角度来看：进程是资源分配的最小单位，线程的切换仅仅保存了较少的寄存器，线程不是资源分配的最小单位</li>
+<li>调度的角度：没有引入线程的时候，进程是调度的最小单位，有了线程之后操作系统调度的就是线程了。</li>
+<li>切换开销来看：线程的切换开销较小，只用保存较少的寄存器，进程切换的开销较大</li>
+<li>并发的角度来看：同一个进程的线程可以并发，不同进程的线程之间也可以并发</li>
+</ol>
+<h2 id="Java的线程和操作系统的线程有什么区别"><a href="#Java的线程和操作系统的线程有什么区别" class="headerlink" title="Java的线程和操作系统的线程有什么区别"></a>Java的线程和操作系统的线程有什么区别</h2><p>在jdk1.2以前，java的线程是用户级线程，也就是一对多模型，向下操作系统申请一个线程，这个线程来轮询java的操作，在用户层面看上去是有多线程，但这样效率并没有提升</p>
+<p>在此之后java的线程可以直接用内核级线程，也就是java创建的线程就是操作系统认可的一个线程。</p>
+<h2 id="创建线程的方法"><a href="#创建线程的方法" class="headerlink" title="创建线程的方法"></a>创建线程的方法</h2><p>网上都说有四五种方法，但是其实只用一种就是thread.start()方法，但是为了完整性还是说一下这四种方法：</p>
+<ol>
+<li>继承Thread</li>
+<li>实现Runnable接口:run方法不允许有返回值，也不能抛出异常</li>
+<li>实现Callable接口：call可以有返回值，可以抛出异常</li>
+<li>线程池</li>
+</ol>
+<blockquote>
+<p>什么时候实现runnable接口什么时候继承thread：由于java是单继承的，如果有继承别的类就不能继承Thread了，此时就要使用Runnable接口<br>runnable和callable只是两个接口而已，直接运行对应的run和call是不能成为一个线程的，start是Thread类才有的方法，所以要真正运行起来线程需要new Thread(),这里面传入的是一个Runnable参数，Callable不行，需要用futureTask包装</p>
+</blockquote>
+<blockquote>
+<p>callable怎么用？</p>
+<ol>
+<li>callable和futureTask:由于new Thread要传一个Runnable参数，Callable不是；所以要用futureTask包装</li>
+<li>callable和线程池：submit给线程池返回一个future对象</li>
+</ol>
+</blockquote>
+<h2 id="Future和FutureTask"><a href="#Future和FutureTask" class="headerlink" title="Future和FutureTask"></a>Future和FutureTask</h2><p>future是异步编程的一个体现，当前线程正在执行，我需要取到程序运行结束的结果，也就是未来的结果。具有取消任务，查看任务执行情况，获取任务执行结果等功能。而futureTask是其的一个实现类，同时实现了future和runnable接口，由于new Thread只能传Runnable接口，futureTask正式为了搭配Callable接口，使用的时候new Thread(new FutureTask(new Callable))</p>
+<h2 id="线程池的submit和execute什么区别"><a href="#线程池的submit和execute什么区别" class="headerlink" title="线程池的submit和execute什么区别"></a>线程池的submit和execute什么区别</h2><ol>
+<li>submit返回值为Future，可以执行Callable和Runnable任务，但是如果是runnable那future.get返回就是null，也可以抛出异常</li>
+<li>execute返回值为空，只能执行Runnable任务</li>
+</ol>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>类似原来408学的线程状态，但是在java中这些状态略有不同，相比于底层操作系统，这些状态更加高层次，因为不涉及到io操作阻塞进程：</p>
+<ul>
+<li>NEW:初始状态，一般是new Thread()，创建出来但是还没有执行start方法</li>
+<li>RUNNABLE:运行状态，执行了start方法</li>
+<li>BLOCKED:被synchronized方法阻塞了，没有抢到锁就进入这个状态，等到锁释放就变为RUNNABLE</li>
+<li>WAITING:一般是线程之间通讯，调用了wait方法变成waiting状态，而等到notify或者notifyAll变为运行态</li>
+<li>TIME_WAITING:具有具体时间的等待状态</li>
+<li>TERMINATED:线程终止</li>
+</ul>
+<p><strong>BLOCKED和WAITING的区别</strong></p>
+<ul>
+<li>触发条件：线程没有获取到监视器锁（synchronized）就BLOCKING，WAITING是获取到了synchronized锁但是锁对象wait了，也就是释放了锁，主要用于线程通讯</li>
+<li>唤醒条件：获取到锁了之后会解除BLOCKING，而别的线程对锁对象.notify或者notifyAll之后会唤醒waiting线程，但是要继续执行还是要获取锁</li>
+</ul>
+<p><strong>notify和notifyAll的区别</strong></p>
+<ul>
+<li>notify随机唤醒一个（这个是hotspot的机制，可能别的虚拟机是指定的）</li>
+<li>notifyAll，当前锁对象下所有的WAITING线程，共同争抢。唤醒的线程在被 notify() 或 notifyAll() 唤醒后，仍然需要重新争抢对象的锁。它会从 WAITING 状态转换到 BLOCKED 状态，等待对象的锁释放。</li>
+</ul>
+<p><strong>wait和sleep方法的区别</strong></p>
+<ul>
+<li>wait是Object的方法，sleep是Thread的方法</li>
+<li>wait释放锁，sleep不释放锁</li>
+<li>wait需要notify唤醒而sleep到时间就唤醒了</li>
+<li>wait主要用于进程同步，sleep延时</li>
+</ul>
+<blockquote>
+<p>为什么wait定义在object里面而sleep定义在Thread里面：<br>与他们使用的场合有关，wait需要在synchronized方法中运用，而代码块的锁正是object，操作的并不是线程<br>而sleep的作用是让线程睡眠一段时间，这显然跟锁没什么关系，就定义在线程中</p>
+</blockquote>
+<h2 id="死锁的四个条件，通过什么方法解决"><a href="#死锁的四个条件，通过什么方法解决" class="headerlink" title="死锁的四个条件，通过什么方法解决"></a>死锁的四个条件，通过什么方法解决</h2><ul>
+<li>互斥条件：一个资源同时刻只能有一个线程访问</li>
+<li>不剥夺条件：一个线程的资源不可以被别的线程剥夺</li>
+<li>占有且等待条件：一个线程获取不到更多的资源，原来持有的资源也不会释放</li>
+<li>循环等待条件：资源的请求变成了一个环，大家都拿不到对应的资源</li>
+</ul>
+<blockquote>
+<p>破坏这四个条件是<strong>死锁预防</strong>要做的事情。此外还有死锁避免（银行家算法），死锁检测和恢复（有向图检测方法）。这三个大的方法性能由低到高，对死锁的控制由严格到松。</p>
+</blockquote>
+<ul>
+<li>破坏互斥条件：多增加临界资源的数量（虚拟化）</li>
+<li>破坏不剥夺条件：抢占式调度（还有一种是协同式调度，是等到当前线程结束才进行线程调度），得不到资源就释放</li>
+<li>破坏占有等待条件：可以先申请，检查当前系统剩余资源是否能够让线程运行，一次性全拿而不是一次拿一点</li>
+<li>循环等待条件：编号，类似TCP的同步号</li>
+</ul>
+<h2 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h2><ol>
+<li>在多线程环境中，每个线程都有自己的 CPU 缓存，线程在读写变量时可能会先将变量的值缓存在自己的工作内存中，而不是直接从主内存中读取或写入。使用volatile关键字就告诉程序这个变量是不稳定的，禁用cpu缓存，每次找这个变量都需要去主存取，</li>
+<li>在jvm的执行优化中可能出现指令重排序，也就是123条指令，可能实际变成132，volatile关键字能够在其中加上内存屏障，禁止指令重排序（主要用在双校验单例模式）<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Singleton</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Singleton singleton;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Singleton</span><span class="params">()</span>&#123;&#125;</span><br><span class="line">    <span class="keyword">public</span> Singleton <span class="title function_">getSingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="built_in">this</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">                    singleton = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> singleton;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>能保证可见性，但不能保证原子性，例如再出现i++这种操作的时候，即使volatile i，还是会有线程安全问题。因为i++其实是三个操作，从内存取出i，对这个副本+1，再把其写回内存。此时两个线程来操作就会少一次+1。（可以加锁synchronized,reentrantlock或者用AtomicInteger的cas操作）</li>
+</ol>
+<blockquote>
+<p>内存屏障：</p>
+<ul>
+<li>写 volatile 变量时： 当一个线程写入 volatile 变量时，JVM 会在写操作后插入一个写内存屏障（Store Memory Barrier），确保所有在 volatile 变量写操作之前的内存操作都已经完成，并且这些操作的结果对其他线程可见。 在 Java 内存模型中，写 volatile 变量时会确保该写入操作之前的所有变量修改都被刷新到主内存中，然后将 volatile 变量的值写入主内存。 </li>
+<li>读 volatile 变量时：当一个线程读取 volatile 变量时，JVM 会在读操作前插入一个读内存屏障（Load Memory Barrier），确保所有在 volatile 变量读操作之后的内存操作都不会被重排序到它之前。 在 Java 内存模型中，读 volatile 变量时，会确保在读取这个 volatile 变量之后，线程能够看到所有其他线程在写入该 volatile 变量之前对其他变量的修改。</li>
+</ul>
+</blockquote>
+<h2 id="synchronized"><a href="#synchronized" class="headerlink" title="synchronized"></a>synchronized</h2><ol>
+<li>可以修饰实例方法，锁住当前对象</li>
+<li>修饰静态方法，锁住当前类。这里就会有个有意思的事情，修饰在静态方法上的synchronized和实例方法上的<strong>不互斥</strong>，因为静态方法锁住的是当前类，实例方法锁住的是对象</li>
+<li>修饰代码块，这个比较灵活<blockquote>
+<p>注意这里不能修饰构造函数，构造函数本身就是线程安全的</p>
+</blockquote>
+</li>
+</ol>
+<p><strong>原理</strong><br>基于jvm的monitor，在代码块进入前加上monitorenter，退出的时候加上monitorexit，也是可重入的，底层是监视器维护了一个state字段，有锁进来就+1，重入多次就+n，退出-1，同时也会有维护一个队列存放未获取锁的对象，等到释放了就会唤醒（BLOCKED）</p>
+<p><strong>锁升级</strong></p>
+<ul>
+<li>不加锁：</li>
+<li>偏向锁：</li>
+<li>轻度锁：</li>
+<li>重度锁：</li>
+</ul>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/10/%E9%9B%86%E5%90%88%E6%80%BB%E7%BB%93/">集合总结</a>
       
     </h1>
@@ -368,55 +544,11 @@
 <li>HashTable：直接锁整个表</li>
 </ol>
 <h2 id="concurrentHashMap和HashTable的区别"><a href="#concurrentHashMap和HashTable的区别" class="headerlink" title="concurrentHashMap和HashTable的区别"></a>concurrentHashMap和HashTable的区别</h2><p>concurrentHashMap在jdk1.7以前是segment+hashEntry+链表构成，给每个segment上锁，默认支持16的并发（前提是每一个线程访问的数据都不在一个segment上）；在jdk1.8以后通过synchronized+cas+node完成了并发控制，直接在hashmap进行锁操作，用synchronized锁住头节点，cas锁住添加操作。HashTable是方法全加synchronized的哈希表，效果肯定是不如cas的</p>
+<blockquote>
+<p>concurrentHashMap什么时候用synchronized什么时候用cas，当Entry是空节点的时候就用自旋锁，当不为空就不用</p>
+</blockquote>
 <h2 id="HashSet"><a href="#HashSet" class="headerlink" title="HashSet"></a>HashSet</h2><p>HashSet是基于HashMap的，由于HashMap的特性会替换重复的key，HashSet直接把当前元素作为key，这样就可以达到去重的目的</p>
 <h1 id="未完待续。。。。。"><a href="#未完待续。。。。。" class="headerlink" title="未完待续。。。。。"></a>未完待续。。。。。</h1>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/06/jvm-%E9%9D%A2%E8%AF%95%E7%AF%87/">jvm-面试篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-06
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="字节码文件"><a href="#字节码文件" class="headerlink" title="字节码文件"></a>字节码文件</h1><h2 id="为什么会有字节码文件"><a href="#为什么会有字节码文件" class="headerlink" title="为什么会有字节码文件"></a>为什么会有字节码文件</h2><p>Java的特性是跨平台，一次编译处处运行，为了能够实现这种特性需要一种中间表达，使得不管是javac还是kotlinc还是groovyc编译出来的都能够运行，这个中间表达就是.class也就是字节码文件，字节码文件是运行在java虚拟机上的，并不是直接的机器或者汇编语言，不针对特定的某一种机器或者操作系统。java通过jvm屏蔽了底层操作系统的差异使得能够跨平台。</p>
-<h2 id="字节码文件-1"><a href="#字节码文件-1" class="headerlink" title="字节码文件"></a>字节码文件</h2><ol>
-<li>魔数：CAFEBABE，为了校验是否为一个字节码文件</li>
-<li>大小版本号：大版本为当前jdk版本+44，jdk8就是52，在类加载中有一个校验的过程，只有大小版本号在某个区间才能符合当前jvm的要求，当然高版本jdk编译出来的是不能在低版本的jvm上运行的。</li>
-<li>常量池：包含字面量和符号引用：字面量可以认为是一些常量，比如int a&#x3D;10，这个10就是字面量，符号引用分为三种：类和接口的全限定名，字段的名称和描述符和方法的名称与描述符。类和接口的全限定名就是类从根目录下的.改成&#x2F;再加;,字段的名称和描述符比如int[] i,字段名称为i，描述符为[I，方法的描述符比如Object m(int i,double j)，描述符为(ID)Ljava&#x2F;lang&#x2F;Object;</li>
-<li>访问标志，父类和接口</li>
-<li>字段</li>
-<li>方法</li>
-<li>属性</li>
-</ol>
-<h1 id="内存区域"><a href="#内存区域" class="headerlink" title="内存区域"></a>内存区域</h1>
     
     
   </div>
@@ -1177,107 +1309,6 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 保存搜索记录</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> keyWord</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Async</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertSearchHistory</span><span class="params">(String keyWord)</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">Long</span> <span class="variable">userID</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">    <span class="comment">//1 先从db找这个数据</span></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID).and(<span class="string">&quot;keyWord&quot;</span>).is(keyWord));</span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">searchHistory</span> <span class="operator">=</span> mongoTemplate.findOne(query, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//2 如果又就更新创建时间</span></span><br><span class="line">    <span class="keyword">if</span> (searchHistory != <span class="literal">null</span>)&#123;</span><br><span class="line">        searchHistory.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3 没有就存进db</span></span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">dto</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">QueryBlogDto</span>();</span><br><span class="line">    dto.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    dto.setUserId(userID);</span><br><span class="line">    dto.setKeyWord(keyWord);</span><br><span class="line"></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query1</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID))</span><br><span class="line">            .with(Sort.by(Sort.Direction.DESC,<span class="string">&quot;createTime&quot;</span>));</span><br><span class="line">    List&lt;QueryBlogDto&gt; dtos = mongoTemplate.find(query1, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//3.1 如果数量少于10条就直接存</span></span><br><span class="line">    <span class="keyword">if</span> (dtos.size() &lt; <span class="number">10</span>)&#123;</span><br><span class="line">        mongoTemplate.save(dto);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3.2 如果多余10就要替换了</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">QueryBlogDto</span> <span class="variable">last</span> <span class="operator">=</span> dtos.get(dtos.size() - <span class="number">1</span>);</span><br><span class="line">        mongoTemplate.findAndReplace(Query.query(Criteria.where(<span class="string">&quot;keyWord&quot;</span>).is(last.getKeyWord())),dto);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 <p>值得注意的是这里使用了@Async，gpt给我的答案是这个跟你新开一个线程没有区别，但是注意要在启动类上enable。这里query更像lambdaQueryWrapper那种。具体的增删改查语法以后再学。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/06/07/redis%E9%A1%B9%E7%9B%AE-kafkaStream%E6%94%B9%E9%80%A0/">redis项目-kafkaStream改造</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-06-07
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>想到之前在黑马头条看到的流式实时更新排行，遂想用在这个项目里。</p>
-</blockquote>
-<p>目标是实时计算每一条博客的评论数，点赞数，还有浏览数收藏数来计算分数，更新在redis上，redis使用zset完成排序。</p>
-<p>Todo：其实可以分离，点赞评论这一系列数据可以放在mongodb里面，不用写在sql中，后续改造这部分内容。</p>
-<h2 id="HyperLogLog"><a href="#HyperLogLog" class="headerlink" title="HyperLogLog"></a>HyperLogLog</h2><p>浏览量想用redis的这个hyperloglog实现，目前学的比较肤浅，这里只是把它当作一个有概率丢失但容量很大并且很高效的set。主要用stringRedisTemplate.opsForHyperLogLog()中的size和add，很简单前者是有多少个，后者是添加</p>
-<h2 id="KafkaStream实现单词统计"><a href="#KafkaStream实现单词统计" class="headerlink" title="KafkaStream实现单词统计"></a>KafkaStream实现单词统计</h2><p>先从配置说起，hosts与kafka本身是一致的，APPLICATION_ID_CONFIG表示的是stream的唯一标识符，Kafka Streams利用这个ID来创建一个内部的消费组，跟踪处理的偏移量，并生成应用的状态存储。</p>
-<p>CLIENT_ID_CONFIG是跟踪消费者的网络状态的客户端组</p>
-<p>多个 CLIENT_ID_CONFIG 可以对应一个 APPLICATION_ID_CONFIG，这种配置允许在一个Kafka Streams应用中，细粒度地控制和监控不同的客户端实例或任务。这对于大型、复杂的应用尤其有用，使得在监控和调试中可以精确定位问题和分析性能。</p>
-<ul>
-<li>APPLICATION_ID_CONFIG 定义了Kafka Streams应用的全局标识，影响整个应用的行为、状态管理和数据分区处理。</li>
-<li>CLIENT_ID_CONFIG 则用于标识具体的客户端实例或任务，便于监控、日志和调试。<br>这种配置方式增强了应用的灵活性和可管理性，使得在复杂的流处理场景中，能够更有效地跟踪和优化每个组件的表现。</li>
-</ul>
-<p>这里我们只有很简单的应用，直接就是一对一</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ConfigurationProperties(prefix = &quot;kafka&quot;)</span></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="meta">@EnableKafkaStreams</span></span><br><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">KafkaStreamConfig</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">MAX_MESSAGE_SIZE</span> <span class="operator">=</span> <span class="number">16</span>*<span class="number">1024</span>*<span class="number">1024</span>;</span><br><span class="line">    <span class="keyword">private</span> String hosts;</span><br><span class="line">    <span class="keyword">private</span> String group;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean(name = KafkaStreamsDefaultConfiguration.DEFAULT_STREAMS_CONFIG_BEAN_NAME)</span></span><br><span class="line">    <span class="keyword">public</span> KafkaStreamsConfiguration <span class="title function_">defaultKafkaStreamsConfig</span><span class="params">()</span>&#123;</span><br><span class="line">        Map&lt;String, Object&gt; props = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//ip地址和端口号</span></span><br><span class="line">        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, hosts);</span><br><span class="line">        <span class="comment">//全局标识</span></span><br><span class="line">        props.put(StreamsConfig.APPLICATION_ID_CONFIG, <span class="built_in">this</span>.getGroup()+<span class="string">&quot;_stream_aid&quot;</span>);</span><br><span class="line">        <span class="comment">//客户端标识</span></span><br><span class="line">        props.put(StreamsConfig.CLIENT_ID_CONFIG, <span class="built_in">this</span>.getGroup()+<span class="string">&quot;_stream_cid&quot;</span>);</span><br><span class="line">        props.put(StreamsConfig.RETRIES_CONFIG, <span class="number">10</span>);</span><br><span class="line">        <span class="comment">//key的序列化和反序列化都为string</span></span><br><span class="line">        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());</span><br><span class="line">        <span class="comment">//value，也就是说键值对都得是String的，后面有坑点</span></span><br><span class="line">        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">KafkaStreamsConfiguration</span>(props);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>测试用例：</p>
-<p>随机在这几种颜色里发送给kafka一个消息</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Autowired</span></span><br><span class="line"><span class="keyword">private</span> KafkaTemplate&lt;String,String&gt; kafkaTemplate;</span><br><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">KafkaTest</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">    String[] field = <span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;red&quot;</span>,<span class="string">&quot;blue&quot;</span>,<span class="string">&quot;yellow&quot;</span>,<span class="string">&quot;green&quot;</span>,<span class="string">&quot;black&quot;</span>,<span class="string">&quot;white&quot;</span>&#125;;</span><br><span class="line">    <span class="type">Random</span> <span class="variable">random</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Random</span>();</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>)&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            <span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> field[random.nextInt(<span class="number">5</span>)];</span><br><span class="line">            System.out.println(s);</span><br><span class="line">            kafkaTemplate.send(<span class="string">&quot;itcast-topic-input&quot;</span>,s);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>流式应用：</p>
-<p>由于流式是不具有缓存功能的，也就是说一段时间内得到的结果只能代表这一段时间。不能与历史记录累加，这个时候就要存redis了，把每一段时间的数据都累加。</p>
-<p>数据流向：测试线程一直发给itcast-topic-input主题，流式应用监听itcast-topic-input，通过处理得到键为单词，值为数量的键值对，传给itcast-topic-output主题。最后再有一个监听器把这些数据与redis进行处理和持久化。</p>
-<blockquote>
-<p>输入的数据是一个字符串，例如“apple apple tea tea”，对于这个构建的流来说，key为空，value为这个字符串，我们首先需要将这个字符串划分为四个键值对，要保留key的同时value变成各个单词（这里不能用map，map是一对一的，这里涉及拆分，需要一对多），得到了key为null，值为单词的很多键值对，<br>对这些键值对分组，key为它的值，也就是说所有是一个单词的分在一个组里面，方便后续统计。</p>
-<p>随后可以用count直接得出每个组的数量，但是我嫌太简单了，用aggregate，这个方法有三个参数。作为聚合，你需要给这个聚合器一个初始的数据类型和数据，后续再对其进行叠加，第一个函数是这个初始化的动作，第二个函数有三个参数，分别是k，v和这个叠加器的传递值。第三个函数指定序列化类型，这个我也没太搞懂</p>
-<p>在这个应用中，迭代器的初始为0，由于aggregate是对每个组进行聚合，因此迭代器只用每次将初始的值+1即可。</p>
-<p>最后收集这个数据进行转换，发送到对应主题给redis监听。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> KStream&lt;String,String&gt; <span class="title function_">kStream</span><span class="params">(StreamsBuilder streamsBuilder)</span>&#123;</span><br><span class="line">    KStream&lt;String, String&gt; stream = streamsBuilder.stream(<span class="string">&quot;itcast-topic-input&quot;</span>);</span><br><span class="line">    stream.flatMapValues(((value)-&gt;Arrays.asList(value.split(<span class="string">&quot; &quot;</span>))))</span><br><span class="line">            .groupBy((key,value)-&gt;value)</span><br><span class="line">            .windowedBy(TimeWindows.of(Duration.ofSeconds(<span class="number">10</span>)))</span><br><span class="line">            .aggregate(()-&gt;<span class="string">&quot;0&quot;</span>,(key,value,aggValue)-&gt;&#123;</span><br><span class="line">                <span class="type">Long</span> <span class="variable">i</span> <span class="operator">=</span> Long.parseLong(aggValue)+<span class="number">1</span>;</span><br><span class="line">                <span class="keyword">return</span> i+<span class="string">&quot;&quot;</span>;</span><br><span class="line">            &#125;)</span><br><span class="line">            .toStream()</span><br><span class="line">            .map(<span class="keyword">new</span> <span class="title class_">KeyValueMapper</span>&lt;Windowed&lt;String&gt;, String, KeyValue&lt;?, ?&gt;&gt;() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> KeyValue&lt;String, String&gt; <span class="title function_">apply</span><span class="params">(Windowed&lt;String&gt; key, String value)</span> &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">KeyValue</span>&lt;&gt;(key.key(),value);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;)</span><br><span class="line">            .to(<span class="string">&quot;itcast-topic-output&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> stream;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>监听器：</p>
-<p>先查找redis有没有这个key，后续就是简单的加上</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@KafkaListener(topics = &quot;itcast-topic-out&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleMessage</span><span class="params">(ConsumerRecord&lt;String,String&gt; message)</span>&#123;</span><br><span class="line">    <span class="comment">//先在redis里找有没有这个单词</span></span><br><span class="line">    <span class="type">Double</span> <span class="variable">score</span> <span class="operator">=</span> stringRedisTemplate.opsForZSet().score(REDIS_WORD, message.key());</span><br><span class="line">    <span class="keyword">if</span> (score == <span class="literal">null</span>)&#123;</span><br><span class="line">        stringRedisTemplate.opsForZSet().add(REDIS_WORD,message.key(), Double.parseDouble(message.value()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        stringRedisTemplate.opsForZSet().add(REDIS_WORD,message.key(), score+Double.parseDouble(message.value()));</span><br><span class="line">    &#125;</span><br><span class="line">    System.out.println(<span class="string">&quot;总计：&quot;</span>+message.key()+<span class="string">&quot;:&quot;</span></span><br><span class="line">            +stringRedisTemplate.opsForZSet().score(REDIS_WORD, message.key()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-<h2 id="KafkaStream改造项目"><a href="#KafkaStream改造项目" class="headerlink" title="KafkaStream改造项目"></a>KafkaStream改造项目</h2><p>定义两个实体类：</p>
-<ul>
-<li>一个是传给kafkastream的消息实体，也就是要告诉stream那一篇文章，有了什么动作，点赞了还是评论了。</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UpdateBlogMess</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 文章id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 更新类型</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> UpdateType updateType;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 更新数值，点赞是1，取消点赞是-1</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> add;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">enum</span> <span class="title class_">UpdateType</span>&#123;</span><br><span class="line">        VIEW,LIKED,COMMENT</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>另一个是传出kafkastream的消息实体，输出处理后的当前片段内blog的一些统计结果</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">BlogVisitedStreamMess</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 文章id</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * UV统计量</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long view;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 点赞的</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long liked;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 评论数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long comment;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>流式应用：</p>
-<p>如上所述，这里的输入是key为空，值为UpdateBlogMess的json字符串，</p>
-<ol>
-<li>首先要把json反序列化，映射到key为id，值为类型和数量，例如liked:1，</li>
-<li>再对key进行分组，很多操作的都是同一篇文章。</li>
-<li>聚合：根据对象的操作类型在对应的未知+1，初始化是一个”VIEW:0;COMMENT:0;LIKED:0”，后续的聚合都在这上面分割和校验。这里只测试了点赞的，对于view这个字段我打算是直接使用HyperLogLog来统计。评论这个功能暂时没做。</li>
-<li>UV统计近一个礼拜的文章访问量。</li>
-<li>最后返回一个key为文章id，值为BlogVisitedStreamMess的Json字符串</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">KAFKA_STREAM_HOT_BLOG</span> <span class="operator">=</span> <span class="string">&quot;hotBlog-produce&quot;</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">KAFKA_STREAM_HOT_BLOG_CONSUMER</span> <span class="operator">=</span> <span class="string">&quot;hotBlog-consumer&quot;</span>;</span><br><span class="line"><span class="meta">@Resource</span></span><br><span class="line"><span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> KStream&lt;String,String&gt; <span class="title function_">kStream</span><span class="params">(StreamsBuilder streamsBuilder)</span>&#123;</span><br><span class="line">    KStream&lt;String, String&gt; stream = streamsBuilder.stream(KAFKA_STREAM_HOT_BLOG);</span><br><span class="line">    stream.map(<span class="keyword">new</span> <span class="title class_">KeyValueMapper</span>&lt;String, String, KeyValue&lt;String , String&gt;&gt;() &#123;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         *</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> key 空</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@param</span> value UpdateBlogMess的Json字符串</span></span><br><span class="line"><span class="comment">         * <span class="doctag">@return</span> key为文章id，value为类型和数量</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> KeyValue&lt;String, String&gt; <span class="title function_">apply</span><span class="params">(String key, String value)</span> &#123;</span><br><span class="line">            <span class="type">UpdateBlogMess</span> <span class="variable">blogMess</span> <span class="operator">=</span> JSONUtil.toBean(value, UpdateBlogMess.class);</span><br><span class="line">            <span class="comment">//key:120312391 value:LIKED:-1</span></span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">KeyValue</span>&lt;&gt;(blogMess.getId()+<span class="string">&quot;&quot;</span>,blogMess.getUpdateType().name()+<span class="string">&quot;:&quot;</span>+blogMess.getAdd());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">            .groupBy((key,value)-&gt;key)</span><br><span class="line">            .windowedBy(TimeWindows.of(Duration.ofSeconds(<span class="number">10</span>)))</span><br><span class="line">            .aggregate(<span class="keyword">new</span> <span class="title class_">Initializer</span>&lt;String&gt;() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> String <span class="title function_">apply</span><span class="params">()</span> &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="string">&quot;VIEW:0;COMMENT:0;LIKED:0&quot;</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;, <span class="keyword">new</span> <span class="title class_">Aggregator</span>&lt;String, String, String&gt;() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="keyword">public</span> String <span class="title function_">apply</span><span class="params">(String key, String value, String aggValue)</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span>(StringUtils.isBlank(value))&#123;</span><br><span class="line">                        <span class="keyword">return</span> aggValue;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="type">long</span> <span class="variable">viewNum</span> <span class="operator">=</span> <span class="number">0L</span>, commentNum = <span class="number">0L</span>, likedNum = <span class="number">0L</span>;</span><br><span class="line">                    <span class="comment">//处理aggValue</span></span><br><span class="line">                    String[] splits = aggValue.split(<span class="string">&quot;;&quot;</span>);</span><br><span class="line">                    <span class="keyword">for</span> (String split : splits) &#123;</span><br><span class="line">                        String[] type = split.split(<span class="string">&quot;:&quot;</span>);</span><br><span class="line">                        <span class="keyword">switch</span> (UpdateBlogMess.UpdateType.valueOf(type[<span class="number">0</span>])) &#123;</span><br><span class="line">                            <span class="keyword">case</span> VIEW:</span><br><span class="line">                                viewNum = Long.parseLong(type[<span class="number">1</span>]);</span><br><span class="line">                                <span class="keyword">break</span>;</span><br><span class="line">                            <span class="keyword">case</span> LIKED:</span><br><span class="line">                                likedNum = Long.parseLong(type[<span class="number">1</span>]);</span><br><span class="line">                                <span class="keyword">break</span>;</span><br><span class="line">                            <span class="keyword">case</span> COMMENT:</span><br><span class="line">                                commentNum = Long.parseLong(type[<span class="number">1</span>]);</span><br><span class="line">                                <span class="keyword">break</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//处理value</span></span><br><span class="line">                    String[] splitVal = value.split(<span class="string">&quot;:&quot;</span>);</span><br><span class="line">                    <span class="keyword">switch</span> (UpdateBlogMess.UpdateType.valueOf(splitVal[<span class="number">0</span>])) &#123;</span><br><span class="line">                        <span class="keyword">case</span> VIEW:</span><br><span class="line">                            <span class="comment">//查询一周以内的UV访问量</span></span><br><span class="line">                            viewNum = calculateUV(key);</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        <span class="keyword">case</span> LIKED:</span><br><span class="line">                            <span class="comment">//如果是liked:-1就要-1</span></span><br><span class="line">                            likedNum += Long.parseLong(splitVal[<span class="number">1</span>]);</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        <span class="keyword">case</span> COMMENT:</span><br><span class="line">                            commentNum += <span class="number">1</span>;</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//最后返回agg</span></span><br><span class="line">                    <span class="keyword">return</span> <span class="string">&quot;VIEW:&quot;</span> + viewNum + <span class="string">&quot;;COMMENT:&quot;</span> + commentNum + <span class="string">&quot;;LIKED:&quot;</span> + likedNum;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;)</span><br><span class="line">            .toStream().map((key,value)-&gt;&#123;</span><br><span class="line">                <span class="type">BlogVisitedStreamMess</span> <span class="variable">blogVisitedStreamMess</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BlogVisitedStreamMess</span>();</span><br><span class="line">                blogVisitedStreamMess.setId(Long.valueOf(key.key()));</span><br><span class="line">                String[] splits = value.split(<span class="string">&quot;;&quot;</span>);</span><br><span class="line">                <span class="keyword">for</span> (String split:splits)&#123;</span><br><span class="line">                    String[] strings = split.split(<span class="string">&quot;:&quot;</span>);</span><br><span class="line">                    <span class="keyword">switch</span> (UpdateBlogMess.UpdateType.valueOf(strings[<span class="number">0</span>]))&#123;</span><br><span class="line">                        <span class="keyword">case</span> LIKED:</span><br><span class="line">                            blogVisitedStreamMess.setLiked(Long.valueOf(strings[<span class="number">1</span>]));</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        <span class="keyword">case</span> COMMENT:</span><br><span class="line">                            blogVisitedStreamMess.setComment(Long.parseLong(strings[<span class="number">1</span>]));</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        <span class="keyword">case</span> VIEW:</span><br><span class="line">                            blogVisitedStreamMess.setView(Long.parseLong(strings[<span class="number">1</span>]));</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">KeyValue</span>&lt;&gt;(key.key(),JSONUtil.toJsonStr(blogVisitedStreamMess));</span><br><span class="line">            &#125;)</span><br><span class="line">            .to(KAFKA_STREAM_HOT_BLOG_CONSUMER);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> stream;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">HyperLogLogPrefix</span> <span class="operator">=</span> <span class="string">&quot;HLL:blog:&quot;</span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 统计一周以内的UV访问量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Long <span class="title function_">calculateUV</span><span class="params">(String key)</span>&#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">UV4Week</span> <span class="operator">=</span> <span class="number">0L</span>;</span><br><span class="line">    <span class="type">LocalDate</span> <span class="variable">now</span> <span class="operator">=</span> LocalDate.now();</span><br><span class="line">    <span class="comment">//不够优雅</span></span><br><span class="line">    <span class="comment">/*String yesterday = now.minusDays(1).format(DateTimeFormatter.ofPattern(&quot;yyyy:MM:dd&quot;));</span></span><br><span class="line"><span class="comment">    String theDayBeforeYesterday = now.minusDays(2).format(DateTimeFormatter.ofPattern(&quot;yyyy:MM:dd&quot;));*/</span></span><br><span class="line">    List&lt;LocalDate&gt; lastWeekDates = IntStream.rangeClosed(<span class="number">1</span>, <span class="number">7</span>)</span><br><span class="line">            .mapToObj(now::minusDays)</span><br><span class="line">            .collect(Collectors.toList());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//blog的id</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">id</span> <span class="operator">=</span> Long.parseLong(key);</span><br><span class="line">    <span class="keyword">for</span> (LocalDate localDate:lastWeekDates)&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">date</span> <span class="operator">=</span> localDate.format(DateTimeFormatter.ofPattern(<span class="string">&quot;yyyy:MM:dd&quot;</span>));</span><br><span class="line">        UV4Week += stringRedisTemplate.opsForHyperLogLog().size(HyperLogLogPrefix + <span class="string">&quot;:&quot;</span> + id + date);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> UV4Week;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>后续监听器根据这个消息操作redis，但是由于黑马点评这个项目里查询热点文章是直接走数据库，根据likes的升序查询，所有要改很多部分。今天先介绍到这里。</p>
-<blockquote>
-<p>2026.6.11更新</p>
-</blockquote>
-<p>实现了用xxl-job定期统计UV然后发送给管道.</p>
-<p>这里还可以优化为scan命令，如果用key的话会在redis里全局找，开销很大。现在数据量小点还没关系，一旦大起来就效率很低了。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 使用 SCAN 命令获取与给定模式匹配的键</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> pattern 模式，例如 &quot;*HLL_PREFIX*&quot;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 匹配的键集合</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> Set&lt;String&gt; <span class="title function_">scanKeys</span><span class="params">(String pattern)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> stringRedisTemplate.keys(<span class="string">&quot;*&quot;</span> + pattern + <span class="string">&quot;*&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 定时给kafka管道发view的消息，从HyperLogLog里找</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@XxlJob(&quot;demoJobHandler&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">viewSchedule</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="comment">//查找所有文章</span></span><br><span class="line">    Set&lt;String&gt; keys = scanKeys(HLL_PREFIX);</span><br><span class="line">    <span class="keyword">for</span> (String key :keys)&#123;</span><br><span class="line">        <span class="type">Long</span> <span class="variable">size</span> <span class="operator">=</span> stringRedisTemplate.opsForHyperLogLog().size(key);</span><br><span class="line">        <span class="type">UpdateBlogMess</span> <span class="variable">mess</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UpdateBlogMess</span>();</span><br><span class="line">        mess.setUpdateType(UpdateBlogMess.UpdateType.VIEW);</span><br><span class="line">        mess.setAdd(Math.toIntExact(size));</span><br><span class="line">        mess.setId(Long.valueOf(key.split(<span class="string">&quot;:&quot;</span>)[<span class="number">2</span>]));</span><br><span class="line">        log.debug(mess.toString());</span><br><span class="line">        kafkaTemplate.send(KAFKA_STREAM_HOT_BLOG, JSONUtil.toJsonStr(mess));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
     
     
