@@ -366,13 +366,26 @@
 </li>
 </ol>
 <p><strong>原理</strong><br>基于jvm的monitor，在代码块进入前加上monitorenter，退出的时候加上monitorexit，也是可重入的，底层是监视器维护了一个state字段，有锁进来就+1，重入多次就+n，退出-1，同时也会有维护一个队列存放未获取锁的对象，等到释放了就会唤醒（BLOCKED）</p>
+<p>两个队列entryList和waitList:</p>
+<ul>
+<li>entryList是进入锁代码块的所有线程，当锁释放了之后其中的一个线程会给monitor上锁，同时+1（队列里的状态为BLOCKED），注意这里是队列里所有线程都进行竞争，所以synchronized是非公平锁</li>
+<li>waitList是调用了wait方法的线程，等待notify或者notifyAll进行唤醒，唤醒之后还需要重新获得锁，也就是要进入entryList里（状态为WAITING）</li>
+</ul>
+<p><img src="/../img/Java/img_9.png"></p>
 <p><strong>锁升级</strong></p>
 <ul>
 <li>不加锁：</li>
-<li>偏向锁：</li>
-<li>轻度锁：</li>
+<li>偏向锁：当第一个线程进入之后会给其加上偏向锁，使得这个资源偏向。</li>
+<li>轻度锁：使用cas操作</li>
 <li>重度锁：</li>
 </ul>
+<blockquote>
+<p>为什么会有偏向锁这个过程：<br>对于竞争不激烈但是还有加了synchronized关键字的，如果是单线程就没有必要进行锁和上下文切换，偏向锁的初衷正是为了减小上下文切换的开销。如果一个线程反复进入和退出同步块，而没有其他线程争用这把锁，那么这些加锁解锁的开销是完全多余的。</p>
+</blockquote>
+<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>抽象队列同步器（AbstractQueuedSynchronizer）提供了一种同步机制，被应用于Reentrantlock，semaphore，cyclicBarrier等排他和共享锁结构中。</p>
+<p>在说AQS之前先要讨论一下CHL锁，因为AQS是基于CHL的。CHL锁是一个队列结构，头节点是一个空节点，当线程进入后会对前驱节点的资源释放状态做cas，例如第一个线程进入之后就对表头节点的锁资源cas，获取到了就改变自己的值为false，后续另外一个线程进入之后就会轮询上一个节点的状态，拉成一个队列。</p>
+<p>这种结构的好处是资源状态分布在每个节点上，但同时也增大了cpu的开销，因为每一个节点都需要轮询。</p>
+<p>AQS正式基于这种思想，首先他把CHL的虚拟队列改造成了显式队列，保存了前驱和后继（为了满足一些对于公平锁和非公平锁的要求，使用了双向链表），全局维护一个state，当获取到锁之后state+1，可以实现锁重入。</p>
 
     
     
