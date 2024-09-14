@@ -237,7 +237,22 @@
 
   <div class="post-content">
     
-    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2>
+    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2><p>循环依赖问题指的是在依赖注入过程中两个类互相依赖，这会导致实例化的过程混乱，因为一个类实例化需要另一个类已经实例化了，一般有三种循环依赖问题：</p>
+<ol>
+<li>构造函数依赖循环，这个解决不了</li>
+<li>setter的依赖循环，其中bean是多例（prototype）</li>
+<li>setter的依赖循环，其中bean是单例。</li>
+</ol>
+<p>Spring仅仅对第三种进行了解决。第一种在new的时候就进行不下去了，无法生成对象；第二种由于无穷无尽的循环会生成很多的bean，最后导致oom。</p>
+<p><strong>如何解决</strong></p>
+<p>spring用一个三级缓存解决了，总的来说就是在一个类没有初始化的时候提前暴露bean存到三级缓存中，然后进行这个类初始化完成之后就放回第一层缓存中。</p>
+<p>创建 BeanA： Spring 首先将 BeanA 的实例存储在三级缓存中。 在创建 BeanA 的过程中，发现需要注入 BeanB。</p>
+<p>创建 BeanB： Spring 将 BeanB 的实例存储在三级缓存中（因为 BeanB 也需要 BeanA）。 在创建 BeanB 的过程中，Spring 发现 BeanA 还未完全初始化，所以从三级缓存中获取 BeanA 的代理对象。</p>
+<p>注入依赖： 当 BeanA 创建完成后，Spring 会将 BeanB 注入到 BeanA 的字段中。 同样地，BeanA 会注入到 BeanB 的字段中，完成依赖注入。</p>
+<blockquote>
+<p>在三级缓存这一块，主要记一下 Spring 是如何支持循环依赖的即可，也就是如果发生循环依赖的话，就去 三级缓存 singletonFactories 中拿到三级缓存中存储的 ObjectFactory 并调用它的 getObject() 方法来获取这个循环依赖对象的前期暴露对象（虽然还没初始化完成，但是可以拿到该对象在堆中的存储地址了），并且将这个前期暴露对象放到二级缓存中，这样在循环依赖时，就不会重复初始化了！</p>
+</blockquote>
+
     
   </div>
 
