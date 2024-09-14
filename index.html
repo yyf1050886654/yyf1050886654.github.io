@@ -212,6 +212,182 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/14/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">分布式面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-14
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/09/14/Spring%E9%9D%A2%E8%AF%95%E7%AF%87/">Spring面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-14
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2>
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/09/14/Java%E5%9F%BA%E7%A1%80%E7%AF%87/">Java基础篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-14
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="Java的异常体系"><a href="#Java的异常体系" class="headerlink" title="Java的异常体系"></a>Java的异常体系</h2><p>分为异常Exception和错误Error，异常是可以用try&#x2F;catch来解决的，但是error就很严重了，会直接导致线程终止。他们都继承自ThrowAble接口。</p>
+<p>其中exception分为可以检查到的异常（checked exception），表示能够在编译阶段就发现并且抛出错误的异常，比如sqlexception或者ioexception；编译时无法检测出的异常（unchecked exception），指的就是运行时异常（runtimeException）例如数组越界，空指针这种。 runtimeException都是无法检测出的异常，其余的都是可以在编译阶段检测出来的。</p>
+<p>error是比较严重的错误，例如oom或者stackoverflow，还有虚拟机内部的一些问题，这些error会导致线程直接终止，<del>并不能用try&#x2F;catch</del></p>
+<blockquote>
+<p>gpt了一下，其实error也可以用catch，因为都是继承自throwable接口，throwable满足这个语法糖。但是出现了error就算catch了程序还是出现了严重错误，捕获这些问题并不能修复，继续运行可能导致更加严重的问题。</p>
+</blockquote>
+<h2 id="finally方法块"><a href="#finally方法块" class="headerlink" title="finally方法块"></a>finally方法块</h2><ul>
+<li>finally并不一定会执行：如果出现了电源掉电或者cpu卡死就不会（<del>这有点幽默了</del>）</li>
+<li>不建议在finally里面写返回：try&#x2F;catch&#x2F;finally方法块的逻辑是，即使在try中已经返回了，也会执行finally里面的语句，try的返回值保存起来，同时如果finally里面也有return，就会覆盖try的返回值。</li>
+</ul>
+<h2 id="序列化和反序列化"><a href="#序列化和反序列化" class="headerlink" title="序列化和反序列化"></a>序列化和反序列化</h2><p>Java数据的传输是通过字节流的，也就是一个byte[]数组，如何将Java转化为这个数组就是序列化要干的事情，原生提供的序列化可以提供实现serialization接口并且指定serialVersionUID完成序列化，这个serialVersionUID会为反序列化提供一个校验，如果id与当前要强制类型转换的类是一样的，那就可以转换，否则就会抛出异常。</p>
+<p>比如下面这个代码，文件模拟的是传输的数据流。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">1L</span>; <span class="comment">// 显式定义版本号</span></span><br><span class="line">    String name;</span><br><span class="line">    <span class="type">int</span> age;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Person</span><span class="params">(String name, <span class="type">int</span> age)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 序列化</span></span><br><span class="line">            <span class="type">ObjectOutputStream</span> <span class="variable">out</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(<span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="string">&quot;person.ser&quot;</span>));</span><br><span class="line">            <span class="type">Person</span> <span class="variable">person</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Person</span>(<span class="string">&quot;Alice&quot;</span>, <span class="number">30</span>);</span><br><span class="line">            out.writeObject(person);</span><br><span class="line">            out.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 模拟反序列化后类发生变化</span></span><br><span class="line">            <span class="comment">// 修改 serialVersionUID 为 2L，模拟版本不匹配</span></span><br><span class="line">            <span class="comment">// private static final long serialVersionUID = 2L;</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">// 反序列化</span></span><br><span class="line">            <span class="type">ObjectInputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(<span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;person.ser&quot;</span>));</span><br><span class="line">            <span class="type">Person</span> <span class="variable">deserializedPerson</span> <span class="operator">=</span> (Person) in.readObject();  <span class="comment">// 读取对象</span></span><br><span class="line">            in.close();</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">&quot;Deserialized Person: &quot;</span> + deserializedPerson.name + <span class="string">&quot;, &quot;</span> + deserializedPerson.age);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();  <span class="comment">// 如果 serialVersionUID 不匹配，这里会抛出 InvalidClassException</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意几点：</p>
+<ol>
+<li>序列化转化的是对象，也就是说static修饰的字段是不会被序列化的，反正最终反序列化变成了一个对象之后类的静态属性又不会有变化，</li>
+<li>不想序列化的变量用transient修饰，例如下面这个代码</li>
+</ol>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Example</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">1L</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="type">int</span> <span class="variable">staticField</span> <span class="operator">=</span> <span class="number">10</span>; <span class="comment">// static 字段</span></span><br><span class="line">    <span class="keyword">transient</span> <span class="type">int</span> <span class="variable">transientField</span> <span class="operator">=</span> <span class="number">20</span>; <span class="comment">// transient 字段</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">instanceField</span> <span class="operator">=</span> <span class="number">30</span>; <span class="comment">// 实例字段</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Example</span> <span class="variable">example</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Example</span>();</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 序列化对象</span></span><br><span class="line">            <span class="type">ObjectOutputStream</span> <span class="variable">out</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(<span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="string">&quot;example.ser&quot;</span>));</span><br><span class="line">            out.writeObject(example);</span><br><span class="line">            out.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 修改 staticField 值以查看序列化和反序列化的影响</span></span><br><span class="line">            Example.staticField = <span class="number">100</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 反序列化对象</span></span><br><span class="line">            <span class="type">ObjectInputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(<span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;example.ser&quot;</span>));</span><br><span class="line">            <span class="type">Example</span> <span class="variable">deserializedExample</span> <span class="operator">=</span> (Example) in.readObject();</span><br><span class="line">            in.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 打印结果</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Deserialized Example:&quot;</span>);</span><br><span class="line">            System.out.println(<span class="string">&quot;Static Field: &quot;</span> + Example.staticField); <span class="comment">// staticField 仍然是 100</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Instance Field: &quot;</span> + deserializedExample.instanceField); <span class="comment">// instanceField 是 30</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Transient Field: &quot;</span> + deserializedExample.transientField); <span class="comment">// transientField 是 0</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<p>但是Java默认的这个序列化并不好，至少我在开发的时候都用的是Json，为什么呢？</p>
+<ol>
+<li>不支持跨平台，java序列化得到的字节流只能java反序列化出来，json不一样，java转化为的json可以用python再反序列化回来</li>
+<li>性能较差，转化后的字节数组大</li>
+<li>安全性</li>
+</ol>
+<h2 id="String-StringBuffer-StringBuilder"><a href="#String-StringBuffer-StringBuilder" class="headerlink" title="String,StringBuffer,StringBuilder"></a>String,StringBuffer,StringBuilder</h2><ul>
+<li>string是被final修饰的，同时内部的实现数组（char[]或者byte[]）是private，无法通过外界修改。因此字符串的拼接是需要新生成对象的。</li>
+<li>stringbuffer：方法由synchronized修饰，是线程安全的，其拼接字符串不会创建一个新的stringbuffer类，效率比string不知道高到哪里去了</li>
+<li>stringbuilder：在大部分情况下string的操作都不太需要线程同步，这个类就取消了同步操作，效率比上一个高。</li>
+</ul>
+<p><strong>字符串的拼接</strong></p>
+<p>java是没有运算符重载的，但是唯一为了string的拼接修改了+和+&#x3D;，使得string可以通过+和+&#x3D;操作</p>
+<p>查看字节码我们可以知道，其实string的+和+&#x3D;是基于stringbuilder调用append方法，最后再使用tostring赋值给String，但是每次进行这样一个拼接操作就需要new一个stringbuilder，对于循环来说，这样的开销就非常大了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String[] arr = &#123;<span class="string">&quot;he&quot;</span>, <span class="string">&quot;llo&quot;</span>, <span class="string">&quot;world&quot;</span>&#125;;</span><br><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; arr.length; i++) &#123;</span><br><span class="line">    s += arr[i];</span><br><span class="line">&#125;</span><br><span class="line">System.out.println(s);</span><br></pre></td></tr></table></figure>
+
+<p>如果直接使用append来拼接，就不会有这个问题了。所以在大量字符串操作的时候用buffer或者builder比较好。</p>
+<h2 id="字符串常量池和String对象"><a href="#字符串常量池和String对象" class="headerlink" title="字符串常量池和String对象"></a>字符串常量池和String对象</h2><p><strong>字符串常量池</strong><br>首先做个区分，java程序在编译成了class文件之后会有一个常量池，也叫做静态常量池。当在被类加载器加载进内存时会将其分为字符串常量池和运行时常量池。</p>
+<ul>
+<li>运行时常量池是一直跟着方法区的，方法区在哪里它在哪里。在jdk1.7的时候方法区叫做永久代，放在运行时数据区，也就是和堆栈在一起的区域，为了减少oom的可能和内存的压力，在jdk1.8以后被搬到了直接内存中，由操作系统管理不由jvm虚拟机管理，从而减少了jvm的内存压力。但是虚拟机参数可以配置元空间的大小，并不是可以无限扩大的，也会有oom：metaspace的报错。说回运行时常量池，包含了class文件里静态常量池里的字面量和符号引用，但唯独没有字符串。<strong>也就是说除字符串以外的字面量比如整形和浮点，符号引用的类与接口全限定名，方法和字段的名称和描述符，都还在运行时常量池；维度字符串排除出去了</strong></li>
+<li>字符串常量池：在jdk1.6的时候是没有与运行时常量池分开来的，也是跟着方法区的，到了1.7被分到堆内存去了。原因是本来方法区进行垃圾回收的机会就很少，除了fullgc基本到不了这里，字符串又是一个很容易产生大量对象的地方。所以就放到heap中了，可以进行垃圾回收，这里创建出的也被称之为字符串对象。实际上String的引用都是在字符串常量池里的地址。</li>
+</ul>
+<p><strong>new String(“abc”)的问题</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>我们假设前面都没有关于abc这个字符串的创建，这个操作会创建两个对象：</p>
+<ul>
+<li>首先会在字符串常量池上创建abc这个对象</li>
+<li>由于new了一个String对象，会在堆上创建一个新的对象</li>
+</ul>
+<p>但是如果前面有String s2&#x3D;”abc”，也就是前面已经有在字符串常量池里面创建对象了，前面这个new的代码只会创建一个对象，即堆内存上的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">s2</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"></span><br><span class="line">System.out.println(s1 == s2);  <span class="comment">// true，因为 s1 和 s2 都引用常量池中的同一个对象</span></span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;              <span class="comment">// 常量池中的 &quot;abc&quot; 对象</span></span><br><span class="line"><span class="type">String</span> <span class="variable">s2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);  <span class="comment">// 堆中的新对象</span></span><br><span class="line"></span><br><span class="line">System.out.println(s1 == s2);   <span class="comment">// false，s1 和 s2 是不同的对象，s1 是常量池中的，s2 是堆中的</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>那我在new了一个String以后，我怎么找到字符串常量池里面的对象？<br>intern可以直接找，返回的是在字符串常量池里的地址，这样就保证了字符串内容是一致的情况下，地址也完全一样，在某些要用锁的场合下，使用intern可以保证锁的对象是唯一的。<br>例如在黑马点评这个锁代码块里面：</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span>  Result <span class="title function_">createVoucherOrder</span><span class="params">(Long voucherId)</span> &#123;</span><br><span class="line">	<span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">	<span class="keyword">synchronized</span>(userId.toString().intern())&#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>这里面每一个id的toString都会创建一个新的对象，为了保证锁对象的唯一性，需要用intern直接取出常量池的地址</p>
+</blockquote>
+<p>为什么要有这种设计？字符串常量池本身就是为了可重复才扩展的，有的时候不想要与字符串的常量池共享，就需要创建一个新的字符串。</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/10/redis%E6%80%BB%E7%BB%93/">redis总结</a>
       
     </h1>
@@ -386,6 +562,7 @@
 <p>在说AQS之前先要讨论一下CHL锁，因为AQS是基于CHL的。CHL锁是一个队列结构，头节点是一个空节点，当线程进入后会对前驱节点的资源释放状态做cas，例如第一个线程进入之后就对表头节点的锁资源cas，获取到了就改变自己的值为false，后续另外一个线程进入之后就会轮询上一个节点的状态，拉成一个队列。</p>
 <p>这种结构的好处是资源状态分布在每个节点上，但同时也增大了cpu的开销，因为每一个节点都需要轮询。</p>
 <p>AQS正式基于这种思想，首先他把CHL的虚拟队列改造成了显式队列，保存了前驱和后继（为了满足一些对于公平锁和非公平锁的要求，使用了双向链表），全局维护一个state，当获取到锁之后state+1，可以实现锁重入。</p>
+<h2 id="reentrantLock"><a href="#reentrantLock" class="headerlink" title="reentrantLock"></a>reentrantLock</h2><p>reentrantLock基于aqs，实现可重入，可中断，可以设置公平锁，可以有多个条件设置，可以设置超时时间。</p>
 
     
     
@@ -956,372 +1133,6 @@
 
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">FeignConfig</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 自定义解析器</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> msgConverters 信息转换</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> customizers   自定义参数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 解析器</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> Decoder <span class="title function_">decoder</span><span class="params">(ObjectFactory&lt;HttpMessageConverters&gt; msgConverters, ObjectProvider&lt;HttpMessageConverterCustomizer&gt; customizers)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">OptionalDecoder</span>((<span class="keyword">new</span> <span class="title class_">ResponseEntityDecoder</span>(<span class="keyword">new</span> <span class="title class_">FeignCustomDataDecoder</span>(<span class="keyword">new</span> <span class="title class_">SpringDecoder</span>(msgConverters, customizers)))));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>&#x2F;&#x2F;TODO: 这一块需要对了解openfeign的结构有一定的了解，后续将对这一块进行补充</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/">新坑-代驾微服务项目</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-07-19
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>前言：一直都想做一个有点高级但是又重复度低的项目，正好让我遇上了这个尚硅谷刚发的《乐尚代驾》，做了一下感觉还是有学到很多东西的，不管以后放不放在简历里面，算是先开了一个小头，弄懂再说。</p>
-</blockquote>
-<h1 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h1><p>该项目是模仿滴滴的一个代驾系统，前端是基于uniapp的微信小程序，分为三个端口：客户端，司机端和管理系统。业务很纯粹，就是乘客基于当前位置呼叫周围正在接单的司机，司机接单后对车辆的基本情况进行上传，然后就可以开始代驾了，到达终点后计算金额并用微信支付；此外还涉及到优惠券业务，也就是传统的那套秒杀逻辑，分布式锁+lua脚本那些。</p>
-<h2 id="技术栈"><a href="#技术栈" class="headerlink" title="技术栈"></a>技术栈</h2><ul>
-<li>SpringCloudAlibaba：包括nacos，openfeign，gateway这些，其实后续还可以做一些熔断和限流操作。</li>
-<li>redis：项目中主要是用到了geo数据结构，在司机开启抢单的时候将地理坐标上传到redis；此外也用到了redisson实现分布式锁和延迟队列（这里的延迟队列就是超时15分钟自动取消，其实也可以用rabbitmq实现）</li>
-<li>xxl-job：项目最核心的业务是通过xxl-job实现的，每次下单客户端都会创建一个新的任务调度，这个任务可以定时寻找周围司机。</li>
-<li>mongodb：在代驾订单进行过程中的地理坐标不好放在mysql里面，用mongodb存储地理坐标，考虑了其在实时性方面的优化</li>
-<li>rabbitmq：延迟队列，业务解耦和流量削峰</li>
-<li>Drools：第一次听说，规则引擎，就是把一些业务计算逻辑抽取出来，不硬编码在程序中，项目中用规则引擎定义了路程和费用的计算，还有最后算金额也用到了规则引擎，它有自己的一套语法。</li>
-<li>seata：分布式事务，在分布式系统中一个事务的回调是无法用@Transactional进行回调的，这里就用了阿里的这个分布式事务中间件完成，目前还没有太了解这个，只知道导入包只会加一个注释就能完成功能。</li>
-<li>minio：存储上传照片和音频文件</li>
-</ul>
-<h2 id="项目亮点"><a href="#项目亮点" class="headerlink" title="项目亮点"></a>项目亮点</h2><ul>
-<li>使用<strong>aop+注解+threadlocal</strong>的方式完成登录状态保存，微信小程序登录，做到了对业务代码的零入侵。</li>
-<li>在下单后用<strong>xxl-job</strong>进行任务调度，定时搜索周围司机，并基于<strong>redis的geo</strong>数据结构，提高附近司机的搜索速度，完成司乘对接。</li>
-<li>为了减小mysql访问压力使用<strong>mongodb</strong>记录沿途地理坐标，并使用基于<strong>rabbitmq</strong>的延迟队列将多次写请求合并为一次写入，再次减小了数据库操作。</li>
-<li>使用<strong>策略模式和规则引擎Drools</strong>，定义了业务执行过程中的多种流程，例如代驾费用计算，司机积分计算以及优惠卷最大优惠策略计算。</li>
-<li>使用<strong>Redisson分布式锁</strong>解决了高并发场景下的司机抢单和优惠卷超发问题，使用Redisson提供的<strong>延时队列</strong>完成了订单超出时间限制后自动取消。</li>
-<li>使用<strong>CompletableFuture</strong>完成了订单结束提交过程的异步编排，提高了响应效率，并使用<strong>seata</strong>来保证分布式事务的执行。</li>
-</ul>
-<h2 id="可以有增量的地方"><a href="#可以有增量的地方" class="headerlink" title="可以有增量的地方"></a>可以有增量的地方</h2><ul>
-<li>数据库分库分表，ShardingSphere可以尝试一下</li>
-<li>二级缓存，本地caffeine和redis二级缓存</li>
-<li>做限流和熔断，以及redis集群和哨兵</li>
-<li>点赞（set），评论，排行榜（zset），签到（bitmap）和UV统计（hyperloglog）都是可以用redis解决的</li>
-<li>kafka-stream还是没能找到应用的场景，</li>
-<li>binlog实现与mysql的持久化</li>
-<li>优惠卷兑换算法和优惠卷的最大优惠计算</li>
-</ul>
-<h2 id="业务流程"><a href="#业务流程" class="headerlink" title="业务流程"></a>业务流程</h2><h3 id="乘客端："><a href="#乘客端：" class="headerlink" title="乘客端："></a>乘客端：</h3><blockquote>
-<p>登录–选择代驾地址–呼叫代驾–等待接单–15分钟没有司机接单自动取消–15内有司机接单，司乘同显–账单支付</p>
-</blockquote>
-<ol>
-<li>登录：前端首先调用wx.login()，返回一串字符串，然后后端拿到这个去请求微信服务器得到当前登录的openid，也就是微信的唯一id（可以理解为wx.login()请求发出之后，wx的缓存中就保存了这个键值对，键是这个字符串，值是当前用户的结构，必须是连贯的动作，可能设置了失效时间，这也是为什么我后面拿postman同样请求得不到的原因）</li>
-<li>选择代驾地址：百度地图的api返回距离和时间，这个参数给后端规则引擎计算出费用</li>
-<li>等待接单：xxl-job新增一个订单任务，每隔一分钟根据redis的geo搜索周围的汽车，然后在附近开启接单的汽车的队列里面（通过redis的list实现）添加这个订单。</li>
-<li>15分钟没有司机接单自动取消：通过redisson实现或者rabbitmq的延迟队列实现</li>
-<li>15内有司机接单，司乘同显：当司机抢到了该订单后，订单状态改变，进入司乘同显模式，此后基本上没有乘客端什么事情了，前端会一直轮询订单当前状态，并根据司机端存在mongodb中的数据获取车的位置。</li>
-<li>账单支付：微信支付</li>
-</ol>
-<h3 id="司机端："><a href="#司机端：" class="headerlink" title="司机端："></a>司机端：</h3><blockquote>
-<p>登录–认证–开始接单–抢单–开始代驾–生成账单，发送乘客</p>
-</blockquote>
-<ol>
-<li>登录：逻辑类似</li>
-<li>认证：司机需要上传身份证驾驶证人脸等，通过腾讯云，我懒得注册这部分就跳过了</li>
-<li>开始接单：开始接单后会把当前的坐标上传到redis，然后每隔5s询问一次当前队列状态，当xxl-job把订单放在了该司机的队列里面，前端就会有显示可以抢单</li>
-<li>抢单：分布式锁，无需多言，抢单之后将订单状态改变，这样乘客端轮询这个订单的时候就会发现有司机已经接单了。</li>
-<li>到达乘客指定地点，这里会有一个刷单的校验，也就是说在距离地点1km之内才能有效</li>
-<li>上传车辆状况和车牌号：拍照上传minio</li>
-<li>开始代驾：每隔几秒钟将当前的坐标上传到mongodb中，实现与乘客端同步显示。</li>
-<li>生成账单：根据规则引擎分账，然后推送微信支付给乘客。</li>
-</ol>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/">论文精读-DOMINANT</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-07-11
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <!-- TOC -->
-<ul>
-<li><a href="#deep-anomaly-detection-on-attributed-networks">Deep Anomaly Detection on Attributed Networks</a><ul>
-<li><a href="#%E5%9B%BE%E5%8D%B7%E7%A7%AF%E7%A5%9E%E7%BB%8F%E7%BD%91%E7%BB%9C">图卷积神经网络</a></li>
-<li><a href="#%E6%A8%A1%E5%9E%8B%E6%9E%B6%E6%9E%84">模型架构</a></li>
-<li><a href="#%E5%B8%A6%E5%B8%A6%E9%94%90%E8%AF%84">带带锐评</a><!-- TOC -->
-<blockquote>
-<p>开发项目虽好，但是还是要毕业的嘛，正好今天做完了组会汇报ppt，趁热打铁写一篇读后感。</p>
-<p><strong>2024-7-11，我研究生生涯的第一篇论文，我会记住你的。</strong></p>
-</blockquote>
-</li>
-</ul>
-</li>
-</ul>
-<h1 id="Deep-Anomaly-Detection-on-Attributed-Networks"><a href="#Deep-Anomaly-Detection-on-Attributed-Networks" class="headerlink" title="Deep Anomaly Detection on Attributed Networks"></a>Deep Anomaly Detection on Attributed Networks</h1><blockquote>
-<p>在说明这篇文章之前，首先说一下图卷积神经网络（GSN）</p>
-</blockquote>
-<h2 id="图卷积神经网络"><a href="#图卷积神经网络" class="headerlink" title="图卷积神经网络"></a>图卷积神经网络</h2><p>&nbsp;&nbsp;图是一种数据结构，相比于离散的点，更具有特征的是边带来的结构上的关系。普通的卷积神经网络处理的主要是结构性数据，类似图片或者nlp任务，这一类任务的输入数据是有迹可循的，结构不会发生变化，图片可以拆为像素进行卷积核操作，nlp可以将词进行词嵌入。</p>
-<p>&nbsp;&nbsp;而图不一样，图的拓扑结构是无迹可寻的，这也意味着普通的cnn无法满足在图上的搜索，但是我们可以参考cnn的公式$Y&#x3D;XW+B$，结合图的规律探索出图的卷积神经网络。</p>
-<p>&nbsp;&nbsp;首先我们定义一个图，$\mathcal{G}&#x3D;(\mathcal{V},\epsilon,X)$，（1）节点集合$\mathcal{V} &#x3D; \mathcal{v_1},\mathcal{v_2},\ldots,\mathcal{v_n}$，其中$\left|\mathcal{V}\right|&#x3D;\mathcal{n}$ （2）边集$\epsilon$，其中$\left|\epsilon\right|&#x3D;\mathcal{m}$（3）节点属性$\mathrm{X}\in\Bbb{R}^{n \times d}$,其中第i行向量$\mathrm{x_i}\in\Bbb{R}^{d}(i&#x3D;1,\ldots,n)$表示的是第i个节点的属性表示，d是属性的数量。举例如下：</p>
-<div style="text-align: center;">
-  <img src="../img/oodPaper/img_1.png" alt="" />
-</div>
-
-<p>&nbsp;&nbsp;这里举例是有权图，如果是无权图那就都为0或者1，这张图的邻接矩阵A为：</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>v1</th>
-<th>v2</th>
-<th>v3</th>
-<th>v4</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>v1</td>
-<td>0</td>
-<td>2</td>
-<td>5</td>
-<td>6</td>
-</tr>
-<tr>
-<td>v2</td>
-<td>2</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>v3</td>
-<td>5</td>
-<td>0</td>
-<td>0</td>
-<td>3</td>
-</tr>
-<tr>
-<td>v4</td>
-<td>6</td>
-<td>0</td>
-<td>3</td>
-<td>0</td>
-</tr>
-</tbody></table>
-<p>&nbsp;&nbsp;节点属性H，比如这四个点代表一个人，属性就可能是身高体重这类，举例如下：</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>姓名</th>
-<th>性别</th>
-<th>身高</th>
-<th>体重</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>H1</td>
-<td>239</td>
-<td>2</td>
-<td>175</td>
-<td>120</td>
-</tr>
-<tr>
-<td>H2</td>
-<td>542</td>
-<td>1</td>
-<td>168</td>
-<td>100</td>
-</tr>
-<tr>
-<td>H3</td>
-<td>937</td>
-<td>2</td>
-<td>188</td>
-<td>150</td>
-</tr>
-<tr>
-<td>H4</td>
-<td>365</td>
-<td>1</td>
-<td>163</td>
-<td>90</td>
-</tr>
-</tbody></table>
-<p>&nbsp;&nbsp;如果我们取矩阵中的一行A1点乘H，即有：<br>$$<br>A_1 \cdot H&#x3D;(0 \times H_1 +2 \times H_2 +5 \times H_3 + 6 \times H_4)<br>$$</p>
-<p>&nbsp;&nbsp;可以看出，这个结果是V1的邻居节点信号的加权求和，其中权重为关系强弱数值，由A提供，但是这个权重并没有进行归一化，也就是说，如果某个节点的邻居顶点越多，关系数值越强，这个结果就越大，为了避免这种情况，我们进行了归一化操作，即，让权重除以该节点所有边的关系数值的和，上这些边的关系数值成为真正意义上和为1的“权值”。那么我们所需要的数学过程即让A的每一行都除以该行的和。这是我们引入一个新的矩阵D，这个矩阵为对角矩阵，每行对角线上的元素为A的这行的元素和，也就是该顶点的度。</p>
-<p>&nbsp;&nbsp;D矩阵：</p>
-<table>
-<thead>
-<tr>
-<th><!-- --></th>
-<th><!-- --></th>
-<th><!-- --></th>
-<th><!-- --></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>13</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>0</td>
-<td>2</td>
-<td>0</td>
-<td>0</td>
-</tr>
-<tr>
-<td>0</td>
-<td>0</td>
-<td>8</td>
-<td>0</td>
-</tr>
-<tr>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>9</td>
-</tr>
-</tbody></table>
-<p>&nbsp;&nbsp;接着执行$D^{-1}A$操作，即把A的每个关系数值都归一化了，变为权重，最后与H相乘，归一化后的表达式为：</p>
-<p>$$<br>D_{1}^{-1}A_1 \cdot H&#x3D;(1&#x2F;13) \times (0 \times H_1 +2 \times H_2 +5 \times H_3 + 6 \times H_4)<br>$$</p>
-<p>&nbsp;&nbsp;所有行都进行同样的操作，$D^{-1}A \times\ H$，则每一行的量纲都一样了，不会出现某一行计算结果特别夸张。此时我们来考虑这个结果是什么，它相当于是某一个顶点周围所有顶点的信号按关系（权重）相加（聚合），那么这个结果就能表征出周围节点对自己的影响了，同时由于是通过矩阵进行运算，数据结构变得很规整，可以使用计算机来运算。</p>
-<blockquote>
-<p>到这里为止有两个问题：</p>
-<ul>
-<li>首先是自身的因素没有考虑，就如上面的例子，没有考虑到$H_1$的影响，也就是自己，这是很不合理的，在传播过程中需要有“我”的参与，而不是都是客体。</li>
-<li>其次是没有考虑到邻居的影响，假如我的朋友只有一个大佬，那么我和大佬的关系网络如果用平均算法的话就等同了，所以直接把B的特征赋给A肯定是不合适的。</li>
-</ul>
-</blockquote>
-<div style="text-align: center;">
-  <img src="../img/oodPaper/img_2.png" alt="" />
-</div>
-
-<p><strong>针对第一个问题：</strong><br>把“我”的信息加进去<br>$$\tilde{A}&#x3D;A+a \cdot I$$<br>这样A就不再是一个单位阵，在进行矩阵运算的时候就能考虑到自己的因素，因此D也要随之改变，D原本是表示出度，此时要变为出度+a<br>$$\tilde{D}&#x3D;D+a \cdot I$$</p>
-<p><strong>针对第二个问题：</strong><br>关系数值我们一般是通过两顶点信号之间的欧氏距离得到的，这只跟这两个顶点有关系，与其二阶邻居的信号是无关的，但是显然，邻居的邻居对我影响应该也是有的，我们怎样才能把二阶邻居的影响考虑进来呢？</p>
-<p>比如，我叫V2，是个自闭症患者，班里一共四个人，我们自己的信号为社交能力值，我只认识V1，认识V1也不是因为我和他聊得来，纯纯是因为V1是个社牛， V1谁都认识。在这个例子中，如果考虑V2经过一次传播后形成的新V2，是通过$\tilde{D_2^{-1}}\tilde{A_2}H$计算的，结果为$\tilde{D_2^{-1}}\tilde{A_2}H$&#x3D;(1&#x2F;3)×(2×H1 + 1×H2 + 0×H3 + 0×H4) &#x3D;2&#x2F;3 H1 + 1&#x2F;3H2 ,可以看出，此时新的V2的信号绝大部分来源于原来V1的信号，这当然不行，怎么经过一次传播后，把我一个社恐变成了社牛，这显然传播仍然存在问题，我希望能把二阶邻居和一阶邻居都考虑进去，二阶邻居和一阶邻居数量差别较大的时候，我希望能衰减这种影响，尽可能让自己的信号和别人的信号尽可能的分开来，那么就容易得到两种思路了，一是传播中我尽可能保留自己的权重，削减别人的权重，即$\tilde{A}$对做处理，第二是让“我”的信号根据传播产生某种线性变化，即随着二阶邻居和一阶邻居数量差别越大我信号越小，这样也可以把我和别人区分出来，也可以有我自己单独的特征，就是信号特别小嘛。GCN中是按照第二个思路来的，在数学上新的传播过程表示为：</p>
-<p>$$<br>\tilde{D^{-\frac{1}{2}}}\tilde{A}\tilde{D^{-\frac{1}{2}}}H<br>$$<br>为什么是开根号，因为在衰减的时候还是要尽量满足归一化。可以看作对$\tilde{A_{i,j}}$做了如下操作：</p>
-<p>$$<br>\tilde{A_{ij}} &#x3D; \frac{A_{ij}}{\sqrt{D_{ii}} \sqrt{D_{jj}}}<br>$$</p>
-<p>这样，当一阶邻居顶点j的度（边数量，也就是它的一阶邻居数量）很大，那么传播一次后信号就会变得很小，比如对V2来讲：</p>
-<p>$$<br>\tilde{D_{22}^{-\frac{1}{2}}}\tilde{A_2}\tilde{D_{11}^{-\frac{1}{2}}}H&#x3D;\frac{1}{\sqrt{3} \sqrt{14}}(2H_1+H_2)<br>$$</p>
-<p>最后再通过一个激活函数，以及一个阈值b，就可以类似cnn得到一个前向传播公式：</p>
-<p>$$<br>H^{l+1}&#x3D;\sigma (\tilde{D^{-\frac{1}{2}}}\tilde{A}\tilde{D^{-\frac{1}{2}}}H^{l}W^{l}+b^{l})<br>$$</p>
-<p>其中$\tilde{D^{-\frac{1}{2}}}\tilde{A}\tilde{D^{-\frac{1}{2}}}$是固定不变的，其余的工作就是构建全连接层，损失函数，反向传播，更新参数。</p>
-<h2 id="模型架构"><a href="#模型架构" class="headerlink" title="模型架构"></a>模型架构</h2><p>前面铺垫了这么多，那么这个模型是什么呢，说白了就是类似transformer的编码器解码器，基于重构的方法。</p>
-<div style="text-align: center;">
-  <img src="../img/oodPaper/img_3.png" alt="" />
-</div>
-
-<ul>
-<li>编码器：将输入的属性矩阵通过前面所述的图卷积神经网络提取特征，得到了一个杂糅属性和结构关系的低维向量表示。</li>
-<li>解码器：根据这个得到的中间表示<strong>重构</strong>，结构通过结构解码器进行重构，属性通过属性编码器进行重构。然后计算重构结果与实际结果，完成损失函数最小化。原文这里的结构解码器非常简单暴力，就用中间低维特征提取的内积完成，$\sigma(Z*Z^{T})$，属性用另一层GSN进行映射。</li>
-</ul>
-<p><strong>那么是怎么判断出异常的？</strong></p>
-<p>通过以上步骤重建拓扑网络结构，将结构和属性的重构误差共同学习，可以表示为：<br>$$<br>\mathcal{L}&#x3D;(1-\alpha)R_S+\alpha R_A&#x3D;(1-\alpha){\Vert A-\hat{A} \Vert}_F^2+\alpha {\Vert X-\hat{X} \Vert}_F^2<br>$$<br>式中，是用来平衡结构重建和属性重建影响的一个重要参数。</p>
-<p>通过最小化目标函数，自编码器可以基于编码的潜在表示迭代地近似输入的属性网络，直至收敛。最后，使用两项重构误差之和来评估节点的异常性。 也就是，得分越高的实例越是被认为异常。再由该分数来计算属性网络的异常排名</p>
-<h2 id="带带锐评"><a href="#带带锐评" class="headerlink" title="带带锐评"></a>带带锐评</h2><ul>
-<li>优点：结构新颖，基于图卷积神经网络，特征提取考虑了结构和点属性两方面特征，更能检测出异常，对稀疏图数据的处理有优势。</li>
-<li>缺点：重构本身具有一定的局限性，只适用于异常数据占比比较小的数据集进行训练，否则通过重构方法后的误差较大，还有前文所说的解码器构造有一点暴力了，因为Z不止有结构还有属性，直接内积会有干扰，改进措施应该可以剔除这部分因素进行单纯的结构重构。</li>
-</ul>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/">redis项目-elasticsearch与mongodb</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-06-11
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>其实这个搜索的功能反倒跟redis没啥关系了，所以我也没归类在redis里。基于es的搜索也不无非是增删改查，先简单说一下项目里用到的这两个功能和api。后续我会详细学习</p>
-</blockquote>
-<h2 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h2><p>es是一个搜索器，具体怎么搜的我不知道（笑）。目前的理解是在新增blog的时候同时把这个对象给es服务器，它通过索引的方式进行缓存。后续查找的时候就可以根据field，也就是字段名来指定匹配位置。</p>
-<p>比如这里要搜索文章标题的关键字，就用title；如果是内容的，就用content。经过我的实验发现黑马给的分词器只能检索中文，我想要搜素字母“s”，都搜不到。</p>
-<p>项目里的应用也比较简单，就是上述的关键字搜索，然后返回前端的时候要标红，这个步骤是通过在前后加font标签完成的。</p>
-<p>首先是配置：</p>
-<p>这里用到的对象是RestHighLevelClient，我们只需要配置端口号和ip就可以了，这个客户端会使用es的restful端口进行增删改查。</p>
-<p>我们对其的增删改查操作就跟redistemplate一样的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ElasticSearchConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.host&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String host;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.port&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> Integer port;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     * 将该对象交给Spring容器去管理</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RestHighLevelClient <span class="title function_">restHighLevelClient</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RestHighLevelClient</span>(</span><br><span class="line">                RestClient.builder(</span><br><span class="line">                        <span class="comment">//若有多个，可以传一个数组</span></span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">HttpHost</span>(host, port, <span class="string">&quot;http&quot;</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>用这个RestHighLevelClient，传输的是一个httprequest，返回的是response。思路是创建一个request，查询标题和内容两个方面的关键词。<br>返回以后进行一个转换，返回的加上颜色标签的hits是一个数组，需要转换成字符串。最后向前端返回这个字符串。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">searchBlog</span><span class="params">(QueryBlogDto dto)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">    <span class="comment">//1.输入校验</span></span><br><span class="line">    <span class="keyword">if</span> (dto == <span class="literal">null</span>)&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (dto.getKeyWord() == <span class="literal">null</span> || dto.getKeyWord().isEmpty())&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入关键词为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//异步给mongo</span></span><br><span class="line">    insertSearchHistory(dto.getKeyWord());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.查询条件</span></span><br><span class="line">    <span class="type">SearchRequest</span> <span class="variable">searchRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchRequest</span>(<span class="string">&quot;hmdp_blogs&quot;</span>);</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">searchSourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.1布尔类型的查询</span></span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">builder</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.2 查询标题和内容两方面的关键词</span></span><br><span class="line">    <span class="type">QueryStringQueryBuilder</span> <span class="variable">queryStringQueryBuilder</span> <span class="operator">=</span> QueryBuilders.queryStringQuery(dto.getKeyWord()).field(<span class="string">&quot;content&quot;</span>).field(<span class="string">&quot;title&quot;</span>).defaultOperator(Operator.OR);</span><br><span class="line">    builder.must(queryStringQueryBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.3 文本高亮这个查找到的关键字</span></span><br><span class="line">    <span class="type">HighlightBuilder</span> <span class="variable">highlightBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HighlightBuilder</span>();</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">    <span class="comment">//2.3.1 标红</span></span><br><span class="line">    highlightBuilder.preTags(<span class="string">&quot;&lt;font style=&#x27;color: red; font-size: inherit;&#x27;&gt;&quot;</span>);</span><br><span class="line">    highlightBuilder.postTags(<span class="string">&quot;&lt;/font&gt;&quot;</span>);</span><br><span class="line">    searchSourceBuilder.highlighter(highlightBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.4 传给searchRequest</span></span><br><span class="line">    searchSourceBuilder.query(builder);</span><br><span class="line">    searchRequest.source(searchSourceBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.5 包装好了的request给客户端返回</span></span><br><span class="line">    <span class="type">SearchResponse</span> <span class="variable">response</span> <span class="operator">=</span> restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3 处理消息回应，一个gethits是一个类，要获取这个数组需要在这个包装类里面再获取。</span></span><br><span class="line">    SearchHit[] hits = response.getHits().getHits();</span><br><span class="line">    List&lt;Map&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (SearchHit hit : hits)&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> hit.getSourceAsString();</span><br><span class="line">        <span class="type">Map</span> <span class="variable">map</span> <span class="operator">=</span> JSONUtil.toBean(json, Map.class);</span><br><span class="line">        Map&lt;String, HighlightField&gt; highlightFields = hit.getHighlightFields();</span><br><span class="line">        <span class="keyword">if</span> (highlightFields != <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">title</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">content</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">            <span class="keyword">if</span> (title != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//title高亮</span></span><br><span class="line">                Text[] titleFragments = title.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(titleFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;title&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (content != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//content高亮</span></span><br><span class="line">                Text[] contentFragments = content.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(contentFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;content&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        list.add(map);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> Result.ok(list);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="mongodb"><a href="#mongodb" class="headerlink" title="mongodb"></a>mongodb</h2><p>登录用户的查询记录很多而且变化频繁。需要用非关系型数据库来存储。（其实我个人觉得没必要存在服务器上，这些缓存应该都是在客户端上保留的）</p>
-<p>mongodb的配置比较简单，甚至不用写配置类。直接看使用</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 保存搜索记录</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> keyWord</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Async</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertSearchHistory</span><span class="params">(String keyWord)</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">Long</span> <span class="variable">userID</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">    <span class="comment">//1 先从db找这个数据</span></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID).and(<span class="string">&quot;keyWord&quot;</span>).is(keyWord));</span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">searchHistory</span> <span class="operator">=</span> mongoTemplate.findOne(query, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//2 如果又就更新创建时间</span></span><br><span class="line">    <span class="keyword">if</span> (searchHistory != <span class="literal">null</span>)&#123;</span><br><span class="line">        searchHistory.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3 没有就存进db</span></span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">dto</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">QueryBlogDto</span>();</span><br><span class="line">    dto.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    dto.setUserId(userID);</span><br><span class="line">    dto.setKeyWord(keyWord);</span><br><span class="line"></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query1</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID))</span><br><span class="line">            .with(Sort.by(Sort.Direction.DESC,<span class="string">&quot;createTime&quot;</span>));</span><br><span class="line">    List&lt;QueryBlogDto&gt; dtos = mongoTemplate.find(query1, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//3.1 如果数量少于10条就直接存</span></span><br><span class="line">    <span class="keyword">if</span> (dtos.size() &lt; <span class="number">10</span>)&#123;</span><br><span class="line">        mongoTemplate.save(dto);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3.2 如果多余10就要替换了</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">QueryBlogDto</span> <span class="variable">last</span> <span class="operator">=</span> dtos.get(dtos.size() - <span class="number">1</span>);</span><br><span class="line">        mongoTemplate.findAndReplace(Query.query(Criteria.where(<span class="string">&quot;keyWord&quot;</span>).is(last.getKeyWord())),dto);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>值得注意的是这里使用了@Async，gpt给我的答案是这个跟你新开一个线程没有区别，但是注意要在启动类上enable。这里query更像lambdaQueryWrapper那种。具体的增删改查语法以后再学。</p>
 
     
     

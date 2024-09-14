@@ -212,6 +212,289 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/">java-多线程-volatile，synchronized和lock</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-07
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>由于东西很多很乱，就按照Q&amp;A的方式整理以下</p>
+</blockquote>
+<h1 id="进程与线程的区别"><a href="#进程与线程的区别" class="headerlink" title="进程与线程的区别"></a>进程与线程的区别</h1><ul>
+<li>调度方面：在传统计算机中，进程是调度的基本单位，但是在引入线程之后，线程是调度的基本单位。同一个进程下的线程切换不会引起进程切换，但是不同的就会影响</li>
+<li>拥有资源方面：进程是拥有资源的单位，线程之间共享内存空间</li>
+<li>切换方面：进程切换要保存上下文程序计数器很多东西，而线程切换只用保存一些寄存器。开销远小于进程</li>
+<li>并发性：同一个进程下的线程可以并发，不同进程下的线程也可以并发</li>
+</ul>
+<h1 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h1><p>volatile是不稳定的意思，不止用于java，c++也有使用，声明了这个关键字的变量会禁用缓存，每一次都从内存找最新的值，这样就能保证可见性，但是不会保证原子性，例如下面这段代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">VolatileAtomicityDemo</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">volatile</span> <span class="keyword">static</span> <span class="type">int</span> <span class="variable">inc</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">increase</span><span class="params">()</span> &#123;</span><br><span class="line">        inc++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">        <span class="type">ExecutorService</span> <span class="variable">threadPool</span> <span class="operator">=</span> Executors.newFixedThreadPool(<span class="number">5</span>);</span><br><span class="line">        <span class="type">VolatileAtomicityDemo</span> <span class="variable">volatileAtomicityDemo</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VolatileAtomicityDemo</span>();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">5</span>; i++) &#123;</span><br><span class="line">            threadPool.execute(() -&gt; &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; <span class="number">500</span>; j++) &#123;</span><br><span class="line">                    volatileAtomicityDemo.increase();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 等待1.5秒，保证上面程序执行完成</span></span><br><span class="line">        Thread.sleep(<span class="number">1500</span>);</span><br><span class="line">        System.out.println(inc);</span><br><span class="line">        threadPool.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里得不到结果的主要原因是，inc++不是一个原子操作，其实是由三个操作并成，先读取inc，再++，最后写回，可能两个线程同时都读到inc为100，这个时候再同时更改写回内存，这样就会达不到预期，所以volatile关键之<strong>只能保证可见性，不能保证原子性</strong></p>
+<p>如果要保证原子性，可以使用：</p>
+<ul>
+<li>synchronized关键字上锁increase方法</li>
+<li>既然可以用synchronized方法，那肯定也可以用ReentrantLock，关于这两者的区别后文再说</li>
+<li>ReentrantLock基于CAS和AQS，那肯定用CAS的原子方法也可以解决，后文再说</li>
+</ul>
+<h1 id="乐观锁和悲观锁"><a href="#乐观锁和悲观锁" class="headerlink" title="乐观锁和悲观锁"></a>乐观锁和悲观锁</h1><ul>
+<li>悲观锁：悲观的觉得临界区一定会有人来竞争，所以每次访问的时候一定要上锁，synchronized和ReentrantLock就是比较典型的悲观锁</li>
+<li>乐观锁：很投机的觉得，这段代码可能不会有别的线程访问，就算有我也不上锁，用其他的方法，例如队列，链表的方式，比较典型的就是CAS（其实我觉得MVCC多少也有点这种思想）<br>最大的区别就是锁的粒度不一样，悲观锁由于每一次都要上锁，肯定效率没有乐观锁高，反而言之，如果频繁发生冲突，乐观锁的效率也是很低的。总而言之，在读多写少的场景，可以使用乐观锁，写多读少的情况下，使用悲观锁。</li>
+</ul>
+<h1 id="CAS和自旋锁"><a href="#CAS和自旋锁" class="headerlink" title="CAS和自旋锁"></a>CAS和自旋锁</h1><h2 id="CAS"><a href="#CAS" class="headerlink" title="CAS"></a>CAS</h2><p>compare and swap，比较并且交换，主要思想是给出三个数据：要修改的数据的更新值，这个要修改的数据的预期值，要修改数据的实际值。什么意思呢，例如我们要把一个等于1的数据修改成6，我对于这个要修改数据的预期值就是1，当且仅当数据是1的时候，我才会把它修改成6.<br>这个思想怎么在并发的环境下体现呢？比如这个时候两个线程都要修改这个数据，有一个别的线程抢占先机，由于这个是由volatile修饰的，另一边立即会就看到修改成了另外一个值，不再是预期值1，这个时候cas就会失效，从而保证了并发。</p>
+<p><strong>为什么这样就能作为锁呢？</strong></p>
+<p>理由很简单，cas<strong>保证原子性</strong>，为什么他敢理直气壮的说自己是原子的。这就要涉及到一个神奇的类Unsafe，在实现java虚拟机的时候，由于jvm的隔离性，使得java很难接近底层操作系统，Unsafe这个类里面全都是native方法，也就是用的本地方法，对于cas而言，这个底层的方法不是java实现的，是由Unsafe调用dll动态库，也就是c++实现的，cas这条操作可以理解成汇编的一个原子指令，既然是一条指令，那么肯定是可以保证原子性的。</p>
+<p>那么问题来了，为什么不直接弄一条锁的原子指令，而这么拐弯抹角的用到这个语句间接完成乐观锁，小编也不知道</p>
+<h2 id="自旋锁"><a href="#自旋锁" class="headerlink" title="自旋锁"></a>自旋锁</h2><p>我们有了这个CAS操作，到底怎么用到锁上面呢？我们先看一个用CAS的例子：</p>
+<p>AtomicInteger中调用unsafe进行自增操作的源码中的do-while循环就是一个自旋操作，如果修改数值失败则通过循环来执行自旋，直至修改成功。AtomicInteger是一个操作Integer类型的原子操作类，这里的getAndAddInt可以保证线程安全，获取Object对象在内存偏移量，然后在+i</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="type">int</span> <span class="title function_">getAndAddInt</span> <span class="params">(Object var1, Long var2, <span class="type">int</span> var4)</span> &#123;</span><br><span class="line">	<span class="type">int</span> var5;</span><br><span class="line">    <span class="comment">//自循环的思想，每一次循环都找Object的偏移量为var2的那个值，这个获得的就是预期值，</span></span><br><span class="line">    <span class="comment">//循环条件是如果跟他一样就断开，如果不一样，不阻塞，不释放CPU，但是也达到了锁的功能</span></span><br><span class="line">    <span class="comment">//能加就加，加不上就一只循环一直尝试</span></span><br><span class="line">	<span class="keyword">do</span> &#123;</span><br><span class="line">		var5 = <span class="built_in">this</span>.getIntVolatile(var1, var2);</span><br><span class="line">	&#125; <span class="keyword">while</span>( !<span class="built_in">this</span>.compareAndSwapInt(var1, var2, var5, var5 + var4));</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> var5;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>主要思想是加的上就加，加不上一直尝试，即使没有加锁，但是也达到了锁的功能。</p>
+<p>这种思想称为<strong>自旋</strong>，我们把这种dowhile的思想运用到类上就是<strong>自旋锁</strong>，我猜取这个名字的原因是因为一直循环，很像自己一个人在转</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SpinLock</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> AtomicReference&lt;Thread&gt; owner = <span class="keyword">new</span> <span class="title class_">AtomicReference</span>&lt;Thread&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">currentThread</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">        <span class="comment">// 如果锁未被占用，则设置当前线程为锁的拥有者</span></span><br><span class="line">        <span class="keyword">while</span> (!owner.compareAndSet(<span class="literal">null</span>, currentThread)) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Thread</span> <span class="variable">currentThread</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">        <span class="comment">// 只有锁的拥有者才能释放锁</span></span><br><span class="line">        owner.compareAndSet(currentThread, <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>AtomicReference是一个原子类，提供的compareAndSet方法封装了CAS方法，参数中前面是预期值，后面是要修改的值，如果预期值和实际值是一样的，那么就设置为修改值。</p>
+<p>上锁过程：owner这里空参数构造，所以我的预期值是空，如果这个时候只有一个线程，那么没有人上锁肯定也是空，所以实际值也是空，满足条件，那么就把空设置为当前线程。如果有两个线程，都同时要上锁，先进来的那个上了锁，下一个compareAndSet方法肯定是假，就会一直while，不会释放cpu</p>
+<p>解锁过程：预期值为当前线程，这个线程刚刚上锁了，所以实际值肯定存的也是这个，最后满足条件就把锁设置为null，此时第二个线程终于不用自旋了，就会获取锁。</p>
+<p>通过这个过程也看到了，自旋的优点和缺点都很明显，优点是如果时间短的话，可以免去线程的上下文切换时间；但是如果时间长，那就是很消耗cpu的，一直不释放，这个缺点有改进措施，可以用<strong>自适应自旋锁</strong>，也就说，不再是无限循环，可以设置一个最大循环次数，就不会导致死循环的情况。</p>
+<h2 id="ABA问题"><a href="#ABA问题" class="headerlink" title="ABA问题"></a>ABA问题</h2><p>CAS存在一个问题，判断实际值和预期值相同，其实不一定就能说明没改过，有可能预期值是A，实际值从A变成了B再变成了A，这个问题其实蛮严重的，如果是变量还好，如果在链表中，判断头节点没变化，不代表接下来的节点没有变化，就会导致完全不一样的结果。</p>
+<p>如何避免？</p>
+<p>加时间戳，上文用了AtomicReference，这回用AtomicStampedReference，这里使用了时间戳，只有当时间戳相同并且实际值等于预期值，才可以。</p>
+<h1 id="Synchronized关键字"><a href="#Synchronized关键字" class="headerlink" title="Synchronized关键字"></a>Synchronized关键字</h1><p>在 Java 早期版本中，synchronized 属于 重量级锁，效率低下。这是因为监视器锁（monitor）是依赖于底层的操作系统的 Mutex Lock 来实现的，Java 的线程是映射到操作系统的原生线程之上的。如果要挂起或者唤醒一个线程，都需要操作系统帮忙完成，而操作系统实现线程之间的切换时需要从用户态转换到内核态，这个状态之间的转换需要相对比较长的时间，时间成本相对较高。</p>
+<p>不过，在 Java 6 之后， synchronized 引入了大量的优化如自旋锁、适应性自旋锁、锁消除、锁粗化、偏向锁、轻量级锁等技术来减少锁操作的开销，这些优化让 synchronized 锁的效率提升了很多。因此， synchronized 还是可以在实际项目中使用的，像 JDK 源码、很多开源框架都大量使用了 synchronized 。</p>
+<p>关于偏向锁多补充一点：由于偏向锁增加了 JVM 的复杂性，同时也并没有为所有应用都带来性能提升。因此，在 JDK15 中，偏向锁被默认关闭（仍然可以使用 -XX:+UseBiasedLocking 启用偏向锁），在 JDK18 中，偏向锁已经被彻底废弃（无法通过命令行打开）。</p>
+<h2 id="如何使用Synchronized关键字？"><a href="#如何使用Synchronized关键字？" class="headerlink" title="如何使用Synchronized关键字？"></a>如何使用Synchronized关键字？</h2><ol>
+<li>修饰方法</li>
+<li>修饰静态方法（锁住当前类）：注意修饰静态方法是没有互斥性的，因为静态方法是放在进程中静态代码块那一部分的，所有线程共享，每一个线程都可以访问</li>
+<li>修饰代码块：</li>
+</ol>
+<ul>
+<li>synchronized(object) 表示进入同步代码库前要获得 给定对象的锁。</li>
+<li>synchronized(类.class) 表示进入同步代码前要获得 给定 Class 的锁</li>
+</ul>
+<p>总结：</p>
+<ul>
+<li>synchronized 关键字加到 static 静态方法和 synchronized(class) 代码块上都是是给 Class 类上锁；</li>
+<li>synchronized 关键字加到实例方法上是给对象实例上锁；</li>
+<li>尽量不要使用 synchronized(String a) 因为 JVM 中，字符串常量池具有缓存功能。</li>
+</ul>
+<h2 id="构造方法可以被Synchronized修饰吗》"><a href="#构造方法可以被Synchronized修饰吗》" class="headerlink" title="构造方法可以被Synchronized修饰吗》"></a>构造方法可以被Synchronized修饰吗》</h2><p>不可以，因为本身构造方法就已经是线程安全的了</p>
+<h2 id="Synchronized底层原理"><a href="#Synchronized底层原理" class="headerlink" title="Synchronized底层原理"></a>Synchronized底层原理</h2><p>基于jvm的monitor,在java编译的时候会给加锁代码加上monitorenter和两个monitorexit，在这中间的就是互斥的，为什么要有两个呢，线程有的时候会抛出异常或者错误，这个时候就会走第二个exit，用两个是为了保证一定能退出。</p>
+<p>monitor也是基于c++的，分为三个部分，一个是当前获取锁的对象，还有一个是等待队列，一个是阻塞队列。</p>
+<p>上锁成功的标志是monitor的拥有者为当前线程，当释放的时候会唤醒阻塞进程，有一点要说明的是这个过程是非公平，也就是运行不在队列里的新进程也来抢。</p>
+<h2 id="Synchronized锁升级原理"><a href="#Synchronized锁升级原理" class="headerlink" title="Synchronized锁升级原理"></a>Synchronized锁升级原理</h2><blockquote>
+<p>这一块暂时还没有细细研究。</p>
+</blockquote>
+<p>有四种锁等级，锁的重量依次递增：</p>
+<ol>
+<li>不加锁</li>
+<li>加偏向锁：一段很长的时间内都只被一个线程使用锁，可以使用了偏向锁，在第一次获得锁时，会有一个CAS操作，之后该线程再获取锁，只需要判断mark word中是否是自己的线程id即可，而不是开销相对较大的CAS命令。这也是某种投机行为，乐观锁思想，在很少有进程竞争的时候比较节约资源</li>
+<li>加轻度锁：也就是自旋锁等，每次操作都是cas，还是乐观锁思想，这个就比偏向锁稍微控制了一点</li>
+<li>重度锁，使用monitor那种悲观锁</li>
+</ol>
+<p>Synchronized发生竞争会依次升级锁，高并发下变成悲观锁</p>
+<h2 id="Synchronized和volatile什么区别"><a href="#Synchronized和volatile什么区别" class="headerlink" title="Synchronized和volatile什么区别"></a>Synchronized和volatile什么区别</h2><ol>
+<li>Synchronized修饰方法，静态方法，代码块等，而volatile修饰变量</li>
+<li>volatile是线程同步的轻量实现，具有可见性但是没有原子性，Synchronized可以保证可见性和原子性</li>
+<li>volatile性能肯定比Synchronized好，但是主要解决的是变量的问题，Synchronized解决方法的同步和互斥。</li>
+</ol>
+<h1 id="ReentrantLock"><a href="#ReentrantLock" class="headerlink" title="ReentrantLock"></a>ReentrantLock</h1><p>可重入锁，实现了Lock接口，相比Synchronized功能更多，实现了轮询，超时，中断，公平锁和非公平锁。</p>
+<p>公平和非公平锁主要是Sync里面实现的，而Sync继承自<strong>AQS</strong>，也就是说ReentrantLock用的就是AQS思想。</p>
+<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>主要数据结构是CLH，最早的CLH是一个虚拟的单向链表，为什么是虚拟的呢，因为甚至连指针都没有，一个CLH节点就包含两个结构，一个是当前线程，另外一个是一个bool变量，用来表示是否获得了锁。</p>
+<p><strong>那是怎么运作的呢？</strong></p>
+<p>初始化一个尾节点，线程那部分为空，bool部分为true，也就是说可以被上锁，每一个线程都用<strong>自旋的方式</strong>尝试获得来的时候的尾节点的bool值，那么这个时候来了一个线程，用CAS尝试获取现在的尾节点的bool，为真，那就可以上锁为false，同时自己的bool也为false，表示前面的节点都不能用，所以下一个也不能。</p>
+<p>来了一个线程2，现在的尾节点是线程1，他的bool是false，线程2会一直自旋的获取前一个节点的bool值，后面的也是，如果此时线程1好了，那么线程2监听到前面一个变成了true，那就会开始线程2，以此类推。</p>
+<p>优点很明显：如果时间短，那么获取和释放锁的开销小。CLH 的锁状态不再是单一的原子变量，而是分散在每个节点的状态中，降低了自旋锁在竞争激烈时频繁同步的开销。还有就是公平，先进先出</p>
+<p>这样的CLH有什么缺点呢，首先是都是自旋，如果时间短还好，长了那肯定浪费资源。功能单一，不能支持ReentrantLock的那些接口功能。</p>
+<p><strong>AQS对于CLH的改造</strong></p>
+<p>针对自旋，AQS都改造成了阻塞，还是不能用自旋。针对第二个功能单一的缺点，使用了双向链表和一个全局变量state（其实我觉得之前那种看上一个节点情况的机制还蛮好的，这不是又重新变成信号量那种机制了）</p>
+<p>state属性表示资源的状态，为0表示可以抢了，为1表示不能，为1时候来的线程进阻塞队列</p>
+<ul>
+<li>公平与非公平，公平就是直接每次都唤醒队列头的，非公平就是来的也一起竞争，但是可能会导致饥饿</li>
+<li>可重入：一个线程多次进入可以state自增，如果重入两次那么state就是2，但是要保证加锁几次就解锁几次，保证最终还是0</li>
+</ul>
+<h1 id="ReentrantLock和synchronized区别"><a href="#ReentrantLock和synchronized区别" class="headerlink" title="ReentrantLock和synchronized区别"></a>ReentrantLock和synchronized区别</h1><ol>
+<li>首先两者都是悲观锁，也都是可重入的，synchronized是一个关键字，基于jvm实现，ReentrantLock是一个是实现类，实现Lock接口，使用的时候需要声明。</li>
+<li>ReentrantLock功能比较多，实现了可中断（中断也就说如果得不到锁就去干别的事情了，synchronized不可中断），可超时（ReentrantLock实现了，如果超时多少就不去争抢锁了，syn实现不了），锁可以绑定多个条件（Condition类，就相当于不同的信号量，可以控制一部分Condition下的进程等待，另一部分的执行）</li>
+<li>没有竞争的时候synchronized优化很多，锁没有升级的时候性能很好；重度的时候Lock的性能比较好，因为底层还是用了cas的一部分乐观机制，相比synchronized的monitor还是好一点</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/04/05/mysql-%E7%B4%A2%E5%BC%95%E5%92%8C%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88/">mysql-索引和索引失效</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-05
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="索引失效"><a href="#索引失效" class="headerlink" title="索引失效"></a>索引失效</h1><h2 id="左匹配或者左右匹配"><a href="#左匹配或者左右匹配" class="headerlink" title="左匹配或者左右匹配"></a>左匹配或者左右匹配</h2><p>当我们使用左或者左右模糊匹配的时候，也就是 like %xx 或者 like %xx% 这两种方式都会造成索引失效。</p>
+<p><strong>为什么 like 关键字左或者左右模糊匹配无法走索引呢？</strong></p>
+<p>因为索引 B+ 树是按照「索引值」有序排列存储的，只能根据前缀进行比较。</p>
+<p>举个例子，下面这张二级索引图（图中叶子节点之间我画了单向链表，但是实际上是双向链表，原图我找不到了，修改不了，偷个懒我不重画了，大家脑补成双向链表就行），是以 name 字段有序排列存储的。</p>
+<p><img src="/../img/Mysql/img_13.png"></p>
+<p>假设我们要查询 name 字段前缀为「林」的数据，也就是 name like ‘林%’，扫描索引的过程（这里中文都是按照某种排序，不知道是不是按照utf-8的编码值比较的，但是这个规则不影响寻找到逻辑）：</p>
+<ul>
+<li>节点1判断出“林”小于“周”并且大于“陈”（这个步骤是通过<strong>页目录</strong>进行搜索的，回顾一下：假设这里头指针是一个分组，陈是一个分组，剩下两个和尾指针是一个分组，二分查找目录项，由于目录项指向分组的最大值，那么“林”是大于陈小于周的，按照目录项的规则，从<em>包含尾指针的那个分组开始</em>，但是由于存的是最大值也就是尾指针，为了从头开始遍历，就要找到上一个槽的指针，往后数一个就是当前的最小值，结果发现当前的最小值“周”还是大于“林”，这样就定位在“陈”和“周”之间，按照存储规则，<strong>非叶子节点存的是下一个节点的最小值</strong>，那就要在“陈”这个节点找）</li>
+<li>节点2继续比较：节点2的第一个索引值中的陈字的拼音大小比林字小，所以继续看下一个索引值，发现节点2有与林字前缀匹配的索引值，于是就往叶子节点查询，即叶子节点4</li>
+<li>节点4查询比较：节点4的第一个索引值的前缀符合林字，于是就读取该行数据，接着继续往右匹配，直到匹配不到前缀为林的索引值。</li>
+</ul>
+<p>如果使用 name like ‘%林’ 方式来查询，因为查询的结果可能是「陈林、张林、周林」等之类的，所以不知道从哪个索引值开始比较，于是就只能通过全表扫描的方式来查询。</p>
+<blockquote>
+<p>总而言之，索引是从左边开始匹配的，如果左边第一个都不能确定，那就要全部遍历</p>
+</blockquote>
+<h2 id="对索引使用函数"><a href="#对索引使用函数" class="headerlink" title="对索引使用函数"></a>对索引使用函数</h2><p>有时候我们会用一些 MySQL 自带的函数来得到我们想要的结果，这时候要注意了，如果查询条件中对索引字段使用函数，就会导致索引失效。</p>
+<p><strong>为什么对索引使用函数，就无法走索引了呢？</strong></p>
+<p>因为索引保存的是索引字段的原始值，而不是经过函数计算后的值，自然就没办法走索引了。</p>
+<p>不过，从 MySQL 8.0 开始，索引特性增加了函数索引，即可以针对函数计算后的值建立一个索引，也就是说该索引的值是函数计算后的值，所以就可以通过扫描索引来查询数据。</p>
+<p>举个例子，我通过下面这条语句，对 length(name) 的计算结果建立一个名为 idx_name_length 的索引。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">alter table t_user add key idx_name_length ((length(name)));</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>总而言之，索引保存的是原始值，使用函数后重新计算导致不能索引到，就失效了，但是如果对这个函数也建立一个索引，那也可以走索引</p>
+</blockquote>
+<h2 id="数据类型强制转换"><a href="#数据类型强制转换" class="headerlink" title="数据类型强制转换"></a>数据类型强制转换</h2><blockquote>
+<p>这个印象比较深刻：首先举一个例子，select “10” &gt; 9，通过这个例子可以看出来在mysql是怎么处理字符串的</p>
+<ul>
+<li>如果是结果是1，也就是select 10&gt;9，那么内部会把字符串处理成数字</li>
+<li>如果结果是0，也就是select “10” &gt; “9”，字符串是比较首位，1肯定小于9，所以这个结果是0，那么内部把数字处理成字符串<br>结果是1，也就是<strong>mysql内部把字符串变成数字进行比较</strong></li>
+</ul>
+</blockquote>
+<p>假设phone在数据库是用varchar存的，有了这个结论，那么</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from t_user where phone = 1300000001;</span><br></pre></td></tr></table></figure>
+<p>这个代码就会变成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from t_user where CAST(phone AS signed int) = 1300000001;</span><br></pre></td></tr></table></figure>
+<p>因为内部会把索引的字符串变成整数进行比较，相当于给索引使用了函数，所以就会失效</p>
+<p>如果查询条件是字符串，id在数据库用int存的</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from t_user where id = &quot;1&quot;;</span><br></pre></td></tr></table></figure>
+<p>那么就会变成：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from t_user where id = CAST(&quot;1&quot; AS signed int);</span><br></pre></td></tr></table></figure>
+<p>也就是说，只有这个查询条件会要用这个函数，索引没有用，索引就不失效</p>
+<h2 id="对索引进行表达式计算"><a href="#对索引进行表达式计算" class="headerlink" title="对索引进行表达式计算"></a>对索引进行表达式计算</h2><p>在查询条件中对索引进行表达式计算，也是无法走索引的。</p>
+<p>比如，下面这条查询语句，执行计划中 type &#x3D; ALL，说明是通过全表扫描的方式查询数据的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">explain select * from t_user where id + 1 = 10;</span><br></pre></td></tr></table></figure>
+
+<p><strong>为什么对索引进行表达式计算，就无法走索引了呢？</strong></p>
+<p>原因跟对索引使用函数差不多。</p>
+<p>因为索引保存的是索引字段的原始值，而不是 id + 1 表达式计算后的值，所以无法走索引，只能通过把索引字段的取值都取出来，然后依次进行表达式的计算来进行条件判断，因此采用的就是全表扫描的方式。</p>
+<p>有的同学可能会说，这种对索引进行简单的表达式计算，在代码特殊处理下，应该是可以做到索引扫描的，比方将 id + 1 &#x3D; 10 变成 id &#x3D; 10 - 1。</p>
+<p>是的，是能够实现，但是 MySQL 还是偷了这个懒，没有实现。</p>
+<p>我的想法是，可能也是因为，表达式计算的情况多种多样，每种都要考虑的话，代码可能会很臃肿，所以干脆将这种索引失效的场景告诉程序员，让程序员自己保证在查询条件中不要对索引进行表达式计算。</p>
+<h2 id="联合索引的左匹配问题"><a href="#联合索引的左匹配问题" class="headerlink" title="联合索引的左匹配问题"></a>联合索引的左匹配问题</h2><p>对主键字段建立的索引叫做聚簇索引，对普通字段建立的索引叫做二级索引。</p>
+<p>那么多个普通字段组合在一起创建的索引就叫做联合索引，也叫组合索引。</p>
+<p>创建联合索引时，我们需要注意创建时的顺序问题，因为联合索引 (a, b, c) 和 (c, b, a) 在使用的时候会存在差别。</p>
+<p>联合索引要能正确使用需要遵循最左匹配原则，也就是按照最左优先的方式进行索引的匹配。</p>
+<p>比如，如果创建了一个 (a, b, c) 联合索引，如果查询条件是以下这几种，就可以匹配上联合索引：</p>
+<ul>
+<li>where a&#x3D;1；</li>
+<li>where a&#x3D;1 and b&#x3D;2 and c&#x3D;3；</li>
+<li>where a&#x3D;1 and b&#x3D;2；<br>需要注意的是，因为有查询优化器，所以 a 字段在 where 子句的顺序并不重要。</li>
+</ul>
+<p>但是，如果查询条件是以下这几种，因为不符合最左匹配原则，所以就无法匹配上联合索引，联合索引就会失效:</p>
+<ul>
+<li>where b&#x3D;2；</li>
+<li>where c&#x3D;3；</li>
+<li>where b&#x3D;2 and c&#x3D;3；<blockquote>
+<p>其实类似第一种情况，不管是字符串还是索引，都是按照最左匹配的，如果连第一个都没有，那就会导致索引失效，这里还有一个<strong>索引下推</strong>的机制，等以后再来补。</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="or导致的失效问题"><a href="#or导致的失效问题" class="headerlink" title="or导致的失效问题"></a>or导致的失效问题</h2><p>在 WHERE 子句中，如果在 OR 前的条件列是索引列，而在 OR 后的条件列不是索引列，那么索引会失效。</p>
+<p>这是因为 OR 的含义就是两个只要满足一个即可，因此只有一个条件列是索引列是没有意义的，只要有条件列不是索引列，就会进行全表扫描。</p>
+<blockquote>
+<p>or就是两个里面满足一个，也就是索引要有两个，才可以一起用索引，and其实是只要有一个是索引就可以走索引的，要注意</p>
+</blockquote>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/04/05/mysql-Buffer-Pool/">mysql-Buffer Pool</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-05
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/04/05/mysql-%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8EMVCC/">mysql-事务隔离级别与MVCC</a>
       
     </h1>
@@ -1022,201 +1305,6 @@
 <li>多个redis集群提高服务的可用性</li>
 </ol>
 
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/31/%E5%91%A8%E8%B5%9B2024-3-31/">周赛2024-3-31</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-31
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>因为第三题long被卡了三发wa，所以即使做出了第三题也没上次排名高</p>
-</blockquote>
-<h1 id="第一题：哈沙德数"><a href="#第一题：哈沙德数" class="headerlink" title="第一题：哈沙德数"></a>第一题：哈沙德数</h1><p>如果一个整数能够被其各个数位上的数字之和整除，则称之为 <strong>哈沙德数</strong>（Harshad number）。给你一个整数 x 。如果 x 是 <strong>哈沙德数</strong> ，则返回 x 各个数位上的数字之和，否则，返回 -1 。</p>
-<blockquote>
-<p>字符串拆分成数组，然后累计和，最后做个判断</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">sumOfTheDigitsOfHarshadNumber</span><span class="params">(<span class="type">int</span> x)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">num</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>+x;</span><br><span class="line">        String[] split = num.split(<span class="string">&quot;&quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(split));</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; split.length; i++) &#123;</span><br><span class="line">            ans+=Integer.parseInt(split[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (x % ans ==<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> ans;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="第二题：换水问题"><a href="#第二题：换水问题" class="headerlink" title="第二题：换水问题"></a>第二题：换水问题</h1><p>给你两个整数 numBottles 和 numExchange 。</p>
-<p>numBottles 代表你最初拥有的满水瓶数量。在一次操作中，你可以执行以下操作之一：</p>
-<ul>
-<li>喝掉任意数量的满水瓶，使它们变成空水瓶。</li>
-<li>用 numExchange 个空水瓶交换一个满水瓶。然后，将 numExchange 的值增加 1 。<br>注意，你不能使用相同的 numExchange 值交换多批空水瓶。例如，如果 numBottles &#x3D;&#x3D; 3 并且 numExchange &#x3D;&#x3D; 1 ，则不能用 3 个空水瓶交换成 3 个满水瓶。</li>
-</ul>
-<p>返回你 <strong>最多</strong> 可以喝到多少瓶水。</p>
-<p><img src="/../img/coding/2024_3_31_2.png"></p>
-<blockquote>
-<p>小学奥数貌似碰到过这样的问题，就是没兑换一次，兑换的要求就多一瓶，直接暴力模拟就行</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maxBottlesDrunk</span><span class="params">(<span class="type">int</span> numBottles, <span class="type">int</span> numExchange)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">empty</span> <span class="operator">=</span> numBottles;</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> numBottles;</span><br><span class="line">        <span class="comment">//直到换不了了</span></span><br><span class="line">        <span class="keyword">while</span> (empty &gt;= numExchange)&#123;</span><br><span class="line">            <span class="comment">//兑换新的之后剩下的</span></span><br><span class="line">            empty -=numExchange;</span><br><span class="line">            numExchange++;</span><br><span class="line">            <span class="comment">//兑换多的</span></span><br><span class="line">            empty +=<span class="number">1</span>;</span><br><span class="line">            ans++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="第三题：交替子数组计数"><a href="#第三题：交替子数组计数" class="headerlink" title="第三题：交替子数组计数"></a>第三题：交替子数组计数</h1><p>给你一个<strong>二进制数组</strong>nums 。</p>
-<p>如果一个子数组中 <strong>不存在</strong> 两个 <strong>相邻</strong> 元素的值 <strong>相同</strong> 的情况，我们称这样的子数组为 <strong>交替子数组</strong> 。</p>
-<p>返回数组 nums 中交替子数组的数量。</p>
-<p>示例 1：</p>
-<p>输入： nums &#x3D; [0,1,1,1]</p>
-<p>输出： 5</p>
-<p>解释： 以下子数组是交替子数组：[0] 、[1] 、[1] 、[1] 以及 [0,1] 。</p>
-<blockquote>
-<p>这里有个用例真的好恶心，wa三次都是这一个用例没过，需要全开long或者long long才能过</p>
-</blockquote>
-<h2 id="记忆化搜索超出内存限制"><a href="#记忆化搜索超出内存限制" class="headerlink" title="记忆化搜索超出内存限制"></a>记忆化搜索超出内存限制</h2><blockquote>
-<p>最早的思路是用一个二维数组存dp[i][j]是否是一个交替子数组，为1表示i到j是一个交替子数组，判断条件$$ dp[i][j-1] &#x3D;&#x3D; 1 &amp;&amp; nums[j] !&#x3D; nums[j-1] $$</p>
-<p>其实完全不用这么大的空间，二维数组超空间也是应该的</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">countAlternatingSubarrays</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">        <span class="comment">//记忆化搜索</span></span><br><span class="line">        <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[nums.length][nums.length];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> i; j &lt; nums.length; j++) &#123;</span><br><span class="line">                <span class="comment">//对角线肯定是交替子数组</span></span><br><span class="line">                <span class="keyword">if</span> (i==j)&#123;</span><br><span class="line">                    dp[i][j] = <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">//只有前面是一个交替子数组并且不等于最后的那个元素</span></span><br><span class="line">                    <span class="keyword">if</span> (dp[i][j-<span class="number">1</span>] == <span class="number">1</span> &amp;&amp; nums[j] != nums[j-<span class="number">1</span>])&#123;</span><br><span class="line">                        dp[i][j] = <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">else</span> &#123;</span><br><span class="line">                        dp[i][j] = <span class="number">0</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//最后再遍历一次数组，每一个1就是一个交替子数组</span></span><br><span class="line">        <span class="type">long</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> i; j &lt; nums.length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (dp[i][j] == <span class="number">1</span>)&#123;</span><br><span class="line">                    ans+=<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="双指针-AC"><a href="#双指针-AC" class="headerlink" title="双指针(AC)"></a>双指针(AC)</h2><blockquote>
-<p>思路是，如果一个数组是交替数组，那么子数组肯定也是，利用双指针找到尽量最长的交替子数组存起来，最后遍历这些最长的交替子数组。由于他们的子数组肯定也是交替的，那就是等差数列求和就可以算出。最后累加得到答案</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">long</span> <span class="title function_">countAlternatingSubarrays</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">        <span class="comment">//恶心的long</span></span><br><span class="line">        List&lt;<span class="type">long</span>[]&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="type">long</span> <span class="variable">head</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="type">long</span> <span class="variable">rear</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="comment">//双指针找到长的数组，存起来他们的下标</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (nums[i] == nums[i-<span class="number">1</span>])&#123;</span><br><span class="line">                list.add(<span class="keyword">new</span> <span class="title class_">long</span>[]&#123;head,rear&#125;);</span><br><span class="line">                head = i;</span><br><span class="line">            &#125;</span><br><span class="line">            rear++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//最后一个没加上就退出循环了，需要最后加上</span></span><br><span class="line">        list.add(<span class="keyword">new</span> <span class="title class_">long</span>[]&#123;head,rear&#125;);</span><br><span class="line">        <span class="type">long</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; list.size(); i++) &#123;</span><br><span class="line">            <span class="type">long</span> <span class="variable">length</span> <span class="operator">=</span> list.get(i)[<span class="number">1</span>]-list.get(i)[<span class="number">0</span>]+<span class="number">1</span>;</span><br><span class="line">            <span class="comment">//子数组的数量</span></span><br><span class="line">            ans += length *(length+<span class="number">1</span>)/<span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度:o(n)<br>空间复杂度：o(n)</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/31/leetcode-2024-3-31/">leetcode-2024-3-31</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-31
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="331-验证二叉树的前序序列化（Medium）"><a href="#331-验证二叉树的前序序列化（Medium）" class="headerlink" title="331 验证二叉树的前序序列化（Medium）"></a>331 验证二叉树的前序序列化（Medium）</h1><p>序列化二叉树的一种方法是使用 <strong>前序遍历</strong> 。当我们遇到一个非空节点时，我们可以记录下这个节点的值。如果它是一个空节点，我们可以使用一个标记值记录，例如 #。<br><img src="/../img/coding/2024_3_31_1.png"></p>
-<p>例如，上面的二叉树可以被序列化为字符串 “9,3,4,#,#,1,#,#,2,#,6,#,#”，其中 # 代表一个空节点。</p>
-<p>给定一串以逗号分隔的序列，验证它是否是正确的二叉树的前序序列化。编写一个在不重构树的条件下的可行算法。</p>
-<p>保证 每个以逗号分隔的字符或为一个整数或为一个表示 null 指针的 ‘#’ 。</p>
-<p>你可以认为输入格式总是有效的</p>
-<p>例如它永远不会包含两个连续的逗号，比如 “1,,3” 。</p>
-<p>注意：不允许重建树。</p>
-<h2 id="栈"><a href="#栈" class="headerlink" title="栈"></a>栈</h2><blockquote>
-<p>由于是先序遍历，我们考虑栈。栈的存放一个数组，第一位表示在split中的下标，第二位表示左边是否有节点，第三位表示右边是否有节点</p>
-<p>遍历这个数组，然后如果栈非空，当前元素就是栈顶元素的左孩子或者右孩子，更新栈顶数组，每次遍历都要判断栈顶元素是否左右都有，如果有就出栈。<br>遍历完看栈是否为空，为空说明是二叉树</p>
-</blockquote>
-<blockquote>
-<p>这里有两个细节，</p>
-<ul>
-<li>首先是可能出现多棵树的情况，也就是说以上算法对于两个完整的树拼在一起的字符串结果还是为true，需要一个计数器，如果在循环过程中栈就已经空了，就返回false</li>
-<li>还有就是这里用了trycatch，如果出现异常情况比如栈顶为空了，那肯定是出问题了，直接返回false，也算是一种偷懒吧。</li>
-</ul>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isValidSerialization</span><span class="params">(String preorder)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        String[] split = preorder.split(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (split.length == <span class="number">1</span> &amp;&amp; Objects.equals(split[<span class="number">0</span>], <span class="string">&quot;#&quot;</span>))&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Stack&lt;<span class="type">int</span>[]&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; split.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (!Objects.equals(split[i], <span class="string">&quot;#&quot;</span>))&#123;</span><br><span class="line">                <span class="keyword">if</span> (!stack.isEmpty())&#123;</span><br><span class="line">                    <span class="keyword">if</span> (stack.peek()[<span class="number">1</span>] ==<span class="number">0</span> &amp;&amp; stack.peek()[<span class="number">2</span>] == <span class="number">0</span>)&#123;</span><br><span class="line">                        stack.peek()[<span class="number">1</span>]  = <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">else</span> <span class="keyword">if</span> (stack.peek()[<span class="number">1</span>] == <span class="number">1</span> &amp;&amp; stack.peek()[<span class="number">2</span>] == <span class="number">0</span>)&#123;</span><br><span class="line">                        stack.peek()[<span class="number">2</span>] = <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">                stack.add(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;i,<span class="number">0</span>,<span class="number">0</span>&#125;);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (stack.peek()[<span class="number">1</span>] == <span class="number">0</span> &amp;&amp; stack.peek()[<span class="number">2</span>] ==<span class="number">0</span>)&#123;</span><br><span class="line">                    stack.peek()[<span class="number">1</span>]  = <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> <span class="keyword">if</span> (stack.peek()[<span class="number">1</span>] == <span class="number">1</span> &amp;&amp; stack.peek()[<span class="number">2</span>] == <span class="number">0</span>)&#123;</span><br><span class="line">                    stack.peek()[<span class="number">2</span>] = <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">while</span> (!stack.isEmpty() &amp;&amp; stack.peek()[<span class="number">1</span>] == <span class="number">1</span> &amp;&amp; stack.peek()[<span class="number">2</span>] == <span class="number">1</span>)&#123;</span><br><span class="line">                stack.pop();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (stack.isEmpty() &amp;&amp; i != split.length-<span class="number">1</span>)&#123;</span><br><span class="line">                count++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (count!=<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> stack.isEmpty();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度：O(n)，其中 n 为字符串的长度。我们每个字符只遍历一次，同时每个字符对应的操作都是常数时间的。</p>
-<p>空间复杂度：O(n)。此为栈所需要使用的空间。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/30/leetcode-2024-3-30/">leetcode-2024-3-30</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-30
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="2952-需要添加的硬币的最小数量（Medium）"><a href="#2952-需要添加的硬币的最小数量（Medium）" class="headerlink" title="2952 需要添加的硬币的最小数量（Medium）"></a>2952 需要添加的硬币的最小数量（Medium）</h1><blockquote>
-<p>这道题止中等？</p>
-</blockquote>
-<p>给你一个下标从 0 开始的整数数组 coins，表示可用的硬币的面值，以及一个整数 target 。</p>
-<p>如果存在某个 coins 的子序列总和为 x，那么整数 x 就是一个 <strong>可取得的金额</strong> 。</p>
-<p>返回需要添加到数组中的 <strong>任意面值</strong> 硬币的 最小数量 ，使范围 $[1, target]$ 内的每个整数都属于 <strong>可取得的金额</strong> 。</p>
-<p>数组的 <strong>子序列</strong> 是通过删除原始数组的一些（<strong>可能不删除</strong>）元素而形成的新的 <strong>非空</strong> 数组，删除过程不会改变剩余元素的相对位置。</p>
-<p>示例 1：</p>
-<p>输入：coins &#x3D; [1,4,10], target &#x3D; 19</p>
-<p>输出：2</p>
-<p>解释：需要添加面值为 2 和 8 的硬币各一枚，得到硬币数组 [1,2,4,8,10] 。</p>
-<p>可以证明从 1 到 19 的所有整数都可由数组中的硬币组合得到，且需要添加到数组中的硬币数目最小为 2 。</p>
-<blockquote>
-<p>自己想没想出来</p>
-</blockquote>
-<h2 id="官方解：贪心算法"><a href="#官方解：贪心算法" class="headerlink" title="官方解：贪心算法"></a>官方解：贪心算法</h2><p>为方便描述，把 0也算作可以得到的数。</p>
-<p>假设现在得到了区间 $[0,s−1]$ 中的所有整数，如果此时遍历到整数 $x&#x3D;coins[i]$，那么把 $[0,s−1]$ 中的每个整数都增加 x，我们就得到了区间 $[x,s+x−1]$ 中的所有整数。</p>
-<p>把 coins 从小到大排序，遍历 $x&#x3D;coins[i]$。分类讨论，看是否要添加数字：</p>
-<ul>
-<li>如果 x≤s，那么合并 $[0,s−1]$ 和 $[x,s+x−1]$这两个区间，我们可以得到 $[0,s+x−1]$ 中的所有整数。</li>
-<li>如果 x&gt;s，或者遍历完了 coins 数组，这意味着我们无法得到 s，那么就一定要把 s 加到数组中（加一个比 s 还小的数字就没法得到更大的数，不够贪），这样就可以得到了 $[s,2s−1]$ 中的所有整数，再与 $[0,s−1]$ 合并，可以得到 $[0,2s−1]$ 中的所有整数。然后再考虑 x 和 2s 的大小关系，继续分类讨论。<br>当 s&gt;targets 时，我们就得到了 $[1,target]$ 中的所有整数，退出循环。</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">minimumAddedCoins</span><span class="params">(<span class="type">int</span>[] coins, <span class="type">int</span> target)</span> &#123;</span><br><span class="line">        Arrays.sort(coins);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>, s = <span class="number">1</span>, i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (s &lt;= target) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i &lt; coins.length &amp;&amp; coins[i] &lt;= s) &#123;</span><br><span class="line">                s += coins[i++];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                s *= <span class="number">2</span>; <span class="comment">// 必须添加 s</span></span><br><span class="line">                ans++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
     
     
   </div>
