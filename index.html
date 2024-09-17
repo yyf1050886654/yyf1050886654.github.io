@@ -212,6 +212,157 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/17/redis%E6%80%BB%E7%BB%93/">redis总结</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-17
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="redis的数据结构"><a href="#redis的数据结构" class="headerlink" title="redis的数据结构"></a>redis的数据结构</h2><ul>
+<li>基本数据结构：string，hash，list，set，sorted set</li>
+<li>高级数据结构：geo，hyperloglog，bitmap</li>
+</ul>
+<h2 id="String的SDS"><a href="#String的SDS" class="headerlink" title="String的SDS"></a>String的SDS</h2><p>redis是基于c的，但是其并没有采用c语言的字符串形式。c语言的字符串是给首数据的指针，遍历字符串的时候一直往后找直到出现”\0”，这对于需要快速处理字符串的redis是不可接受的。</p>
+<p>于是redis发明了一个SDS（简单动态字符串），相对于原先的c语言字符串，这里最大的不同是使用一个数据结构里面保存字符串的数组和长度。优点如下：</p>
+<ol>
+<li>统计字符串的时间复杂度为o(1)：由于c语言的字符串是需要遍历的，类似链表的结构，但是sds直接就有一个字段保存长度</li>
+<li>可以保存二进制信息：由于c语言是要找到”\0”为末尾信息，不允许有空格，使得c语言字符串的存储形式受限；而sds没有这方面的特性，直接保存在一个数组里面，因此redis可以用字符串存储图片等二进制信息。</li>
+<li>不会发生溢出：由于保存了数组的长度和数组剩余长度，当进行字符串拼接的时候会校验新的长度是否会导致数组溢出，c语言是没有这个特性的。</li>
+</ol>
+<h2 id="压缩队列ziplist"><a href="#压缩队列ziplist" class="headerlink" title="压缩队列ziplist"></a>压缩队列ziplist</h2><p>在讲其他数据结构之前，需要讲一下压缩。在redis中list，set和zset都有两种数据结构，其中一种就是ziplist，初始为ziplist而当元素数量达到一定阈值就会进化为其他的。</p>
+<p>一般来说存储数据每一个格子长度都是固定的，但redis为了节约这部分空白数据就使用了动态长度，也就是说每一个格子只会正好包括数据而不会有空白。但是这样不是固定长度也给遍历带来的问题，不能够按照数组那种长度*个数来找地址，于是redis也做了一些方便搜索的数据结构。</p>
+<p><strong>连锁更新问题</strong></p>
+<p>除了搜索有缺点，还存在着更新问题，也能想到，如果在中间的某个数据需要更新，那么后面所有的数据都需要向后移动，造成很大的开销，所以redis只在数据量很小的情况下使用这个数据结构。</p>
+<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>类似jdk1.7实现的hashmap，就是拉链法解决哈希冲突。相较于jdk的hashmap，这里的扩容机制有很大不同。</p>
+<p><strong>渐进式扩容</strong><br>对于redis来说，由于是单线程，hashmap扩容会导致线程阻塞，影响性能，所以采用了渐进式hash。每当需要进行扩容的时候不会立刻一次性全部扩容，而是同时创建一个两倍大小的hashmap，在以后的每一次请求中，都会移动一部分数据从旧的hashmap到新的hashmap中，新增的数据就直接写在新表上。</p>
+<p>这样将一次扩容平坦到每次请求中，完成扩容的同时也没有严重影响性能。但是此时get一个数据就需要在两个表上都要找。</p>
+<h2 id="sorted-set和跳表"><a href="#sorted-set和跳表" class="headerlink" title="sorted set和跳表"></a>sorted set和跳表</h2><p>zset是按照分数score有序排列的集合，底层使用了ziplist+skiplist，当元素数量大于128且元素长度大于64字节的时候自动扩展为跳表。</p>
+<p><strong>跳表</strong></p>
+<p>单向链表查找的时间复杂度平均为o(n)，跳表用多层链表实现在单向链表上查询的时间复杂度降低为logn</p>
+<div style="text-align: center;">
+  <img src="../img/Java/img_10.png" alt="" />
+</div>
+
+<p>查询就像坐了快车，只有大站到达，节约了不少遍历的时间，一般来说上一层的节点数量是下一层的一半，当需要添加数据的时候如何确定这个节点的层级呢。如果说加入一个节点那么它在最底层的概率为100%，由于上面一层的数量是一半，那么他是2层节点的概率就为50%，3层的就为25%。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 随机生成节点的层数</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">randomLevel</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">lvl</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (random.nextFloat() &lt; P &amp;&amp; lvl &lt; MAX_LEVEL) &#123;</span><br><span class="line">        lvl++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> lvl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>为什么用跳表而不是红黑树或者b树</strong></p>
+<ul>
+<li>hashmap的红黑树结构不适合范围查找，zset有个命令就是查询score在某个范围之内的，而且指针数量也较少，实现难度较低</li>
+<li>b树数据结构较大，内存不友好。节点分裂等实现起来较为复杂。</li>
+</ul>
+<h2 id="redis为什么这么快"><a href="#redis为什么这么快" class="headerlink" title="redis为什么这么快"></a>redis为什么这么快</h2><ol>
+<li>基于单线程的io阻塞模型，能够高效的进行网络io</li>
+<li>基于内存，且有自己的vm，不会导致虚拟内存频繁换入换出</li>
+<li>高效的数据结构</li>
+</ol>
+<h2 id="redis的单线程io多路复用模型"><a href="#redis的单线程io多路复用模型" class="headerlink" title="redis的单线程io多路复用模型"></a>redis的单线程io多路复用模型</h2><blockquote>
+<p>select&#x2F;poll&#x2F;epoll：<br>这三种是操作系统提供给程序员的系统调用api，epoll只有linux内核可以用，这三个系统调用封装了io多路复用机制：</p>
+<ul>
+<li>select：对于到来的socket链接，操作系统会把它按照特定的数据结构组织成一个文件（这个文件中元素的数量是有上限的，为1024），select操作将这个文件给内核态进行遍历，根据这些数据结构的状态找到需要进行处理的socket然后标记，再返回给用户态。这样的优点是简单直接，缺点是找到需要处理的socket时间复杂度大，而且能够处理的socket有限，所以仅仅支持小规模的io多路复用</li>
+<li>poll：是select的升级版，主要是将1024这个上线取消了，使用了链表就没有上限了，其余从用户态到内核态处理，从内核态到用户态都是一样的，都需要遍历两次，效率较低。</li>
+<li>epoll：首先是对于数据结构的处理，epoll在内核态维护了一个红黑树，使得处理socket不用每次都在两个态之间每次都复制，仅仅是将新增的加入红黑树，而且查询效率也很高；其次是采用了事件驱动的方法，并不会像select&#x2F;poll那样轮询，这里是直接阻塞，等有消息再通知，是一种阻塞的方式。</li>
+<li>水平触发和边缘触发：水平触发是有事件来了就一直通知，直到事件被处理；边缘触发是只通知一次，但是消息可能会丢失。</li>
+</ul>
+</blockquote>
+<p>redis基于reactor模式建立了一套高效的单线程io模型（这里的单线程指的是从socket到epoll发现到执行器处理的流程是单线程），主要组件有：</p>
+<ul>
+<li>多个socket（多个客户端请求，四元组即为一个socket）</li>
+<li>io多路复用：redis是基于epoll的，实现事件驱动的监听机制</li>
+<li>事件分派器：根据epoll_wait监听到的socket事件来决定接下来的执行逻辑</li>
+<li>事件执行逻辑：有accept，read，write。accept逻辑是根据新来的socket加入红黑树维护并监听</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Java/img_11.png" alt="" />
+</div>
+
+<h2 id="redis持久化"><a href="#redis持久化" class="headerlink" title="redis持久化"></a>redis持久化</h2><ul>
+<li>rdb：将当前的redis数据压缩成一个rdb文件，在文件压缩的过程中（save）会阻塞主线程，但是可以采用bgsave的方式，开辟一个新的线程执行。优点是数据形成的文件dump格式紧凑，redis恢复速度快；缺点是在两次save中间可能会导致丢数据，需要fork一个线程来进行save操作</li>
+<li>aof：类似记录日志，每次操作都需要保存。优点是实时性比rdb要好，不容易丢数据；缺点是文件占的地方很大，可能偶尔还需要一个压缩线程来压缩，恢复速度也比dump.rdb慢</li>
+</ul>
+<p><strong>aof的刷盘方式</strong>：</p>
+<ul>
+<li>always：每次操作完就刷盘一条aof</li>
+<li>everysec：每一秒钟刷盘一次</li>
+<li>no：不主动刷盘，靠操作系统来刷盘</li>
+</ul>
+<p><strong>aof为什么是一条命令执行完了才触发</strong>：</p>
+<ol>
+<li>有可能命令是错误的，只有正确的命令会aof</li>
+<li>不会阻塞当前的任务</li>
+<li>缺点是反着来的，不阻塞当前任务但是会阻塞下条任务，有可能执行校验完了执行完了，但是出现异常使得数据丢失没有存储</li>
+</ol>
+<p><strong>rdb的机制</strong>：<br>bgsave：copyonwirte<br>save：save 50 1000，50s有1000条变化就触发</p>
+<h2 id="过期删除"><a href="#过期删除" class="headerlink" title="过期删除"></a>过期删除</h2><ul>
+<li>定时清除：在设置key的过期时间的同时给一个定时任务，过期了定时任务删除。这种策略对于cpu不友好，还需要监控每一个key的剩余时间</li>
+<li>惰性删除：过期了不会立即删除，直到有访问的时候查询过期时间表，过期了就删除，返回空值。缺点是对于内存不友好</li>
+<li>定期删除：根据某个时间进行定期删除，算是上面两种的折中方案</li>
+</ul>
+<p>redis是惰性删除和定期删除相结合的过期删除策略，根据cpu运载情况选择策略，对于定期删除是随机挑选一些key检查过期情况，其中过期的删除，但是当这个比例大于某个阈值的时候redis就认为有大量过期key需要处理，因此会立即做一次删除，以此类推。</p>
+<h2 id="内存淘汰策略"><a href="#内存淘汰策略" class="headerlink" title="内存淘汰策略"></a>内存淘汰策略</h2><ol>
+<li>volatile-lru</li>
+<li>volatile-lfu</li>
+<li>volatile-random</li>
+<li>volatile-ttl</li>
+<li>all-lru</li>
+<li>all-lfu</li>
+<li>all-random</li>
+<li>no-eviction：默认的策略，满了会报错，驱逐新请求</li>
+</ol>
+<h2 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h2><h3 id="全量复制"><a href="#全量复制" class="headerlink" title="全量复制"></a>全量复制</h3><ol>
+<li>从服务器向主服务器发送replicaof命令，参数是自己的ip地址，请求主机的唯一id</li>
+<li>主机收到了之后返回自己的runid和当前复制的offset</li>
+<li>接着主机开始bgsave自己的rdb文件，与从机同步，每次复制都会有一个offset</li>
+<li>在复制的过程中可能也会有新的数据，此时主机会用一个缓冲区缓存这部分数据</li>
+<li>从机接受完成后，主机再把刚刚缓冲区的传给从机器</li>
+</ol>
+<h3 id="增量复制"><a href="#增量复制" class="headerlink" title="增量复制"></a>增量复制</h3><p>主机会维护一个环形缓冲区，储存最近的操作。如果这个环形缓冲区满了就说明有的请求恢复不了了，需要重新进行增量复制。如果没有满，就会用到上面说的那个offset进行增量复制。增量复制的时间很短，毕竟只用传掉线时间丢失的一部分数据。</p>
+<p>这个缓冲区的大小应该设置为比掉线恢复时间*平均输入数据稍大，这样就可以避免丢失数据而全量复制</p>
+<h2 id="哨兵机制"><a href="#哨兵机制" class="headerlink" title="哨兵机制"></a>哨兵机制</h2><blockquote>
+<p>哨兵也是集群，集群管理集群</p>
+</blockquote>
+<p><strong>主官下线和客观下线</strong></p>
+<p>redis集群通过心跳机制（ping-pong）来检测服务器是否存活，哨兵定期与服务器实例进行检测，当某一个哨兵发现主服务器没有在规定时间内返回pong，就会认为这个服务器下线了，这就是主观下线：</p>
+<p>但是这也有可能是由于网络信道丢失消息，未必是主服务器真的宕机了，所以还需要其他哨兵对其进行判断，当超过参数quorum的哨兵认为是下线了，那么就会被认为是客观下线，这个时候就需要进行故障转移。</p>
+<p><strong>选举和故障转移</strong></p>
+<p>既然主节点发生了故障，那么由谁来进行故障转移呢。那当然是最先发现故障的哨兵，但也可以是两个哨兵同时发现了故障，这个时候就要选举了，每个哨兵只有一个选票，自己发现的需要我选我，当哨兵获得的选票大于半数且也要大于quorum的时候就被选举为故障转移的节点。</p>
+<p>接下来就由这个节点进行故障转移：</p>
+<ol>
+<li>主节点周围的从节点选一个作为下个主节点，进行转移：首先过滤网络状态不好的；再按照优先级，复制进度，id号进行择优。（网络状态有一个主从复制的断连次数，根据这个可以排除网络状态）</li>
+<li>其他的从节点全部修改为replicaof这个节点</li>
+<li>订阅者通知频道告诉客户端进行了改变</li>
+<li>继续监视被替换的这个主机，如果上线了就让他变成从机</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/14/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">分布式面试篇</a>
       
     </h1>
@@ -428,80 +579,6 @@
 <p>这里面每一个id的toString都会创建一个新的对象，为了保证锁对象的唯一性，需要用intern直接取出常量池的地址</p>
 </blockquote>
 <p>为什么要有这种设计？字符串常量池本身就是为了可重复才扩展的，有的时候不想要与字符串的常量池共享，就需要创建一个新的字符串。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/10/redis%E6%80%BB%E7%BB%93/">redis总结</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-10
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="redis的数据结构"><a href="#redis的数据结构" class="headerlink" title="redis的数据结构"></a>redis的数据结构</h2><ul>
-<li>基本数据结构：string，hash，list，set，sorted set</li>
-<li>高级数据结构：geo，hyperloglog，bitmap</li>
-</ul>
-<h2 id="String的SDS"><a href="#String的SDS" class="headerlink" title="String的SDS"></a>String的SDS</h2><p>redis是基于c的，但是其并没有采用c语言的字符串形式。c语言的字符串是给首数据的指针，遍历字符串的时候一直往后找直到出现”\0”，这对于需要快速处理字符串的redis是不可接受的。</p>
-<p>于是redis发明了一个SDS（简单动态字符串），相对于原先的c语言字符串，这里最大的不同是使用一个数据结构里面保存字符串的数组和长度。优点如下：</p>
-<ol>
-<li>统计字符串的时间复杂度为o(1)：由于c语言的字符串是需要遍历的，类似链表的结构，但是sds直接就有一个字段保存长度</li>
-<li>可以保存二进制信息：由于c语言是要找到”\0”为末尾信息，不允许有空格，使得c语言字符串的存储形式受限；而sds没有这方面的特性，直接保存在一个数组里面，因此redis可以用字符串存储图片等二进制信息。</li>
-<li>不会发生溢出：由于保存了数组的长度和数组剩余长度，当进行字符串拼接的时候会校验新的长度是否会导致数组溢出，c语言是没有这个特性的。</li>
-</ol>
-<h2 id="压缩队列ziplist"><a href="#压缩队列ziplist" class="headerlink" title="压缩队列ziplist"></a>压缩队列ziplist</h2><p>在讲其他数据结构之前，需要讲一下压缩。在redis中list，set和zset都有两种数据结构，其中一种就是ziplist，初始为ziplist而当元素数量达到一定阈值就会进化为其他的。</p>
-<p>一般来说存储数据每一个格子长度都是固定的，但redis为了节约这部分空白数据就使用了动态长度，也就是说每一个格子只会正好包括数据而不会有空白。但是这样不是固定长度也给遍历带来的问题，不能够按照数组那种长度*个数来找地址，于是redis也做了一些方便搜索的数据结构。</p>
-<p><strong>连锁更新问题</strong></p>
-<p>除了搜索有缺点，还存在着更新问题，也能想到，如果在中间的某个数据需要更新，那么后面所有的数据都需要向后移动，造成很大的开销，所以redis只在数据量很小的情况下使用这个数据结构。</p>
-<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>类似jdk1.7实现的hashmap，就是拉链法解决哈希冲突。相较于jdk的hashmap，这里的扩容机制有很大不同。</p>
-<p><strong>渐进式扩容</strong><br>对于redis来说，由于是单线程，hashmap扩容会导致线程阻塞，影响性能，所以采用了渐进式hash。每当需要进行扩容的时候不会立刻一次性全部扩容，而是同时创建一个两倍大小的hashmap，在以后的每一次请求中，都会移动一部分数据从旧的hashmap到新的hashmap中，新增的数据就直接写在新表上。</p>
-<p>这样将一次扩容平坦到每次请求中，完成扩容的同时也没有严重影响性能。但是此时get一个数据就需要在两个表上都要找。</p>
-<h2 id="sorted-set和跳表"><a href="#sorted-set和跳表" class="headerlink" title="sorted set和跳表"></a>sorted set和跳表</h2><p>zset是按照分数score有序排列的集合，底层使用了ziplist+skiplist，当元素数量大于128且元素长度大于64字节的时候自动扩展为跳表。</p>
-<p><strong>跳表</strong></p>
-<p>单向链表查找的时间复杂度平均为o(n)，跳表用多层链表实现在单向链表上查询的时间复杂度降低为logn</p>
-<div style="text-align: center;">
-  <img src="../img/Java/img_10.png" alt="" />
-</div>
-
-<p>查询就像坐了快车，只有大站到达，节约了不少遍历的时间，一般来说上一层的节点数量是下一层的一半，当需要添加数据的时候如何确定这个节点的层级呢。如果说加入一个节点那么它在最底层的概率为100%，由于上面一层的数量是一半，那么他是2层节点的概率就为50%，3层的就为25%。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 随机生成节点的层数</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">randomLevel</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">lvl</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (random.nextFloat() &lt; P &amp;&amp; lvl &lt; MAX_LEVEL) &#123;</span><br><span class="line">        lvl++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> lvl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><strong>为什么用跳表而不是红黑树或者b树</strong></p>
-<ul>
-<li>hashmap的红黑树结构不适合范围查找，zset有个命令就是查询score在某个范围之内的，而且指针数量也较少，实现难度较低</li>
-<li>b树数据结构较大，内存不友好。节点分裂等实现起来较为复杂。</li>
-</ul>
-<h2 id="redis为什么这么快"><a href="#redis为什么这么快" class="headerlink" title="redis为什么这么快"></a>redis为什么这么快</h2><ol>
-<li>基于单线程的io阻塞模型，能够高效的进行网络io</li>
-<li>基于内存，且有自己的vm，不会导致虚拟内存频繁换入换出</li>
-<li>高效的数据结构</li>
-</ol>
 
     
     
