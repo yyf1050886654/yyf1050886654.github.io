@@ -465,7 +465,44 @@
     
 
     
-    
+    <h2 id="redis的数据结构"><a href="#redis的数据结构" class="headerlink" title="redis的数据结构"></a>redis的数据结构</h2><ul>
+<li>基本数据结构：string，hash，list，set，sorted set</li>
+<li>高级数据结构：geo，hyperloglog，bitmap</li>
+</ul>
+<h2 id="String的SDS"><a href="#String的SDS" class="headerlink" title="String的SDS"></a>String的SDS</h2><p>redis是基于c的，但是其并没有采用c语言的字符串形式。c语言的字符串是给首数据的指针，遍历字符串的时候一直往后找直到出现”\0”，这对于需要快速处理字符串的redis是不可接受的。</p>
+<p>于是redis发明了一个SDS（简单动态字符串），相对于原先的c语言字符串，这里最大的不同是使用一个数据结构里面保存字符串的数组和长度。优点如下：</p>
+<ol>
+<li>统计字符串的时间复杂度为o(1)：由于c语言的字符串是需要遍历的，类似链表的结构，但是sds直接就有一个字段保存长度</li>
+<li>可以保存二进制信息：由于c语言是要找到”\0”为末尾信息，不允许有空格，使得c语言字符串的存储形式受限；而sds没有这方面的特性，直接保存在一个数组里面，因此redis可以用字符串存储图片等二进制信息。</li>
+<li>不会发生溢出：由于保存了数组的长度和数组剩余长度，当进行字符串拼接的时候会校验新的长度是否会导致数组溢出，c语言是没有这个特性的。</li>
+</ol>
+<h2 id="压缩队列ziplist"><a href="#压缩队列ziplist" class="headerlink" title="压缩队列ziplist"></a>压缩队列ziplist</h2><p>在讲其他数据结构之前，需要讲一下压缩。在redis中list，set和zset都有两种数据结构，其中一种就是ziplist，初始为ziplist而当元素数量达到一定阈值就会进化为其他的。</p>
+<p>一般来说存储数据每一个格子长度都是固定的，但redis为了节约这部分空白数据就使用了动态长度，也就是说每一个格子只会正好包括数据而不会有空白。但是这样不是固定长度也给遍历带来的问题，不能够按照数组那种长度*个数来找地址，于是redis也做了一些方便搜索的数据结构。</p>
+<p><strong>连锁更新问题</strong></p>
+<p>除了搜索有缺点，还存在着更新问题，也能想到，如果在中间的某个数据需要更新，那么后面所有的数据都需要向后移动，造成很大的开销，所以redis只在数据量很小的情况下使用这个数据结构。</p>
+<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>类似jdk1.7实现的hashmap，就是拉链法解决哈希冲突。相较于jdk的hashmap，这里的扩容机制有很大不同。</p>
+<p><strong>渐进式扩容</strong><br>对于redis来说，由于是单线程，hashmap扩容会导致线程阻塞，影响性能，所以采用了渐进式hash。每当需要进行扩容的时候不会立刻一次性全部扩容，而是同时创建一个两倍大小的hashmap，在以后的每一次请求中，都会移动一部分数据从旧的hashmap到新的hashmap中，新增的数据就直接写在新表上。</p>
+<p>这样将一次扩容平坦到每次请求中，完成扩容的同时也没有严重影响性能。但是此时get一个数据就需要在两个表上都要找。</p>
+<h2 id="sorted-set和跳表"><a href="#sorted-set和跳表" class="headerlink" title="sorted set和跳表"></a>sorted set和跳表</h2><p>zset是按照分数score有序排列的集合，底层使用了ziplist+skiplist，当元素数量大于128且元素长度大于64字节的时候自动扩展为跳表。</p>
+<p><strong>跳表</strong></p>
+<p>单向链表查找的时间复杂度平均为o(n)，跳表用多层链表实现在单向链表上查询的时间复杂度降低为logn</p>
+<div style="text-align: center;">
+  <img src="../img/Java/img_10.png" alt="" />
+</div>
+
+<p>查询就像坐了快车，只有大站到达，节约了不少遍历的时间，一般来说上一层的节点数量是下一层的一半，当需要添加数据的时候如何确定这个节点的层级呢。如果说加入一个节点那么它在最底层的概率为100%，由于上面一层的数量是一半，那么他是2层节点的概率就为50%，3层的就为25%。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 随机生成节点的层数</span></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> <span class="title function_">randomLevel</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">lvl</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span> (random.nextFloat() &lt; P &amp;&amp; lvl &lt; MAX_LEVEL) &#123;</span><br><span class="line">        lvl++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> lvl;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>为什么用跳表而不是红黑树或者b树</strong></p>
+<ul>
+<li>hashmap的红黑树结构不适合范围查找，zset有个命令就是查询score在某个范围之内的，而且指针数量也较少，实现难度较低</li>
+<li>b树数据结构较大，内存不友好。节点分裂等实现起来较为复杂。</li>
+</ul>
+<h2 id="redis为什么这么快"><a href="#redis为什么这么快" class="headerlink" title="redis为什么这么快"></a>redis为什么这么快</h2><ol>
+<li>基于单线程的io阻塞模型，能够高效的进行网络io</li>
+<li>基于内存，且有自己的vm，不会导致虚拟内存频繁换入换出</li>
+<li>高效的数据结构</li>
+</ol>
+
     
     
   </div>
