@@ -212,6 +212,188 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/08/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E4%B8%8A%EF%BC%89/">java-虚拟机（上）</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-08
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="JVM组成"><a href="#JVM组成" class="headerlink" title="JVM组成"></a>JVM组成</h1><p>按照大的来分可以分为三部分：</p>
+<ol>
+<li>类加载器，由于java是纯面向对象语言，类加载器会把java类转换成成字节码</li>
+<li>运行时数据区（内存分区）：再细分可以分为共享的方法区和堆，线程不共享的虚拟机栈和本地方法栈，还有每个线程的指针</li>
+<li>执行引擎：将中间代码转换成机器指令（x86，arm等）</li>
+<li>本地库接口</li>
+</ol>
+<h1 id="运行时数据区详细介绍"><a href="#运行时数据区详细介绍" class="headerlink" title="运行时数据区详细介绍"></a>运行时数据区详细介绍</h1><ul>
+<li>堆（线程共享）</li>
+<li>方法区（线程共享）</li>
+<li>程序计数器（线程独占）</li>
+<li>虚拟机栈（线程独占）</li>
+<li>本地方法栈（线程独占）</li>
+</ul>
+<h2 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h2><p>就如同cpu中的pc，虚拟机中也有对应代码的pc，为了实现并发，每一个线程程序运行到哪里都不一样，也就需要保存，恢复上下文也方便。所以在jvm中程序计数器是私有的。</p>
+<p>注意：pc是唯一一个不会发生OOM的内存区域，估计是因为本来就放一个指针，再怎么样也超不出去。生存周期，随着线程的创建而创建，随着线程死亡而死亡。</p>
+<h2 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h2><p>这里的虚拟机栈跟真实的用c语言编译的栈类似，都是存函数调用的，有返回地址，局部变量，操作数，这里还有一个<strong>动态链接</strong></p>
+<ul>
+<li>局部变量表：主要存放了编译期可知的各种数据类型（boolean、byte、char、short、int、float、long、double）、对象引用（reference 类型，它不同于对象本身，可能是一个指向对象起始地址的引用指针，也可能是指向一个代表对象的句柄或其他与此对象相关的位置）。</li>
+<li>操作数栈：主要是作为方法调用的中间站，比如addi a,b,a（估计不是这么写的，反正就是a+b计算出来的值再赋给a），存放的那个临时变量就a+b就放在操作数栈</li>
+<li>动态链接：运行到一定位置的时候可能会需要调用其他的类或者方法，这个时候就要把<strong>符号引用转换为调用方法的直接引用</strong>，因为再编译的时候都是用的常量池，在常量池引用的，一层套一层，这个时候就要把最核心的那个函数给拿出来，变成直接引用<br>虚拟机栈超出会报错的，栈帧数量不能多于一个值。比如无限递归，最后报错报的是栈溢出，而不是堆溢出，因为在爆堆之前就已经爆栈</li>
+</ul>
+<h2 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h2><p>这个跟虚拟机栈很像，但是虚拟机栈是为了java语句服务的，本地方法栈是使用到的本地native方法服务</p>
+<h2 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h2><blockquote>
+<p>注意，我们在这里说的这五个其实是逻辑部分，就好像计算机组成原理中那五个部分一样，但是实际cpu又是控制器和运算器组合的。</p>
+<p>这里也是类似，可以理解为这是jvm的逻辑设计图，具体实现的比如jdk1.7的持久代和1.8的元空间，其实也只是方法区的一个实现罢了</p>
+</blockquote>
+<h2 id="持久代和元空间"><a href="#持久代和元空间" class="headerlink" title="持久代和元空间"></a>持久代和元空间</h2><p>最大的一块，jdk1.7主要是三块，新生代，老年代和持久代，1.8把持久代取消了，取而代之的是元空间</p>
+<p>个人理解，本来在堆中就完成了方法区的设计，在持久区放静态变量，代码块和编译好的代码，但是由于可能会出现oom，以及越来越多的动态类，时的很容易爆堆，这个时候不如把它提出虚拟机吧！放在实际内存下面，这样就有更广阔的空间给你爆了。</p>
+<p>于是元空间这个概念就出来了，但是也不是无限扩大，有大小限制的</p>
+<p><strong>为什么使用元空间？</strong></p>
+<ul>
+<li>1）由于 PermGen 内存经常会溢出，引发OutOfMemoryError，因此 JVM 的开发者希望这一块内存可以更灵活地被管理，不要再经常出现这样的 OOM。</li>
+<li>2）移除 PermGen 可以促进 HotSpot JVM 与 JRockit VM 的融合，因为 JRockit 没有永久代。</li>
+<li>3）减轻gc的负担，放在外面的元空间可以不用gc</li>
+</ul>
+<p>准确来说，Perm 区中的字符串常量池被移到了堆内存中是在 Java7 之后，Java 8 时，PermGen 被元空间代替，其他内容比如<strong>类元信息、字段、静态属性、方法、常量</strong>等都移动到元空间区。比如 java&#x2F;lang&#x2F;Object 类元信息、静态属性 System.out、整型常量等。</p>
+<p>元空间的本质和永久代类似，都是对 JVM 规范中方法区的实现。不过元空间与永久代之间最大的区别在于：元空间并不在虚拟机中，而是使用本地内存。因此，默认情况下，元空间的大小仅受本地内存限制。</p>
+<h2 id="新生代和老年代"><a href="#新生代和老年代" class="headerlink" title="新生代和老年代"></a>新生代和老年代</h2><ul>
+<li>年轻代被划分为三部分，Eden区和两个大小严格相同的Survivor区，根据JVM的策略，在经过几次垃圾收集后，任然存活于Survivor的对象将被移动到老年代区间。</li>
+<li>老年代主要保存生命周期长的对象，一般是一些老的对象</li>
+</ul>
+<p>这就涉及到后面的垃圾回收算法了</p>
+<h2 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h2><p>一般来存静态变量，常量以及编译好的代码</p>
+<blockquote>
+<p>这里要注意，既然方法区里面有常量，那也会有运行时常量池。这里要区分<strong>字符串常量池</strong>，jdk1.7之前，字符串常量池是跟持久代放在一起的，是持久代的一个组成部分，1.7之后，字符串常量池就放在堆空间里了，也就是说提出来了，直到现在也还是在堆空间</p>
+<p><strong>为什么？</strong></p>
+<p>主要是因为永久代（方法区实现）的 GC 回收效率太低，只有在整堆收集 (Full GC)的时候才会被执行 GC。Java 程序中通常会有大量的被创建的字符串等待回收，将字符串常量池放到堆中，能够更高效及时地回收字符串内存。</p>
+<p>而运行时常量池是放在方法区的，也就是元空间</p>
+</blockquote>
+<h1 id="类加载器与双亲委派模型"><a href="#类加载器与双亲委派模型" class="headerlink" title="类加载器与双亲委派模型"></a>类加载器与双亲委派模型</h1><blockquote>
+<p>这里的加载有点像dns的递归查找</p>
+</blockquote>
+<ul>
+<li>bootstrapClassLoader：根加载器，每个都会从它开始</li>
+<li>ExtClassLoader：扩展功能的一些jar包里面的类</li>
+<li>AppClassLoader：应用类加载器</li>
+<li>自定义，可以重写方法</li>
+</ul>
+<p><strong>双亲委派模型</strong></p>
+<p>如果一个类加载器在接到加载类的请求时，它首先不会自己尝试去加载这个类，而是把这个请求任务委托给父类加载器去完成，依次递归，如果父类加载器可以完成类加载任务，就返回成功；只有父类加载器无法完成此加载任务时，才由下一级去加载。 </p>
+<p>双亲委派模型保证了 Java 程序的稳定运行，可以避免类的重复加载（JVM 区分不同类的方式不仅仅根据类名，相同的类文件被不同的类加载器加载产生的是两个不同的类），也保证了 Java 的核心 API 不被篡改。如果没有使用双亲委派模型，而是每个类加载器加载自己的话就会出现一些问题，比如我们编写一个称为 java.lang.Object 类的话，那么程序运行的时候，系统就会出现两个不同的 Object 类。双亲委派模型可以保证加载的是 JRE 里的那个 Object 类，而不是你写的 Object 类。这是因为 AppClassLoader 在加载你的 Object 类时，会委托给 ExtClassLoader 去加载，而 ExtClassLoader 又会委托给 BootstrapClassLoader，BootstrapClassLoader 发现自己已经加载过了 Object 类，会直接返回，不会去加载你写的 Object 类</p>
+<p>好处：</p>
+<ul>
+<li>防止核心库被篡改</li>
+<li>不重复加载类</li>
+</ul>
+<h1 id="打破双亲委派"><a href="#打破双亲委派" class="headerlink" title="打破双亲委派"></a>打破双亲委派</h1><p>tomcat，重写了loadClass方法</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/04/07/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%88%E4%B8%AD/">java-多线程-ThreadLocal和线程池</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-07
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="ThreadLocal"><a href="#ThreadLocal" class="headerlink" title="ThreadLocal"></a>ThreadLocal</h1><p>通常情况下，我们创建的变量是可以被任何一个线程访问并修改的。如果想实现每一个线程都有自己的专属本地变量该如何解决呢？</p>
+<p>JDK 中自带的ThreadLocal类正是为了解决这样的问题。 ThreadLocal类主要解决的就是让每个线程绑定自己的值，可以将ThreadLocal类形象的比喻成存放数据的盒子，盒子中可以存储每个线程的私有数据。</p>
+<p>如果你创建了一个ThreadLocal变量，那么访问这个变量的每个线程都会有这个变量的本地副本，这也是ThreadLocal变量名的由来。他们可以使用 get() 和 set() 方法来获取默认值或将其值更改为当前线程所存的副本的值，从而避免了线程安全问题。</p>
+<p>再举个简单的例子：两个人去宝屋收集宝物，这两个共用一个袋子的话肯定会产生争执，但是给他们两个人每个人分配一个袋子的话就不会出现这样的问题。如果把这两个人比作线程的话，那么 ThreadLocal 就是用来避免这两个线程竞争的。</p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p><img src="/../img/Java/img_5.png"></p>
+<p>其实不是ThreadLocal有这个数据结构，是Thread持有的，有一个ThreadLocalMap的数组，专门放键值对，K为ThreadLocal的类对象，V为ThreadLocal泛型的数据。</p>
+<p>也就是说，在一个线程中，如果有多个ThreadLocal，查找Map键为这个ThreadLocal变量，就可以很轻松拿到存的值。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">set</span><span class="params">(T value)</span> &#123;</span><br><span class="line">    <span class="comment">//获取当前请求的线程</span></span><br><span class="line">    <span class="type">Thread</span> <span class="variable">t</span> <span class="operator">=</span> Thread.currentThread();</span><br><span class="line">    <span class="comment">//取出 Thread 类内部的 threadLocals 变量(哈希表结构)</span></span><br><span class="line">    <span class="type">ThreadLocalMap</span> <span class="variable">map</span> <span class="operator">=</span> getMap(t);</span><br><span class="line">    <span class="keyword">if</span> (map != <span class="literal">null</span>)</span><br><span class="line">        <span class="comment">// 将需要存储的值放入到这个哈希表中</span></span><br><span class="line">        map.set(<span class="built_in">this</span>, value);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        createMap(t, value);</span><br><span class="line">&#125;</span><br><span class="line">ThreadLocalMap <span class="title function_">getMap</span><span class="params">(Thread t)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> t.threadLocals;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="内存泄露问题"><a href="#内存泄露问题" class="headerlink" title="内存泄露问题"></a>内存泄露问题</h2><p>这个Map里面，Key是弱引用的，也就是说每次gc都会回收key，而value是强引用的。这个时候就会出现，key被gc回收了为null，value还有的情况。这个时候就会产生内存泄露。</p>
+<p>解决方法：释放的时候手动remove。</p>
+<h1 id="线程池的四个种类"><a href="#线程池的四个种类" class="headerlink" title="线程池的四个种类"></a>线程池的四个种类</h1><ol>
+<li>newCachedThreadPool创建一个可缓存的线程池，默认阻塞队列是SynchronousQueue</li>
+<li>newFixedThreadPool创建一个定长的线程池，默认阻塞队列是LinkedBlockingQueue</li>
+<li>newSingleThreadExecutor创建一个单例线程，默认也是LinkedBlockingQueue</li>
+<li>newScheduled创建一个可以设置定时任务的线程</li>
+</ol>
+<h1 id="线程池的核心参数"><a href="#线程池的核心参数" class="headerlink" title="线程池的核心参数"></a>线程池的核心参数</h1><p>除了上面四种封装好的，还可以自己创建</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 用给定的初始参数创建一个新的ThreadPoolExecutor。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">ThreadPoolExecutor</span><span class="params">(<span class="type">int</span> corePoolSize,//线程池的核心线程数量</span></span><br><span class="line"><span class="params">                          <span class="type">int</span> maximumPoolSize,//线程池的最大线程数</span></span><br><span class="line"><span class="params">                          <span class="type">long</span> keepAliveTime,//当线程数大于核心线程数时，多余的空闲线程存活的最长时间</span></span><br><span class="line"><span class="params">                          TimeUnit unit,//时间单位</span></span><br><span class="line"><span class="params">                          BlockingQueue&lt;Runnable&gt; workQueue,//任务队列，用来储存等待执行任务的队列</span></span><br><span class="line"><span class="params">                          ThreadFactory threadFactory,//线程工厂，用来创建线程，一般默认即可</span></span><br><span class="line"><span class="params">                          RejectedExecutionHandler handler//拒绝策略，当提交的任务过多而不能及时处理时，我们可以定制策略来处理任务</span></span><br><span class="line"><span class="params">                           )</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (corePoolSize &lt; <span class="number">0</span> ||</span><br><span class="line">        maximumPoolSize &lt;= <span class="number">0</span> ||</span><br><span class="line">        maximumPoolSize &lt; corePoolSize ||</span><br><span class="line">        keepAliveTime &lt; <span class="number">0</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>();</span><br><span class="line">    <span class="keyword">if</span> (workQueue == <span class="literal">null</span> || threadFactory == <span class="literal">null</span> || handler == <span class="literal">null</span>)</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">NullPointerException</span>();</span><br><span class="line">    <span class="built_in">this</span>.corePoolSize = corePoolSize;</span><br><span class="line">    <span class="built_in">this</span>.maximumPoolSize = maximumPoolSize;</span><br><span class="line">    <span class="built_in">this</span>.workQueue = workQueue;</span><br><span class="line">    <span class="built_in">this</span>.keepAliveTime = unit.toNanos(keepAliveTime);</span><br><span class="line">    <span class="built_in">this</span>.threadFactory = threadFactory;</span><br><span class="line">    <span class="built_in">this</span>.handler = handler;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>七个核心参数：</p>
+<ol>
+<li>核心线程数量</li>
+<li>最大线程数量</li>
+<li>过期时间：如果线程池的线程数量大于核心线程数量，如果没有新的任务提交，那么已经到期的线程不会立刻销毁，而是等一段时间销毁</li>
+<li>过期时间单位：可以是秒，毫秒</li>
+<li>阻塞队列：刚刚提的那些，后面还会说</li>
+<li>饱和缩略</li>
+<li>线程工厂类：一般都是默认的，可以定制线程对象的创建，例如设置线程名字、是否是守护线程等</li>
+</ol>
+<h1 id="饱和策略"><a href="#饱和策略" class="headerlink" title="饱和策略"></a>饱和策略</h1><p>当阻塞队列满了，而且最大线程数量也满了，就会触发饱和策略</p>
+<ol>
+<li>抛出异常，不让加了</li>
+<li>线程不走线程池，提交线程的那个线程自己来运行</li>
+<li>不报错，直接丢弃</li>
+<li>丢弃队列最前面那个，然后加进队列</li>
+</ol>
+<h1 id="如何确定线程数量"><a href="#如何确定线程数量" class="headerlink" title="如何确定线程数量"></a>如何确定线程数量</h1><ul>
+<li>io密集型：2n+1</li>
+<li>cpu密集型：n+1<br>这里的n都是当前机器的虚拟内核数量，io密集型主要都是io时间多，对于cpu负载并不大</li>
+</ul>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/">java-多线程-volatile，synchronized和lock</a>
       
     </h1>
@@ -1082,228 +1264,6 @@
 <p>通过发布者&#x2F;订阅者机制机制，有了这些事件通知，客户端不仅可以在主从切换后得到新主节点的连接信息，还可以监控到主从节点切换过程中发生的各个重要事件。这样，客户端就可以知道主从切换进行到哪一步了，有助于了解切换进度。</p>
 <h3 id="步骤四：将旧主节点变为从节点"><a href="#步骤四：将旧主节点变为从节点" class="headerlink" title="步骤四：将旧主节点变为从节点"></a>步骤四：将旧主节点变为从节点</h3><p>故障转移操作最后要做的是，继续监视旧主节点，当旧主节点重新上线时，哨兵集群就会向它发送 SLAVEOF 命令，让它成为新主节点的从节点</p>
 <p>至此，整个主从节点的故障转移的工作结束</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/04/01/redis-%E6%8C%81%E4%B9%85%E5%8C%96%E7%AF%87/">redis-持久化篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-04-01
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="Redis持久化"><a href="#Redis持久化" class="headerlink" title="Redis持久化"></a>Redis持久化</h1><p>Redis 是<strong>内存数据库</strong>，如果不将内存中的数据库状态保存到磁盘，那么一旦服务器进程退出，服务器中的数据库状态也会消失。所以 Redis 提供了**持久化功能 **!</p>
-<h2 id="RDB"><a href="#RDB" class="headerlink" title="RDB"></a>RDB</h2><p>RDB全称Redis Database Backup file（Redis数据备份文件），也被叫做Redis数据快照。简单来说就是定期把内存所有数据都记录到磁盘中。</p>
-<p>一旦Redis实例出现故障重启，就会从磁盘中读取快照文件，恢复数据</p>
-<blockquote>
-<p>什么是快照？可以理解成定期给当前的内存中的redis数据拍一张照，然后保存下来。</p>
-</blockquote>
-<h3 id="RDB触发机制"><a href="#RDB触发机制" class="headerlink" title="RDB触发机制"></a>RDB触发机制</h3><p>  可以分为手动触发和自动触发，手动的save占用主进程，bgsave是fork一个新进程来完成快照保存，在此期间主进程通过copyonwrite的机制（类似copyonwrite的Arraylist那样），拷贝一份当前数据，在拷贝的地方进行修改，等到子进程完成磁盘写之后再进行覆盖。</p>
-<p>  自动触发写在redis.conf上，save X Y，表示在X秒内如果有Y个key修改，那么就save（注意这里触发的还是bgsave）<br><img src="/../img/Redis/img_7.png"></p>
-<ul>
-<li>手动触发<br><img src="/../img/Redis/img_6.png"><br>用bgsave可以防止主进程被阻塞，提高效率</li>
-</ul>
-<p>fork采用的是copy-on-write</p>
-<ul>
-<li>当主进程执行读操作的时候可以访问共享内存</li>
-<li>当主进程执行写操作的时候，则会拷贝一份数据</li>
-</ul>
-<p><img src="/../img/Redis/img_9.png"></p>
-<blockquote>
-<p>子进程和主线程怎么共享内存，也就是怎么让子进程知道redis的内存是那些块？通过拷贝主进程的页表（没错就是计组那个页表），这样就知道主进程占用的虚拟地址和物理地址的映射关系，从而找到这些块。</p>
-<p>copyonwrite会将此时的共享内存变成<strong>只读</strong>，主进程来读的时候就可以直接读，写的时候拷贝一份。</p>
-</blockquote>
-<ul>
-<li>自动触发<br><img src="/../img/Redis/img_8.png"><blockquote>
-<p>注意这里save其实也是bgsave，一般都不会影响主进程</p>
-</blockquote>
-</li>
-</ul>
-<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
-<ul>
-<li>只有一个dump.rdb，方便持久化，是一个紧凑的二进制文件，恢复的时候速度也比AOF更快，在数据量大的时候更明显。</li>
-<li>实现了性能的最大化，fork子进程来完成而不影响主进程，保证了Redis的高性能。</li>
-</ul>
-<p><strong>缺点</strong>：</p>
-<ul>
-<li>可能存在数据丢失，在两次RDB的时间里，如果出现宕机，这段时间没有写入的数据都将丢失</li>
-<li>没有办法做到秒级持久化&#x2F;实时持久化</li>
-<li>对于cpu和内存的开销比较大，毕竟要fork一个新进程占用cpu，还要进行COW占用内存而，AOF主要占用的是IO资源</li>
-</ul>
-<p><strong>使用场景</strong>：</p>
-<ul>
-<li>可以容忍数分钟数据丢失，追求更快的启动速度和恢复速度。</li>
-</ul>
-<h2 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h2><p>AOF（append only file） 持久化，采用日志的形式来记录每个写操作，追加到AOF文件的末尾。</p>
-<blockquote>
-<p>意思就是把操作的每一条语句都记录下来，那肯定占用的空间大</p>
-</blockquote>
-<p>Redis默认情况是不开启AOF的。重启时再重新执行AOF文件中的命令来恢复数据。它主要解决数据持久化的实时性问题。</p>
-<p><img src="/../img/Redis/img_10.png"></p>
-<p>AOF是<strong>执行完命令后才记录日志</strong>的。为什么不先记录日志再执行命令呢？这是因为Redis在向AOF记录日志时，不会先对这些命令进行语法检查，如果先记录日志再执行命令，日志中可能记录了错误的命令，Redis使用日志回复数据时，可能会出错。</p>
-<p>正是因为执行完命令后才记录日志，所以不会阻塞当前的写操作。但是会存在两个风险：</p>
-<ul>
-<li>更执行完命令还没记录日志时，宕机了会导致数据丢失</li>
-<li>AOF不会阻塞当前命令，但是可能会阻塞下一个操作。</li>
-</ul>
-<blockquote>
-<p>这两个风险最好的解决方案是折中妙用AOF机制的三种写回策略 appendfsync：</p>
-<ul>
-<li>always，同步写回，每个子命令执行完，都立即将日志写回磁盘。</li>
-<li>everysec，每个命令执行完，只是先把日志写到AOF内存缓冲区，每隔一秒同步到磁盘。</li>
-<li>no：只是先把日志写到AOF内存缓冲区，有操作系统去决定何时写入磁盘。</li>
-</ul>
-</blockquote>
-<p><img src="/../img/Redis/img_11.png"></p>
-<p>always同步写回，可以基本保证数据不丢失，no策略则性能高但是数据可能会丢失，一般可以考虑折中选择everysec。</p>
-<p>如果接受的命令越来越多，AOF文件也会越来越大，文件过大还是会带来性能问题。日志文件过大怎么办呢？</p>
-<blockquote>
-<p><strong>AOF重写机制</strong>就是随着时间推移，AOF文件会有一些冗余的命令如：无效命令、过期数据的命令等等，AOF重写机制就是把它们合并为一个命令（类似批处理命令），从而达到精简压缩空间的目的。</p>
-<p>AOF重写会阻塞嘛？AOF日志是由主线程会写的，而重写则不一样，重写过程是由后台子进程bgrewriteaof完成。</p>
-</blockquote>
-<h3 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
-<ul>
-<li>实时持久化，数据安全，AOF持久化配置为always就可以基本上避免丢失，但是开销比较大，通常用容忍1s内丢失的everysec</li>
-<li>通过append模式写文件，那么即使中途服务器宕机，也可以尽量解决一致性问题（取决于刷盘策略）</li>
-<li>重写机制，在文件太大的时候可以压缩空间</li>
-</ul>
-<p><strong>缺点</strong>：</p>
-<ul>
-<li>文件比RDB大，恢复时间也会慢很多</li>
-<li>启动效率低</li>
-<li>文件体积迅速变大，需要定期执行重写机制降低文件体积。</li>
-</ul>
-<p><strong>使用场景</strong>：</p>
-<ul>
-<li>对数据安全性有较高需求的场景</li>
-</ul>
-<blockquote>
-<p>Redis4.0开始支持RDB和AOF的混合持久化，就是内存快照以一定频率执行，两次快照之间，再使用AOF记录这期间的所有命令操作。</p>
-</blockquote>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/">redis-缓存三兄弟</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-31
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><blockquote>
-<p>这里的redis可以全部想象成cache，数据库可以想象成cpu，穿透有点绕过redis的意思</p>
-</blockquote>
-<p><img src="/../img/Redis/img.png"><br>假设有一个请求api&#x2F;news&#x2F;getById&#x2F;1，但是这个id为1的键并<strong>不存在</strong>于数据库，所以也不会存在于缓存，那么如果有很多这种请求，那么都会绕过redis去查询数据库，造成数据库的负载。</p>
-<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
-<li>缓存空数据，就算是数据库找不到也要缓存一个空数据给redis，要不然就会一直会去绕过redis去找数据库。比如给的key&#x3D;1但是mysql没有相应数据，那么在redis上缓存一个key&#x3D;1，value&#x3D;null的键值对。</li>
-</ol>
-<ul>
-<li><strong>优点</strong>：非常简单，维护方便</li>
-<li><strong>缺点</strong>：会造成额外的内存消耗，因为redis是存在内存中的，有多少个没有的键就会有多少个空，浪费内存。还可能造成<strong>短期不一致</strong>问题，如果在redis里面存了这个空但是这个时候数据库更新了这个键值对，那么在这一段时间访问redis的还是null，就会造成不一致的问题</li>
-</ul>
-<ol start="2">
-<li>布隆过滤器<br>在客户端与Redis之间加了一个布隆过滤器，对于请求进行过滤。</li>
-</ol>
-<p><img src="/../img/Redis/img_1.png"></p>
-<blockquote>
-<p><strong>布隆过滤器</strong></p>
-<ul>
-<li>bitmap（位图）:bit位的数组，数组的元素是0或者1，所以布隆过滤器占用的内存小</li>
-<li><img src="/../img/Redis/img_2.png"></li>
-<li>作用：可以用来检索元素，相当于一种校验电路</li>
-<li>实现原理：类似hashmap，假设来了一个键，用三种不同的hash算法得到位图的三个位置，然后这些位置都置为1，这里要跟redis缓存的保持一致，在初始化的时候就要预热进布隆过滤器。那么就会有很多重复的，数组越大这种情况会越少。那么此时有一个<strong>确实不存在的元素</strong>，但是计算出来的三个哈希值就是都是1，那么还是会发生缓存穿透的现象</li>
-<li>判断不存在的时候一定不存在，也就是说3个地方一定都不为1</li>
-<li>判断存在的时候不一定存在，因为有可能会有误判</li>
-<li><strong>优点</strong>：内存占用小，没有多余key</li>
-<li><strong>缺点</strong>：实现比较复杂，存在误判，大概在5%左右，但是对于数据库也是可以接受的</li>
-</ul>
-</blockquote>
-<p>布隆过滤器的大致的原理：布隆过滤器中存放二进制位。数据库的数据通过hash算法计算其hash值并存放到布隆过滤器中，之后判断数据是否存在的时候，就是判断该hash值是0还是1。</p>
-<p>但是这个玩意是一种概率上的统计，当其判断不存在的时候就一定是不存在；当其判断存在的时候就不一定存在。所以有一定的穿透风险！！！</p>
-<h1 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h1><p>缓存击穿，指的是一个key在不断地支撑高并发，高并发持续对这个点进行访问，当这个点在失效的瞬间，50ms左右，大量的高并发就冲坡缓存请求数据库，造成数据库瘫痪。</p>
-<p>对于一般的网站而言很难有缓存击穿的级别，一般是热门网站或者秒杀瞬时高并发。</p>
-<h2 id="解决方法-1"><a href="#解决方法-1" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
-<li>互斥锁</li>
-</ol>
-<p><img src="/../img/Redis/img_3.png"></p>
-<p>类似pv操作，给临界区上互斥锁，一段时间只要一个线程在重建数据就行，但是这样会造成其他线程等待。通常是需要强一致性的应用需要这种策略。</p>
-<ul>
-<li><strong>优点</strong>：强一致性，在redis没有更新完之前都不许访问，只能要最新的，一般涉及钱的都会有这种逻辑</li>
-<li><strong>缺点</strong>：性能差</li>
-</ul>
-<ol start="2">
-<li>逻辑过期</li>
-</ol>
-<p><img src="/../img/Redis/img_4.png"></p>
-<p>逻辑过期就是在一个键值对的最后加上逻辑时间，并不真实设置过期时间。也就是说，不会真正的过期只会逻辑上的过期。</p>
-<p>当一个线程去访问一个逻辑时间到了的键值对，那么其实redis也还有这部分，他还是<strong>那这部分旧的数据</strong>，但是会开启一个新的线程来完成数据库到mysql的更新</p>
-<ul>
-<li><strong>优点</strong>：可用性强，性能强在不注重强一致性的场景，不会有其他线程等待的情况，但是拿的都是旧数据</li>
-<li><strong>缺点</strong>：一致性弱</li>
-</ul>
-<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><p>如果缓存集中在一段时间内过期，那么会有大量的缓存穿透，所有的查询都落在数据库上，造成缓存雪崩</p>
-<blockquote>
-<p>缓存雪崩和缓存击穿的区别：缓存击穿是针对某一个key，缓存雪崩是针对很多key集中过期，</p>
-</blockquote>
-<p><img src="/../img/Redis/img_5.png"></p>
-<h2 id="解决方法："><a href="#解决方法：" class="headerlink" title="解决方法："></a>解决方法：</h2><ol>
-<li>给不同的key的TTL添加随机值</li>
-<li>多个redis集群提高服务的可用性</li>
-</ol>
 
     
     

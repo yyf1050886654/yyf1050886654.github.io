@@ -212,6 +212,228 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/01/redis-%E6%8C%81%E4%B9%85%E5%8C%96%E7%AF%87/">redis-持久化篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-01
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="Redis持久化"><a href="#Redis持久化" class="headerlink" title="Redis持久化"></a>Redis持久化</h1><p>Redis 是<strong>内存数据库</strong>，如果不将内存中的数据库状态保存到磁盘，那么一旦服务器进程退出，服务器中的数据库状态也会消失。所以 Redis 提供了**持久化功能 **!</p>
+<h2 id="RDB"><a href="#RDB" class="headerlink" title="RDB"></a>RDB</h2><p>RDB全称Redis Database Backup file（Redis数据备份文件），也被叫做Redis数据快照。简单来说就是定期把内存所有数据都记录到磁盘中。</p>
+<p>一旦Redis实例出现故障重启，就会从磁盘中读取快照文件，恢复数据</p>
+<blockquote>
+<p>什么是快照？可以理解成定期给当前的内存中的redis数据拍一张照，然后保存下来。</p>
+</blockquote>
+<h3 id="RDB触发机制"><a href="#RDB触发机制" class="headerlink" title="RDB触发机制"></a>RDB触发机制</h3><p>  可以分为手动触发和自动触发，手动的save占用主进程，bgsave是fork一个新进程来完成快照保存，在此期间主进程通过copyonwrite的机制（类似copyonwrite的Arraylist那样），拷贝一份当前数据，在拷贝的地方进行修改，等到子进程完成磁盘写之后再进行覆盖。</p>
+<p>  自动触发写在redis.conf上，save X Y，表示在X秒内如果有Y个key修改，那么就save（注意这里触发的还是bgsave）<br><img src="/../img/Redis/img_7.png"></p>
+<ul>
+<li>手动触发<br><img src="/../img/Redis/img_6.png"><br>用bgsave可以防止主进程被阻塞，提高效率</li>
+</ul>
+<p>fork采用的是copy-on-write</p>
+<ul>
+<li>当主进程执行读操作的时候可以访问共享内存</li>
+<li>当主进程执行写操作的时候，则会拷贝一份数据</li>
+</ul>
+<p><img src="/../img/Redis/img_9.png"></p>
+<blockquote>
+<p>子进程和主线程怎么共享内存，也就是怎么让子进程知道redis的内存是那些块？通过拷贝主进程的页表（没错就是计组那个页表），这样就知道主进程占用的虚拟地址和物理地址的映射关系，从而找到这些块。</p>
+<p>copyonwrite会将此时的共享内存变成<strong>只读</strong>，主进程来读的时候就可以直接读，写的时候拷贝一份。</p>
+</blockquote>
+<ul>
+<li>自动触发<br><img src="/../img/Redis/img_8.png"><blockquote>
+<p>注意这里save其实也是bgsave，一般都不会影响主进程</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
+<ul>
+<li>只有一个dump.rdb，方便持久化，是一个紧凑的二进制文件，恢复的时候速度也比AOF更快，在数据量大的时候更明显。</li>
+<li>实现了性能的最大化，fork子进程来完成而不影响主进程，保证了Redis的高性能。</li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>可能存在数据丢失，在两次RDB的时间里，如果出现宕机，这段时间没有写入的数据都将丢失</li>
+<li>没有办法做到秒级持久化&#x2F;实时持久化</li>
+<li>对于cpu和内存的开销比较大，毕竟要fork一个新进程占用cpu，还要进行COW占用内存而，AOF主要占用的是IO资源</li>
+</ul>
+<p><strong>使用场景</strong>：</p>
+<ul>
+<li>可以容忍数分钟数据丢失，追求更快的启动速度和恢复速度。</li>
+</ul>
+<h2 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h2><p>AOF（append only file） 持久化，采用日志的形式来记录每个写操作，追加到AOF文件的末尾。</p>
+<blockquote>
+<p>意思就是把操作的每一条语句都记录下来，那肯定占用的空间大</p>
+</blockquote>
+<p>Redis默认情况是不开启AOF的。重启时再重新执行AOF文件中的命令来恢复数据。它主要解决数据持久化的实时性问题。</p>
+<p><img src="/../img/Redis/img_10.png"></p>
+<p>AOF是<strong>执行完命令后才记录日志</strong>的。为什么不先记录日志再执行命令呢？这是因为Redis在向AOF记录日志时，不会先对这些命令进行语法检查，如果先记录日志再执行命令，日志中可能记录了错误的命令，Redis使用日志回复数据时，可能会出错。</p>
+<p>正是因为执行完命令后才记录日志，所以不会阻塞当前的写操作。但是会存在两个风险：</p>
+<ul>
+<li>更执行完命令还没记录日志时，宕机了会导致数据丢失</li>
+<li>AOF不会阻塞当前命令，但是可能会阻塞下一个操作。</li>
+</ul>
+<blockquote>
+<p>这两个风险最好的解决方案是折中妙用AOF机制的三种写回策略 appendfsync：</p>
+<ul>
+<li>always，同步写回，每个子命令执行完，都立即将日志写回磁盘。</li>
+<li>everysec，每个命令执行完，只是先把日志写到AOF内存缓冲区，每隔一秒同步到磁盘。</li>
+<li>no：只是先把日志写到AOF内存缓冲区，有操作系统去决定何时写入磁盘。</li>
+</ul>
+</blockquote>
+<p><img src="/../img/Redis/img_11.png"></p>
+<p>always同步写回，可以基本保证数据不丢失，no策略则性能高但是数据可能会丢失，一般可以考虑折中选择everysec。</p>
+<p>如果接受的命令越来越多，AOF文件也会越来越大，文件过大还是会带来性能问题。日志文件过大怎么办呢？</p>
+<blockquote>
+<p><strong>AOF重写机制</strong>就是随着时间推移，AOF文件会有一些冗余的命令如：无效命令、过期数据的命令等等，AOF重写机制就是把它们合并为一个命令（类似批处理命令），从而达到精简压缩空间的目的。</p>
+<p>AOF重写会阻塞嘛？AOF日志是由主线程会写的，而重写则不一样，重写过程是由后台子进程bgrewriteaof完成。</p>
+</blockquote>
+<h3 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
+<ul>
+<li>实时持久化，数据安全，AOF持久化配置为always就可以基本上避免丢失，但是开销比较大，通常用容忍1s内丢失的everysec</li>
+<li>通过append模式写文件，那么即使中途服务器宕机，也可以尽量解决一致性问题（取决于刷盘策略）</li>
+<li>重写机制，在文件太大的时候可以压缩空间</li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>文件比RDB大，恢复时间也会慢很多</li>
+<li>启动效率低</li>
+<li>文件体积迅速变大，需要定期执行重写机制降低文件体积。</li>
+</ul>
+<p><strong>使用场景</strong>：</p>
+<ul>
+<li>对数据安全性有较高需求的场景</li>
+</ul>
+<blockquote>
+<p>Redis4.0开始支持RDB和AOF的混合持久化，就是内存快照以一定频率执行，两次快照之间，再使用AOF记录这期间的所有命令操作。</p>
+</blockquote>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/">redis-缓存三兄弟</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-31
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h1><blockquote>
+<p>这里的redis可以全部想象成cache，数据库可以想象成cpu，穿透有点绕过redis的意思</p>
+</blockquote>
+<p><img src="/../img/Redis/img.png"><br>假设有一个请求api&#x2F;news&#x2F;getById&#x2F;1，但是这个id为1的键并<strong>不存在</strong>于数据库，所以也不会存在于缓存，那么如果有很多这种请求，那么都会绕过redis去查询数据库，造成数据库的负载。</p>
+<h2 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
+<li>缓存空数据，就算是数据库找不到也要缓存一个空数据给redis，要不然就会一直会去绕过redis去找数据库。比如给的key&#x3D;1但是mysql没有相应数据，那么在redis上缓存一个key&#x3D;1，value&#x3D;null的键值对。</li>
+</ol>
+<ul>
+<li><strong>优点</strong>：非常简单，维护方便</li>
+<li><strong>缺点</strong>：会造成额外的内存消耗，因为redis是存在内存中的，有多少个没有的键就会有多少个空，浪费内存。还可能造成<strong>短期不一致</strong>问题，如果在redis里面存了这个空但是这个时候数据库更新了这个键值对，那么在这一段时间访问redis的还是null，就会造成不一致的问题</li>
+</ul>
+<ol start="2">
+<li>布隆过滤器<br>在客户端与Redis之间加了一个布隆过滤器，对于请求进行过滤。</li>
+</ol>
+<p><img src="/../img/Redis/img_1.png"></p>
+<blockquote>
+<p><strong>布隆过滤器</strong></p>
+<ul>
+<li>bitmap（位图）:bit位的数组，数组的元素是0或者1，所以布隆过滤器占用的内存小</li>
+<li><img src="/../img/Redis/img_2.png"></li>
+<li>作用：可以用来检索元素，相当于一种校验电路</li>
+<li>实现原理：类似hashmap，假设来了一个键，用三种不同的hash算法得到位图的三个位置，然后这些位置都置为1，这里要跟redis缓存的保持一致，在初始化的时候就要预热进布隆过滤器。那么就会有很多重复的，数组越大这种情况会越少。那么此时有一个<strong>确实不存在的元素</strong>，但是计算出来的三个哈希值就是都是1，那么还是会发生缓存穿透的现象</li>
+<li>判断不存在的时候一定不存在，也就是说3个地方一定都不为1</li>
+<li>判断存在的时候不一定存在，因为有可能会有误判</li>
+<li><strong>优点</strong>：内存占用小，没有多余key</li>
+<li><strong>缺点</strong>：实现比较复杂，存在误判，大概在5%左右，但是对于数据库也是可以接受的</li>
+</ul>
+</blockquote>
+<p>布隆过滤器的大致的原理：布隆过滤器中存放二进制位。数据库的数据通过hash算法计算其hash值并存放到布隆过滤器中，之后判断数据是否存在的时候，就是判断该hash值是0还是1。</p>
+<p>但是这个玩意是一种概率上的统计，当其判断不存在的时候就一定是不存在；当其判断存在的时候就不一定存在。所以有一定的穿透风险！！！</p>
+<h1 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h1><p>缓存击穿，指的是一个key在不断地支撑高并发，高并发持续对这个点进行访问，当这个点在失效的瞬间，50ms左右，大量的高并发就冲坡缓存请求数据库，造成数据库瘫痪。</p>
+<p>对于一般的网站而言很难有缓存击穿的级别，一般是热门网站或者秒杀瞬时高并发。</p>
+<h2 id="解决方法-1"><a href="#解决方法-1" class="headerlink" title="解决方法"></a>解决方法</h2><ol>
+<li>互斥锁</li>
+</ol>
+<p><img src="/../img/Redis/img_3.png"></p>
+<p>类似pv操作，给临界区上互斥锁，一段时间只要一个线程在重建数据就行，但是这样会造成其他线程等待。通常是需要强一致性的应用需要这种策略。</p>
+<ul>
+<li><strong>优点</strong>：强一致性，在redis没有更新完之前都不许访问，只能要最新的，一般涉及钱的都会有这种逻辑</li>
+<li><strong>缺点</strong>：性能差</li>
+</ul>
+<ol start="2">
+<li>逻辑过期</li>
+</ol>
+<p><img src="/../img/Redis/img_4.png"></p>
+<p>逻辑过期就是在一个键值对的最后加上逻辑时间，并不真实设置过期时间。也就是说，不会真正的过期只会逻辑上的过期。</p>
+<p>当一个线程去访问一个逻辑时间到了的键值对，那么其实redis也还有这部分，他还是<strong>那这部分旧的数据</strong>，但是会开启一个新的线程来完成数据库到mysql的更新</p>
+<ul>
+<li><strong>优点</strong>：可用性强，性能强在不注重强一致性的场景，不会有其他线程等待的情况，但是拿的都是旧数据</li>
+<li><strong>缺点</strong>：一致性弱</li>
+</ul>
+<h1 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h1><p>如果缓存集中在一段时间内过期，那么会有大量的缓存穿透，所有的查询都落在数据库上，造成缓存雪崩</p>
+<blockquote>
+<p>缓存雪崩和缓存击穿的区别：缓存击穿是针对某一个key，缓存雪崩是针对很多key集中过期，</p>
+</blockquote>
+<p><img src="/../img/Redis/img_5.png"></p>
+<h2 id="解决方法："><a href="#解决方法：" class="headerlink" title="解决方法："></a>解决方法：</h2><ol>
+<li>给不同的key的TTL添加随机值</li>
+<li>多个redis集群提高服务的可用性</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/31/%E5%91%A8%E8%B5%9B2024-3-31/">周赛2024-3-31</a>
       
     </h1>
@@ -1041,190 +1263,6 @@
 </tr>
 </tbody></table>
 
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/26/leetcode-2024-3-26/">leetcode-2024-3-26</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-26
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="2642-设计可以求最短路径的图类（Hard）"><a href="#2642-设计可以求最短路径的图类（Hard）" class="headerlink" title="2642 设计可以求最短路径的图类（Hard）"></a>2642 设计可以求最短路径的图类（Hard）</h1><blockquote>
-<p>题目太长了就换成图片了</p>
-</blockquote>
-<p><img src="/../img/coding/2024_3_26_1.png"></p>
-<h2 id="迪杰斯特拉"><a href="#迪杰斯特拉" class="headerlink" title="迪杰斯特拉"></a>迪杰斯特拉</h2><blockquote>
-<p>我自己的做法是Dijkstra+邻接矩阵，还可以有Floyd，考虑到这个邻接矩阵都已经内存99%了，所以应该矩阵+Floyd是最佳方案</p>
-</blockquote>
-<blockquote>
-<p>就当是复习Dijkstra了</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Graph</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[][] matrix;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[] finalArr;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[] visited;</span><br><span class="line">    <span class="comment">//用邻接矩阵表示图</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Graph</span><span class="params">(<span class="type">int</span> n, <span class="type">int</span>[][] edges)</span> &#123;</span><br><span class="line">        matrix = <span class="keyword">new</span> <span class="title class_">int</span>[n][n];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; n; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (i != j)&#123;</span><br><span class="line">                    matrix[i][j] = Integer.MAX_VALUE;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; edges.length; i++) &#123;</span><br><span class="line">            matrix[edges[i][<span class="number">0</span>]][edges[i][<span class="number">1</span>]] = edges[i][<span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//增加一条边就是再改一个值</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addEdge</span><span class="params">(<span class="type">int</span>[] edge)</span> &#123;</span><br><span class="line">        matrix[edge[<span class="number">0</span>]][edge[<span class="number">1</span>]] = edge[<span class="number">2</span>];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Dijkstra，n次找到n个最短路径，所以需要一个visited矩阵保存已经找到最短路径的点</span></span><br><span class="line"><span class="comment">     * finalArr存放最短路径，初始化为初始点的邻接数组，每次找到其中最小的</span></span><br><span class="line"><span class="comment">     * 更新距离</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> node1</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> node2</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">shortestPath</span><span class="params">(<span class="type">int</span> node1, <span class="type">int</span> node2)</span> &#123;</span><br><span class="line">        finalArr = matrix[node1].clone();</span><br><span class="line">        visited = <span class="keyword">new</span> <span class="title class_">int</span>[matrix.length];</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(finalArr));</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> node1;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length-<span class="number">1</span>; i++) &#123;</span><br><span class="line">            visited[k] = <span class="number">1</span>;</span><br><span class="line">            <span class="type">int</span>[] adj = getMin(finalArr);</span><br><span class="line">            k = adj[<span class="number">0</span>];</span><br><span class="line">            <span class="type">int</span> <span class="variable">price</span> <span class="operator">=</span> adj[<span class="number">1</span>];</span><br><span class="line">            <span class="comment">//如果这里返回-1说明找不到最小值，最小值都已经是正无穷了</span></span><br><span class="line">            <span class="comment">//说明此时其他的都已经最优，直接跳出循环</span></span><br><span class="line">            <span class="keyword">if</span> (k ==-<span class="number">1</span>)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix.length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (matrix[k][j] != Integer.MAX_VALUE&amp;&amp;price != Integer.MAX_VALUE &amp;&amp; visited[j] == <span class="number">0</span> &amp;&amp; matrix[k][j]+price &lt; finalArr[j])&#123;</span><br><span class="line">                    finalArr[j] = matrix[k][j]+price;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//System.out.println(Arrays.toString(finalArr));</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (finalArr[node2] == Integer.MAX_VALUE)&#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> finalArr[node2];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[] getMin(<span class="type">int</span>[] arr)&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">min</span> <span class="operator">=</span> Integer.MAX_VALUE;</span><br><span class="line">        <span class="type">int</span> <span class="variable">vexNum</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; arr.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (visited[i] ==<span class="number">0</span> &amp;&amp; arr[i] != <span class="number">0</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (arr[i] &lt;min)&#123;</span><br><span class="line">                    min = arr[i];</span><br><span class="line">                    vexNum = i;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">int</span>[]&#123;vexNum,min&#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Your Graph object will be instantiated and called as such:</span></span><br><span class="line"><span class="comment"> * Graph obj = new</span></span><br><span class="line"><span class="comment"> * Graph(n, edges);</span></span><br><span class="line"><span class="comment"> * obj.addEdge(edge);</span></span><br><span class="line"><span class="comment"> * int param_2 = obj.shortestPath(node1,node2);</span></span><br><span class="line"><span class="comment"> */</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="矩阵置零（Medium）"><a href="#矩阵置零（Medium）" class="headerlink" title="矩阵置零（Medium）"></a>矩阵置零（Medium）</h1><p><img src="/../img/coding/2024_3_26_2.png"></p>
-<h2 id="广度优先搜索"><a href="#广度优先搜索" class="headerlink" title="广度优先搜索"></a>广度优先搜索</h2><blockquote>
-<p>其实本来是想多源广度优先搜索的，后来发现好像不用这复杂。直接暴力每一行每一列都变成0就可以了</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setZeroes</span><span class="params">(<span class="type">int</span>[][] matrix)</span> &#123;</span><br><span class="line">        <span class="comment">//存储在里面找到的0</span></span><br><span class="line">        List&lt;<span class="type">int</span>[]&gt; points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (matrix[i][j] == <span class="number">0</span>)&#123;</span><br><span class="line">                    points.add(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;i,j&#125;);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//遍历每一个0，使其横竖都变为0</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span>[] point:points)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length; i++) &#123;</span><br><span class="line">                matrix[i][point[<span class="number">1</span>]] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                matrix[point[<span class="number">0</span>]][j] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>row为行，col为列</p>
-<p>时间复杂度：o(row*col)</p>
-<p>空间复杂度：o(row+col)</p>
-<h1 id="130-被围绕的区域（Medium）"><a href="#130-被围绕的区域（Medium）" class="headerlink" title="130 被围绕的区域（Medium）"></a>130 被围绕的区域（Medium）</h1><p><img src="/../img/coding/2024_3_26_3.png"></p>
-<h2 id="深度优先搜索"><a href="#深度优先搜索" class="headerlink" title="深度优先搜索"></a>深度优先搜索</h2><blockquote>
-<p>主要思路是，首先找到一个区域先把其全部变为X，用一个数组保存，如果这个区域里面包含在边界的块，那么这个数组用于后续再把他变为O</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    List&lt;<span class="type">int</span>[]&gt; points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    List&lt;List&lt;<span class="type">int</span>[]&gt;&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">solve</span><span class="params">(<span class="type">char</span>[][] board)</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; board.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; board[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (board[i][j] == <span class="string">&#x27;O&#x27;</span>)&#123;</span><br><span class="line">                    points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">                    <span class="comment">//如果有链接到边界,随后把这些改回来</span></span><br><span class="line">                    <span class="keyword">if</span> (!dfs(board,i,j))&#123;</span><br><span class="line">                        list.add(points);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (List&lt;<span class="type">int</span>[]&gt; points:list)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span>[] point:points)&#123;</span><br><span class="line">                board[point[<span class="number">0</span>]][point[<span class="number">1</span>]] = <span class="string">&#x27;O&#x27;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.deepToString(board));</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//一个区域块，首先全部变为X，返回真在后续把他变回O</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">dfs</span><span class="params">(<span class="type">char</span>[][] board,<span class="type">int</span> i,<span class="type">int</span> j)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (board[i][j] == <span class="string">&#x27;O&#x27;</span>)&#123;</span><br><span class="line">            <span class="type">boolean</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">            points.add(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;i,j&#125;);</span><br><span class="line">            board[i][j] = <span class="string">&#x27;X&#x27;</span>;</span><br><span class="line">            <span class="keyword">if</span> (i == <span class="number">0</span>||j==<span class="number">0</span>||i==board.length-<span class="number">1</span>||j==board[<span class="number">0</span>].length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp = <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (i+<span class="number">1</span>&lt;=board.length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i+<span class="number">1</span>,j);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (i-<span class="number">1</span> &gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i-<span class="number">1</span>,j);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (j+<span class="number">1</span> &lt;= board[<span class="number">0</span>].length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i,j+<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (j-<span class="number">1</span> &gt;= <span class="number">0</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i,j-<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> temp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度：o(m<em>n)<br>空间复杂度：o(m</em>n)</p>
-<h2 id="还有两题太简单了我就当复习了"><a href="#还有两题太简单了我就当复习了" class="headerlink" title="还有两题太简单了我就当复习了"></a>还有两题太简单了我就当复习了</h2><h3 id="排序链表"><a href="#排序链表" class="headerlink" title="排序链表"></a>排序链表</h3><h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[] sortArray(<span class="type">int</span>[] nums) &#123;</span><br><span class="line">        quickSort(nums,<span class="number">0</span>,nums.length-<span class="number">1</span>);</span><br><span class="line">    </span><br><span class="line">        <span class="keyword">return</span> nums;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">quickSort</span><span class="params">(<span class="type">int</span>[] nums,<span class="type">int</span> head,<span class="type">int</span> rear)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (head &lt; rear)&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">mid</span> <span class="operator">=</span> partition(nums,head,rear);</span><br><span class="line">            quickSort(nums,head,mid-<span class="number">1</span>);</span><br><span class="line">            quickSort(nums,mid+<span class="number">1</span>,rear);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">partition</span><span class="params">(<span class="type">int</span>[] arr,<span class="type">int</span> head,<span class="type">int</span> rear)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> arr[head];</span><br><span class="line">        <span class="keyword">while</span>(head &lt; rear)&#123;</span><br><span class="line">            <span class="comment">//主要是要记得这里是每个都要带=，</span></span><br><span class="line">            <span class="keyword">while</span> (head &lt; rear &amp;&amp; arr[rear] &gt;= temp)&#123;</span><br><span class="line">                rear--;</span><br><span class="line">            &#125;</span><br><span class="line">            arr[head] = arr[rear];</span><br><span class="line">            <span class="keyword">while</span> (head &lt; rear &amp;&amp; arr[head] &lt;= temp)&#123;</span><br><span class="line">                head++;</span><br><span class="line">            &#125;</span><br><span class="line">            arr[rear] = arr[head];</span><br><span class="line">        &#125;</span><br><span class="line">        arr[head] = temp;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(arr));</span></span><br><span class="line">        <span class="keyword">return</span> head;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/25/leetcode-2024-3-25/">leetcode-2024-3-25</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-25
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="518-零钱兑换2（Medium）"><a href="#518-零钱兑换2（Medium）" class="headerlink" title="518 零钱兑换2（Medium）"></a>518 零钱兑换2（Medium）</h1><p>给你一个整数数组 coins 表示不同面额的硬币，另给一个整数 amount 表示总金额。</p>
-<p>请你计算并返回可以凑成总金额的硬币组合数。如果任何硬币组合都无法凑出总金额，返回 0 。</p>
-<p>假设每一种面额的硬币有无限个。</p>
-<p>题目数据保证结果符合 32 位带符号整数。</p>
-<p>示例 1：</p>
-<p>输入：amount &#x3D; 5, coins &#x3D; [1, 2, 5]</p>
-<p>输出：4</p>
-<p>解释：有四种方式可以凑成总金额：</p>
-<p>5&#x3D;5</p>
-<p>5&#x3D;2+2+1</p>
-<p>5&#x3D;2+1+1+1</p>
-<p>5&#x3D;1+1+1+1+1</p>
-<h2 id="很愚蠢的暴力解：DFS（8-28）"><a href="#很愚蠢的暴力解：DFS（8-28）" class="headerlink" title="很愚蠢的暴力解：DFS（8&#x2F;28）"></a>很愚蠢的暴力解：DFS（8&#x2F;28）</h2><blockquote>
-<p>最搞笑的是我点了一个运行，然后吃完饭都没有算出结果来，我愿称之为最暴力的一集</p>
-</blockquote>
-<blockquote>
-<p>本意是深度优先搜索，然后将路径上的值保存进哈希表，哈希表记录的是硬币和个数，如果最后能全部找完，就把当前哈希表存到set里面（其实让我意想不到的是这样子set也可以去重）</p>
-</blockquote>
-<blockquote>
-<p>这种方法要重复计算太多次了，可以优化成右边的有向无环图，但是就这个题而言完全没必要这么复杂。</p>
-</blockquote>
-<p><img src="/../img/coding/2024_3_25_1.png"></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//hashmap用来放具体找零</span></span><br><span class="line"><span class="keyword">private</span> HashMap&lt;Integer,Integer&gt; hashMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line"><span class="comment">//set去重</span></span><br><span class="line"><span class="keyword">private</span> Set&lt;HashMap&lt;Integer,Integer&gt;&gt; set = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">change1</span><span class="params">(<span class="type">int</span> amount, <span class="type">int</span>[] coins)</span> &#123;</span><br><span class="line">    Arrays.sort(coins);</span><br><span class="line">    dfs(amount,coins);</span><br><span class="line">    <span class="keyword">return</span> set.size();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">dfs</span><span class="params">(<span class="type">int</span> amount,<span class="type">int</span>[] coins)</span>&#123;</span><br><span class="line">    <span class="comment">//可以找完，放进set里面</span></span><br><span class="line">    <span class="keyword">if</span> (amount == <span class="number">0</span>)&#123;</span><br><span class="line">        set.add(<span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;(hashMap));</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//不能用已有的找零了，失败</span></span><br><span class="line">    <span class="keyword">if</span> (amount &lt; coins[<span class="number">0</span>])&#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//递归遍历每一种情况</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; coins.length; i++) &#123;</span><br><span class="line">        <span class="comment">//先加入hashmap</span></span><br><span class="line">        <span class="keyword">if</span> (!hashMap.containsKey(coins[i]))&#123;</span><br><span class="line">            hashMap.put(coins[i],<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="type">Integer</span> <span class="variable">integer</span> <span class="operator">=</span> hashMap.get(coins[i]);</span><br><span class="line">            hashMap.replace(coins[i],integer+<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        dfs(amount-coins[i],coins);</span><br><span class="line">        <span class="comment">//后续递归再删除回到上一层，保证每个循环都是一样的</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> hashMap.get(coins[i]);</span><br><span class="line">        <span class="keyword">if</span> (temp == <span class="number">1</span>)&#123;</span><br><span class="line">            hashMap.remove(coins[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            hashMap.put(coins[i],temp-<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="动态规划（其实就是跳房子游戏）"><a href="#动态规划（其实就是跳房子游戏）" class="headerlink" title="动态规划（其实就是跳房子游戏）"></a>动态规划（其实就是跳房子游戏）</h2><blockquote>
-<p>问题一：我对这道题的主要纠结点在于，比如11，硬币有1，2，5，理应找dp[10],dp[9],dp[6],但是我们不知道这里面是不是可能造成重复，事实上dp[9]里面肯定也会只使用一个5，对于dp[6]的情况来说只是<strong>改了顺序</strong></p>
-</blockquote>
-<blockquote>
-<p>如何解决？我们不再遍历11而遍历硬币，这样就能保证在遍历到当前硬币之前不会有这个路径出现。每一次遍历都是如何通过当前的这个硬币换到现在的钱，<br>自然而然得到转移方程，dp[j] +&#x3D; dp[j-coins[i]];</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">change</span><span class="params">(<span class="type">int</span> amount, <span class="type">int</span>[] coins)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[] dp = <span class="keyword">new</span> <span class="title class_">int</span>[amount+<span class="number">1</span>];</span><br><span class="line">        dp[<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; coins.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> coins[i]; j &lt; dp.length; j++) &#123;</span><br><span class="line">                dp[j] += dp[j-coins[i]];</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> dp[dp.length-<span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>看完后其实是有恍然大雾的感觉，多看多学。</p>
-</blockquote>
-<h1 id="合并K个有序链表（Hard）"><a href="#合并K个有序链表（Hard）" class="headerlink" title="合并K个有序链表（Hard）"></a>合并K个有序链表（Hard）</h1><p>给你一个链表数组，每个链表都已经按升序排列。</p>
-<p>请你将所有链表合并到一个升序链表中，返回合并后的链表。</p>
-<blockquote>
-<p>实在不明白这个题怎么会是hard，给我刷战绩的题</p>
-</blockquote>
-<blockquote>
-<p>其实还不够快，如果用分治法可以logn</p>
-</blockquote>
-<h2 id="队列"><a href="#队列" class="headerlink" title="队列"></a>队列</h2><blockquote>
-<p>两两合并然后入队，直到队里面只有一个，就是答案</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">mergeKLists</span><span class="params">(ListNode[] lists)</span> &#123;</span><br><span class="line">        <span class="comment">//判断是否为空</span></span><br><span class="line">        <span class="keyword">if</span> (lists.length == <span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        Queue&lt;ListNode&gt; queue = <span class="keyword">new</span> <span class="title class_">ArrayDeque</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; lists.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (lists[i] != <span class="literal">null</span>)&#123;</span><br><span class="line">                queue.add(lists[i]);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//这里也被卡了一下，如果长度是0就不能进行下面的步骤</span></span><br><span class="line">        <span class="keyword">if</span> (queue.isEmpty())&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> (queue.size() != <span class="number">1</span>)&#123;</span><br><span class="line">            <span class="type">ListNode</span> <span class="variable">listNode1</span> <span class="operator">=</span> queue.poll();</span><br><span class="line">            <span class="type">ListNode</span> <span class="variable">listNode2</span> <span class="operator">=</span> queue.poll();</span><br><span class="line">            <span class="keyword">if</span> (listNode1 != <span class="literal">null</span> &amp;&amp; listNode2 != <span class="literal">null</span>)&#123;</span><br><span class="line">                queue.add(merge(listNode1,listNode2));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> queue.poll();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 两个链表合并，基本方法</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> listNode1</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> listNode2</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> ListNode <span class="title function_">merge</span><span class="params">(ListNode listNode1,ListNode listNode2)</span>&#123;</span><br><span class="line">        <span class="comment">//用了一个头节点方便保存</span></span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ListNode</span>();</span><br><span class="line">        <span class="type">ListNode</span> <span class="variable">ans</span> <span class="operator">=</span> temp;</span><br><span class="line">        <span class="keyword">while</span> (listNode1!=<span class="literal">null</span> &amp;&amp; listNode2!=<span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="keyword">if</span> (listNode1.val &lt;= listNode2.val)&#123;</span><br><span class="line">                temp.next = listNode1;</span><br><span class="line">                listNode1 = listNode1.next;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                temp.next = listNode2;</span><br><span class="line">                listNode2 = listNode2.next;</span><br><span class="line">            &#125;</span><br><span class="line">            temp = temp.next;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//接上没遍历到的</span></span><br><span class="line">        <span class="keyword">if</span> (listNode1 != <span class="literal">null</span>)&#123;</span><br><span class="line">            temp.next = listNode1;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (listNode2 != <span class="literal">null</span>)&#123;</span><br><span class="line">            temp.next = listNode2;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans.next;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="搜索二维矩阵2（Medium）"><a href="#搜索二维矩阵2（Medium）" class="headerlink" title="搜索二维矩阵2（Medium）"></a>搜索二维矩阵2（Medium）</h1><p>编写一个高效的算法来搜索 m x n 矩阵 matrix 中的一个目标值 target 。该矩阵具有以下特性：</p>
-<p>每行的元素从左到右升序排列。</p>
-<p>每列的元素从上到下升序排列。</p>
-<p><img src="/../img/coding/2024_3_25_2.png"></p>
-<h2 id="二维双指针"><a href="#二维双指针" class="headerlink" title="二维双指针"></a>二维双指针</h2><blockquote>
-<p>我们可以观察到，从下往上数每一行第一个元素，如果比目标大就可以删除了，同理每一列从后往前数第一个元素，如果大也可以删除了。<br>这样就得到了一个新矩阵。</p>
-</blockquote>
-<blockquote>
-<p>接着找新矩阵最后一行的元素，从前往后数如果比目标小也可以删除了，然后最后一列，从上到下比目标小的也可以删除。</p>
-</blockquote>
-<blockquote>
-<p>这样完成一次循环，减少了很大的搜索范围。一直收敛到只有一行或者一列。</p>
-</blockquote>
-<blockquote>
-<p>这里用了<em><strong>小技巧</strong></em>，对于找不到的元素肯定是会<strong>数组下标抛异常</strong>的，catch到了肯定是没有的，返回假</p>
-</blockquote>
-<blockquote>
-<p>还有有一个小问题，当我们面对[[5,6,9],[9,10,11],[11,14,18]]这样的数组，有两个9，这时候我们就永远满足不了循环条件出不来了，为了解决需要看循环里面四个指针是否变化，如果没变就说明发生了这种情况。直接跳出循环。而出现这种情况的原因就是因为有两个一样的目标值，那肯定返回真。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">searchMatrix</span><span class="params">(<span class="type">int</span>[][] matrix, <span class="type">int</span> target)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">row_top</span> <span class="operator">=</span> <span class="number">0</span>,row_bottom = matrix.length-<span class="number">1</span>,col_left = <span class="number">0</span>,col_right = matrix[<span class="number">0</span>].length-<span class="number">1</span>;</span><br><span class="line">        <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (row_top &lt; row_bottom &amp;&amp; col_left &lt; col_right)&#123;</span><br><span class="line">                <span class="comment">//判断是否指针有变化</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">while</span> (matrix[row_bottom][col_left] &gt; target)&#123;</span><br><span class="line">                    temp++;</span><br><span class="line">                    row_bottom--;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">while</span> (matrix[row_top][col_right] &gt; target)&#123;</span><br><span class="line">                    temp++;</span><br><span class="line">                    col_right--;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">while</span> (matrix[row_bottom][col_left] &lt; target)&#123;</span><br><span class="line">                    temp++;</span><br><span class="line">                    col_left++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">while</span> (matrix[row_top][col_right] &lt;target)&#123;</span><br><span class="line">                    temp++;</span><br><span class="line">                    row_top++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (temp == <span class="number">0</span>)&#123;</span><br><span class="line">                    flag = <span class="literal">true</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//System.out.println(row_top+&quot;  &quot;+row_bottom+&quot;  &quot;+col_left+&quot;  &quot;+col_right);</span></span><br><span class="line">            <span class="keyword">if</span> (row_top == row_bottom)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_left; i &lt;=col_right; i++) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[row_bottom][i] == target)&#123;</span><br><span class="line">                        flag = <span class="literal">true</span>;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (col_left == col_right)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_top; i &lt;= row_bottom; i++) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (matrix[i][col_right] == target)&#123;</span><br><span class="line">                        flag = <span class="literal">true</span>;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> flag;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//小技巧</span></span><br><span class="line">        <span class="keyword">catch</span> (ArrayIndexOutOfBoundsException e)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>这道题做出来其实有点侥幸，很多情况都是错了以后试验出来的。据他们所说这样还不如遍历整体找结果。</p>
-<h1 id="54-螺旋矩阵（Medium）"><a href="#54-螺旋矩阵（Medium）" class="headerlink" title="54 螺旋矩阵（Medium）"></a>54 螺旋矩阵（Medium）</h1><p>给你一个 m 行 n 列的矩阵 matrix ，请按照 顺时针螺旋顺序 ，返回矩阵中的所有元素。</p>
-<p><img src="/../img/coding/2024_3_25_3.png"></p>
-<blockquote>
-<p>非常好理解的一道题，根据上一题的思路很快就能写出，但是这里不用频繁维护四个指针，只用在循环末尾使用就可以。</p>
-</blockquote>
-<blockquote>
-<p>就跟洋葱一样，每次都剥掉最外一层</p>
-</blockquote>
-<h2 id="双指针"><a href="#双指针" class="headerlink" title="双指针"></a>双指针</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> List&lt;Integer&gt; <span class="title function_">spiralOrder</span><span class="params">(<span class="type">int</span>[][] matrix)</span> &#123;</span><br><span class="line">        List&lt;Integer&gt; ans = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span> <span class="variable">row_top</span> <span class="operator">=</span> <span class="number">0</span>,row_bottom = matrix.length-<span class="number">1</span>,col_left = <span class="number">0</span>,col_right = matrix[<span class="number">0</span>].length-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (row_top &lt; row_bottom &amp;&amp; col_left &lt; col_right)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_left; i &lt; col_right; i++) &#123;</span><br><span class="line">                ans.add(matrix[row_top][i]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_top; i &lt; row_bottom; i++) &#123;</span><br><span class="line">                ans.add(matrix[i][col_right]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_right; i &gt; col_left ; i--) &#123;</span><br><span class="line">                ans.add(matrix[row_bottom][i]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_bottom; i &gt; row_top; i--) &#123;</span><br><span class="line">                ans.add(matrix[i][col_left]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//换到内层</span></span><br><span class="line">            row_top++;</span><br><span class="line">            row_bottom--;</span><br><span class="line">            col_left++;</span><br><span class="line">            col_right--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//特判。如果都相等，说明中间只有一个元素</span></span><br><span class="line">        <span class="keyword">if</span> (row_top == row_bottom &amp;&amp; col_left == col_right)&#123;</span><br><span class="line">            ans.add(matrix[row_top][col_right]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//一行</span></span><br><span class="line">            <span class="keyword">if</span> (row_top == row_bottom)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_left; i &lt;= col_right; i++) &#123;</span><br><span class="line">                    ans.add(matrix[row_top][i]);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//一列</span></span><br><span class="line">            <span class="keyword">if</span> (col_left == col_right)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_top; i &lt;= row_bottom; i++) &#123;</span><br><span class="line">                    ans.add(matrix[i][col_left]);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h1 id="59-螺旋矩阵2（Medium）"><a href="#59-螺旋矩阵2（Medium）" class="headerlink" title="59 螺旋矩阵2（Medium）"></a>59 螺旋矩阵2（Medium）</h1><p>给你一个正整数 n ，生成一个包含 1 到 n2 所有元素，且元素按顺时针顺序螺旋排列的 n x n 正方形矩阵 matrix 。</p>
-<p><img src="/../img/coding/2024_3_25_4.png"></p>
-<blockquote>
-<p>这个比上面的更简单了，一个计数器，然后根据上面的逻辑转圈，每次都+1，就可以了，甚至没有中间是一行或者一列的情况，要不就是没有要不就只有一个。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[][] generateMatrix(<span class="type">int</span> n) &#123;</span><br><span class="line">        <span class="type">int</span>[][] matrix = <span class="keyword">new</span> <span class="title class_">int</span>[n][n];</span><br><span class="line">        <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">        <span class="type">int</span> <span class="variable">row_top</span> <span class="operator">=</span> <span class="number">0</span>,row_bottom = matrix.length-<span class="number">1</span>,col_left = <span class="number">0</span>,col_right = matrix[<span class="number">0</span>].length-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (row_top &lt; row_bottom &amp;&amp; col_left &lt; col_right)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_left; i &lt; col_right; i++) &#123;</span><br><span class="line">                matrix[row_top][i] = count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_top; i &lt; row_bottom; i++) &#123;</span><br><span class="line">                matrix[i][col_right]= count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_right; i &gt; col_left ; i--) &#123;</span><br><span class="line">                matrix[row_bottom][i]= count++;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_bottom; i &gt; row_top; i--) &#123;</span><br><span class="line">                matrix[i][col_left]= count++;</span><br><span class="line">            &#125;</span><br><span class="line">            row_top++;</span><br><span class="line">            row_bottom--;</span><br><span class="line">            col_left++;</span><br><span class="line">            col_right--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (row_top == row_bottom &amp;&amp; col_left == col_right)&#123;</span><br><span class="line">            matrix[row_top][col_right]= count++;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (row_top == row_bottom)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> col_left; i &lt;= col_right; i++) &#123;</span><br><span class="line">                    matrix[row_top][i]= count++;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (col_left == col_right)&#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> row_top; i &lt;= row_bottom; i++) &#123;</span><br><span class="line">                    matrix[i][col_left]= count++;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> matrix;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
     
     
   </div>

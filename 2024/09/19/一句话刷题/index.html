@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="一句话刷题" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="刷题笔记, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/archives/page/4/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/19/一句话刷题/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>归档 · YYF&#39;s Blog</title>
+  <title>一句话刷题 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,221 +208,113 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      一句话刷题
+      
+    </h1>
 
-<section id="archive" class="archive">
-  
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-19
+      </span>
+      
+      
+      
+    </div>
+  </header>
 
   
-  
-  
-  
-  
-  
-  <div class="collection-title">
-    <h2 class="archive-year">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </h2>
+
+  <div class="post-content">
+    
+    <ul>
+<li><strong>无重复字符的最长字串</strong>：滑动窗口+heshset，右窗口需要在for外，每轮循环移动右窗口</li>
+<li>LRU缓存机制：偷懒直接linkedHashMap，hashmap长度并不为cachesize，重写替换条件为size&gt;cachesize，构造函数要传一个允许get后重排序的boolean</li>
+<li>反转链表：pre,p,q三指针</li>
+<li>数组第k个最大元素：快排思想，根据每次划分的结果二分查找</li>
+<li>最大子数组和：动态规划，看前面的是否为负数，为负数就抛弃自己作为开头，为正数就自己加上</li>
+<li>合并两个有序链表：模拟题</li>
+<li><strong>最长回文字串</strong>：二维动态规划，撇去前后剩下的也是回文子串</li>
+<li>两数之和：hashmap存余数</li>
+<li>二叉树层次遍历：queue秒杀，记得最牢的一集</li>
+<li>搜索旋转排序数组：随便划分总有一段是顺序的</li>
+<li>岛屿数量：dfs上下左右</li>
+<li>全排列：dfs回溯，visited数组</li>
+<li>有效的括号：stack秒了</li>
+<li>二叉树的最近公共祖先：回溯，找两个列表的最末尾相同元素</li>
+<li>环形链表：hashmap看是否包括</li>
+<li>反转链表2：模拟</li>
+<li><strong>最长递增子序列</strong>：动态规划，找前面每一个比自己小的，取最大值+1</li>
+<li>字符串相加：太简单不说</li>
+<li><strong>接雨水</strong>：单调栈，左-&gt;右和右-&gt;左，取最小值</li>
+<li><strong>编辑距离</strong>：二维动态规划，需要考虑左右对角线三个，对角线（相同），左右对角线取最大+1（不相同）</li>
+<li><strong>最长公共子序列</strong>：二维动态规划。比上面的好理解，对角线的+1（相同），左右取最大（不相同）</li>
+<li>栈实现队列：两个栈来回倒，一个入一个出，在入之前检查出是否为空，反之亦然</li>
+<li>括号生成：左右括号剩余数量判别，右边的数量一定得大于等于左边剩余</li>
+<li>反转字符串中的单词：split和stringbuilder</li>
+</ul>
+
+    
   </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      04-01
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/01/redis-%E6%8C%81%E4%B9%85%E5%8C%96%E7%AF%87/" class="archive-post-link">
-        redis-持久化篇
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-31
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/" class="archive-post-link">
-        redis-缓存三兄弟
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-31
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/31/%E5%91%A8%E8%B5%9B2024-3-31/" class="archive-post-link">
-        周赛2024-3-31
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-31
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/31/leetcode-2024-3-31/" class="archive-post-link">
-        leetcode-2024-3-31
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/30/leetcode-2024-3-30/" class="archive-post-link">
-        leetcode-2024-3-30
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-29
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/29/leetcode-2024-3-29/" class="archive-post-link">
-        leetcode-2024-3-29
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-28
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/28/leetcode-2024-3-28/" class="archive-post-link">
-        leetcode-2024-3-28
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-27
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/27/leetcode-2024-3-27/" class="archive-post-link">
-        leetcode-2024-3-27
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-26
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/26/Collections%E9%9B%86%E5%90%88%E7%AF%87-Map/" class="archive-post-link">
-        Collections集合篇-Map
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      03-26
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/26/Collections%E9%9B%86%E5%90%88%E7%AF%87-List/" class="archive-post-link">
-        Collections集合篇-List
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/09/19/%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%88%B7%E9%A2%98/">https://yyf1050886654.github.io/2024/09/19/%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%88%B7%E9%A2%98/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
       
-      <a class="prev" href="/archives/page/3/">  
-        <i class="iconfont icon-left"></i>  
-        <span class="prev-text">上一页</span>  
-      </a>  
+      <a href="/tags/%E5%88%B7%E9%A2%98%E7%AC%94%E8%AE%B0/">刷题笔记</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
       
       
-      <a class="next" href="/archives/page/5/">  
-        <span class="next-text">下一页</span>  
+      <a class="next" href="/2024/09/19/hot100%E5%A4%A9%E5%A4%A9%E5%88%B7-%E7%AC%AC%E4%B8%80%E6%9C%9F/">  
+        <span class="next-text nav-default">hot100天天刷-第一期</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
         <i class="iconfont icon-right"></i>  
       </a>  
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
@@ -517,6 +413,13 @@
     <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
   </div>
     
+    
+    
+    
+    
+    
+    
+  
 
   
 
