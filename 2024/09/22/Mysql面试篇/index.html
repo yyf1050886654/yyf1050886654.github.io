@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">4.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%EF%BC%9A"><span class="toc-number">5.</span> <span class="toc-text">事务隔离级别：</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95"><span class="toc-number">3.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%88%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">MVCC（多版本并发控制）</span></a></li></ol>
     </div>
   </div>
   
@@ -250,6 +250,13 @@
 <li>红黑树：也是二叉树，io次数肯定比b+树多，跳表同理</li>
 <li>哈希表：不支持范围查询，这同样是redis为什么用跳表而不是哈希表的理由</li>
 </ul>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引是为了加快搜索而建立的数据结构</p>
+<ul>
+<li>按照数据结构划分：B+树索引，Hash索引</li>
+<li>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</li>
+<li>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</li>
+<li>字段个数：单列索引，联合索引</li>
+</ul>
 <h2 id="Mysql事务"><a href="#Mysql事务" class="headerlink" title="Mysql事务"></a>Mysql事务</h2><p>首先是事务的ACID四个特性：</p>
 <ul>
 <li>原子性：事务内的东西是同时完成或者同时取消的。innodb的事务可以做到，redis的事务就没有原子性。</li>
@@ -263,7 +270,21 @@
 <li>不可重复读：在一个事务内读取两次数据，两次数据读取的不一样。这通常是由于另一个事务的提交，这个数据对于其他事务都是可见的（有点像volatile）</li>
 <li>幻读： 查询数量，事务内前后查询两次不一致，像发生了幻觉</li>
 </ul>
-<h2 id="事务隔离级别："><a href="#事务隔离级别：" class="headerlink" title="事务隔离级别："></a>事务隔离级别：</h2>
+<p>事务隔离级别：</p>
+<ul>
+<li>读未提交：</li>
+<li>读提交：解决脏读</li>
+<li>可重复读：解决脏读+不可重复读</li>
+<li>串行化：解决幻读+不可重复读+幻读</li>
+</ul>
+<h2 id="MVCC（多版本并发控制）"><a href="#MVCC（多版本并发控制）" class="headerlink" title="MVCC（多版本并发控制）"></a>MVCC（多版本并发控制）</h2><p>在前面讲的记录中有两个隐藏字段：添加该条记录的事务id和指向上一个版本undolog指针。MVCC是依靠这两个字段完成的，更新数据时会在数据页中替换新的记录，然后将旧的记录作为指针保存下来，这时所有的版本都连成一条链，包含了当时进行更新的事务id。</p>
+<p>MVCC提供了ReadView这个数据结构，由于事务id是顺序递增的，ReadView将事务id分为三个部分，已经提交的事务，正在进行的事务和没有发生的事务。已经提交的事务是有访问权的，正在运行的事务是不允许查看的，此时如果发生并发现象，查询数据的时候会根据这三个范围和当前全部的事务id进行过滤，这样就能避免读到还没有提交事务的数据。从而解决了脏读问题</p>
+<p><strong>MVCC是如何解决不可重复读的</strong></p>
+<p>主要是ReadView生成的时机问题，如果每一次快照读都生成一个ReadView，有可能在两次快照读期间有别的事务提交了，这两次的ReadView范围就会不一样，还是会发生不可重复读。但是如果在事务刚开始的时候就生成ReadView，就能保证执行下来的可见性，即使在第二次读之前，在readview中的那个事务提交了，还能保证接下来的读操作不可见这个数据。</p>
+<p><strong>MVCC解决了幻读吗</strong></p>
+<p>在默认隔离级别下的innoDB很大程度能够避免幻读，范围查询也需要看版本号。在某些情况下还是能出现幻读，例如当前没有s&#x3D;5的数据，此时进行查询是没有的，另一个事务添加了这条数据，此时事务id在readview里面，是不允许访问的。但是原来事务又更新了这条数据，现在事务id是自己的了。下次查询的时候就会查询出来。（虽然更新一条不存在的数据逻辑上很诡异）</p>
+<p>需要通过间隙锁才能解决幻读，也就是锁住一段范围内的，其他事务添加这段范围内的数据就会被阻塞。</p>
+
     
   </div>
 
