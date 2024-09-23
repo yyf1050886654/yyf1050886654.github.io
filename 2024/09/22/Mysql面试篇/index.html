@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95"><span class="toc-number">3.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%88%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">MVCC（多版本并发控制）</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95"><span class="toc-number">3.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">5.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%88%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">MVCC（多版本并发控制）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#redolog"><span class="toc-number">7.</span> <span class="toc-text">redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog"><span class="toc-number">8.</span> <span class="toc-text">binlog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog%E5%B0%B1%E5%A4%9F%E4%BA%86%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81redolog"><span class="toc-number">9.</span> <span class="toc-text">binlog就够了为什么还需要redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-number">10.</span> <span class="toc-text">两阶段提交</span></a></li></ol>
     </div>
   </div>
   
@@ -284,6 +284,60 @@
 <p><strong>MVCC解决了幻读吗</strong></p>
 <p>在默认隔离级别下的innoDB很大程度能够避免幻读，范围查询也需要看版本号。在某些情况下还是能出现幻读，例如当前没有s&#x3D;5的数据，此时进行查询是没有的，另一个事务添加了这条数据，此时事务id在readview里面，是不允许访问的。但是原来事务又更新了这条数据，现在事务id是自己的了。下次查询的时候就会查询出来。（虽然更新一条不存在的数据逻辑上很诡异）</p>
 <p>需要通过间隙锁才能解决幻读，也就是锁住一段范围内的，其他事务添加这段范围内的数据就会被阻塞。</p>
+<h2 id="redolog"><a href="#redolog" class="headerlink" title="redolog"></a>redolog</h2><p>前面所讲的数据库事务的ACID中，持久性就是由redolog保证的。mysql在更新的时候先写redolog，然后再在合适的实际将redolog真正写在数据页上。首先读取操作的时候不会每次都从磁盘io，会缓存在buffer pool中，那么写操作也会在buffer pool中操作，此时就变成了一个脏页。redolog的左右就是把这个脏页的操作记录并持久化下来，这个过程是比刷数据页要快的，很多时候查询的并不是顺序读，有可能在很多数据页上。</p>
+<p><strong>刷盘时机:</strong></p>
+<p>redolog也是有缓冲区的，把buffer pool中的修改保存在redolog缓存区中，然后再在合适的时机刷盘，一般有以下几个时机：</p>
+<ul>
+<li>mysql正常关闭</li>
+<li>后台线程会每隔1s刷盘</li>
+<li>当缓冲区满了一半就触发</li>
+<li>根据刷盘策略</li>
+</ul>
+<p>刷盘策略有以下三种：</p>
+<ul>
+<li>每次事务提交只写在缓冲区中，但是如果在1s内掉电，redolog buffer就会没有了，这种策略可能会掉最多1s的数据</li>
+<li>每次事务提交直接写磁盘，效率较低，但是安全</li>
+<li>每次事务提交给操作系统的page cache，交给操作系统写。这种情况如果mysql停机了还是能写，因为操作系统没有停止，但是如果掉点了还是会丢1s的数据，算是上面两种的一个折中。</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_16.png" alt="" />
+</div>
+
+<p><strong>日志文件组：</strong></p>
+<p>redolog不是一个文件，而是多个文件，这些文件按照环形存储，会覆盖。头指针是checkpoint，尾指针是write pos。每次有缓冲区来的数据就移动pos。如果mysql进行了redolog到数据块的持久化，checkpoint就往后移动。</p>
+<p>如果这个环形文件满了，就需要阻塞mysql，进行部分redolog到数据页的操作。</p>
+<p><strong>总结：</strong></p>
+<p>redolog保证了mysql的持久性，这种操作比直接修改数据页要高效，由于直接修改数据页可能会存在随机写的情况，而redolog是追加写，就好像每次找东西随机写就是看目录找书页，而追加就是往后翻一页。</p>
+<p>然而redolog在某些策略下也不是万无一失的，因为redolog也是有缓存的，如果没有及时写在磁盘里就会丢失1s的数据。</p>
+<blockquote>
+<p>由此可见redolog和真正存在数据页中还有一段时间差，那这个时候来了一个读请求，怎么保证一致性？<br>会在buffer pool找，而不是直接去磁盘找，本来redolog就是为了存buffer pool的脏页的，是内存同步到外存，</p>
+</blockquote>
+<h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><p>binlog是解决主从同步的一种日志形式，只记录写操作，select和show是不记录的。有三种格式形式：</p>
+<ul>
+<li>statement：只记录更新的语句，不管前后状态，一般存储的数据量较小</li>
+<li>row：不光记录更新的具体语句，更新前后的状态也保存，一般用在需要计算的sql语句，例如now()，用第一种方式就会造成数据不一致，第二种会保存在主机上面的结果。当然存储的数据量会更大</li>
+<li>mix：根据具体sql的形式选取策略，例如正常sql就用statement，涉及到计算的就用row</li>
+</ul>
+<p><strong>刷盘方式：</strong></p>
+<p>与redolog类似，也有一个缓冲区，但是binlog的缓冲区线程之间是独立的，最终都要写进磁盘。</p>
+<ul>
+<li>0：不同线程的binlog buffer写到page cache里面，由操作系统写回</li>
+<li>1：直接写到磁盘</li>
+<li>n：n个线程的binlog buffer写到page cache后触发一次写到磁盘。掉电就丢失n个线程的数据</li>
+</ul>
+<h2 id="binlog就够了为什么还需要redolog"><a href="#binlog就够了为什么还需要redolog" class="headerlink" title="binlog就够了为什么还需要redolog"></a>binlog就够了为什么还需要redolog</h2><p>binlog主要负责主从同步，redolog负责恢复数据库。一个是外部机制，一个是内部机制，两者独立但是互补，服务于不同的需求。</p>
+<h2 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h2><p>如果在binlog和redolog之间出现问题就会导致数据不一致。所以需要两阶段提交</p>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_17.png" alt="" />
+</div>
+
+<p>写redo的时候设置为prepare，等到binlog写完了才设置为commit状态。mysql认为binlog写完了就是一个事务结束，即便没有再设置redolog的状态。</p>
+<p>例如在写完redolog时宕机，binlog没有写，这个时候就会触发回滚；但是写完了binlog宕机了，redolog没有被改变为commit，还是会被认为事务提交了</p>
+<p><strong>存在什么问题：</strong></p>
+<ul>
+<li>多线程下需要原子性</li>
+<li>磁盘io很高</li>
+</ul>
 
     
   </div>

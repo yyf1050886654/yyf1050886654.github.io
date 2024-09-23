@@ -281,6 +281,60 @@
 <p><strong>MVCC解决了幻读吗</strong></p>
 <p>在默认隔离级别下的innoDB很大程度能够避免幻读，范围查询也需要看版本号。在某些情况下还是能出现幻读，例如当前没有s&#x3D;5的数据，此时进行查询是没有的，另一个事务添加了这条数据，此时事务id在readview里面，是不允许访问的。但是原来事务又更新了这条数据，现在事务id是自己的了。下次查询的时候就会查询出来。（虽然更新一条不存在的数据逻辑上很诡异）</p>
 <p>需要通过间隙锁才能解决幻读，也就是锁住一段范围内的，其他事务添加这段范围内的数据就会被阻塞。</p>
+<h2 id="redolog"><a href="#redolog" class="headerlink" title="redolog"></a>redolog</h2><p>前面所讲的数据库事务的ACID中，持久性就是由redolog保证的。mysql在更新的时候先写redolog，然后再在合适的实际将redolog真正写在数据页上。首先读取操作的时候不会每次都从磁盘io，会缓存在buffer pool中，那么写操作也会在buffer pool中操作，此时就变成了一个脏页。redolog的左右就是把这个脏页的操作记录并持久化下来，这个过程是比刷数据页要快的，很多时候查询的并不是顺序读，有可能在很多数据页上。</p>
+<p><strong>刷盘时机:</strong></p>
+<p>redolog也是有缓冲区的，把buffer pool中的修改保存在redolog缓存区中，然后再在合适的时机刷盘，一般有以下几个时机：</p>
+<ul>
+<li>mysql正常关闭</li>
+<li>后台线程会每隔1s刷盘</li>
+<li>当缓冲区满了一半就触发</li>
+<li>根据刷盘策略</li>
+</ul>
+<p>刷盘策略有以下三种：</p>
+<ul>
+<li>每次事务提交只写在缓冲区中，但是如果在1s内掉电，redolog buffer就会没有了，这种策略可能会掉最多1s的数据</li>
+<li>每次事务提交直接写磁盘，效率较低，但是安全</li>
+<li>每次事务提交给操作系统的page cache，交给操作系统写。这种情况如果mysql停机了还是能写，因为操作系统没有停止，但是如果掉点了还是会丢1s的数据，算是上面两种的一个折中。</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_16.png" alt="" />
+</div>
+
+<p><strong>日志文件组：</strong></p>
+<p>redolog不是一个文件，而是多个文件，这些文件按照环形存储，会覆盖。头指针是checkpoint，尾指针是write pos。每次有缓冲区来的数据就移动pos。如果mysql进行了redolog到数据块的持久化，checkpoint就往后移动。</p>
+<p>如果这个环形文件满了，就需要阻塞mysql，进行部分redolog到数据页的操作。</p>
+<p><strong>总结：</strong></p>
+<p>redolog保证了mysql的持久性，这种操作比直接修改数据页要高效，由于直接修改数据页可能会存在随机写的情况，而redolog是追加写，就好像每次找东西随机写就是看目录找书页，而追加就是往后翻一页。</p>
+<p>然而redolog在某些策略下也不是万无一失的，因为redolog也是有缓存的，如果没有及时写在磁盘里就会丢失1s的数据。</p>
+<blockquote>
+<p>由此可见redolog和真正存在数据页中还有一段时间差，那这个时候来了一个读请求，怎么保证一致性？<br>会在buffer pool找，而不是直接去磁盘找，本来redolog就是为了存buffer pool的脏页的，是内存同步到外存，</p>
+</blockquote>
+<h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><p>binlog是解决主从同步的一种日志形式，只记录写操作，select和show是不记录的。有三种格式形式：</p>
+<ul>
+<li>statement：只记录更新的语句，不管前后状态，一般存储的数据量较小</li>
+<li>row：不光记录更新的具体语句，更新前后的状态也保存，一般用在需要计算的sql语句，例如now()，用第一种方式就会造成数据不一致，第二种会保存在主机上面的结果。当然存储的数据量会更大</li>
+<li>mix：根据具体sql的形式选取策略，例如正常sql就用statement，涉及到计算的就用row</li>
+</ul>
+<p><strong>刷盘方式：</strong></p>
+<p>与redolog类似，也有一个缓冲区，但是binlog的缓冲区线程之间是独立的，最终都要写进磁盘。</p>
+<ul>
+<li>0：不同线程的binlog buffer写到page cache里面，由操作系统写回</li>
+<li>1：直接写到磁盘</li>
+<li>n：n个线程的binlog buffer写到page cache后触发一次写到磁盘。掉电就丢失n个线程的数据</li>
+</ul>
+<h2 id="binlog就够了为什么还需要redolog"><a href="#binlog就够了为什么还需要redolog" class="headerlink" title="binlog就够了为什么还需要redolog"></a>binlog就够了为什么还需要redolog</h2><p>binlog主要负责主从同步，redolog负责恢复数据库。一个是外部机制，一个是内部机制，两者独立但是互补，服务于不同的需求。</p>
+<h2 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h2><p>如果在binlog和redolog之间出现问题就会导致数据不一致。所以需要两阶段提交</p>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_17.png" alt="" />
+</div>
+
+<p>写redo的时候设置为prepare，等到binlog写完了才设置为commit状态。mysql认为binlog写完了就是一个事务结束，即便没有再设置redolog的状态。</p>
+<p>例如在写完redolog时宕机，binlog没有写，这个时候就会触发回滚；但是写完了binlog宕机了，redolog没有被改变为commit，还是会被认为事务提交了</p>
+<p><strong>存在什么问题：</strong></p>
+<ul>
+<li>多线程下需要原子性</li>
+<li>磁盘io很高</li>
+</ul>
 
     
     
@@ -360,6 +414,12 @@
 <li>从前序与中序遍历序列构造二叉树：经典题目，要时不时写一下</li>
 <li>实现前缀树：Trim[26]数组，要用一个isend区分是前缀还是单词</li>
 <li>有序数组转化为二叉搜索树：二分+递归</li>
+<li><strong>单词拆分：</strong> 动态规划，当dp[j] &#x3D;&#x3D; 1 &amp;&amp; hashset.contains(s.subString(i,j))时dp[i]&#x3D;1，字符串在字典里当且仅当划分的两部分应该也在字典里</li>
+<li>打家劫舍：经典dp题目，有两种策略，不抢的时候选择上一个两种情况中最大的，抢的时候前一个只能不抢。</li>
+<li><strong>最大正方形：</strong> 二维dp，dp[i][j]表示以ij为左下角的最大正方形，取左，上，对角线三个里面最小的。</li>
+<li>最小路径和：二维dp入门题目，看一眼肯定会</li>
+<li><strong>零钱兑换：</strong> dp数组长度为钱的多少，dp表示当前钱兑换的最少次数。每次往后移动都需要首尾指针一起动</li>
+<li><strong>排序链表：</strong> 菜就多练</li>
 </ul>
 
     
