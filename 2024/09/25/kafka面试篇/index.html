@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="消息队列面试篇" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="Kafka, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/archives/2024/05/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/25/kafka面试篇/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>归档 - 2024/5 · YYF&#39;s Blog</title>
+  <title>消息队列面试篇 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,75 +208,121 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      消息队列面试篇
+      
+    </h1>
 
-<section id="archive" class="archive">
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-25
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
   
-  
-  <div class="archive-title">
-    <span class="archive-post-counter">
-      目前共计 53 篇日志
-    </span>
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li></ol>
+    </div>
   </div>
   
-  
 
-  
-  
-  
-  
-  
-  
-  <div class="collection-title">
-    <h2 class="archive-year">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </h2>
+  <div class="post-content">
+    
+    <h2 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h2><p>rocketMq的架构是类似于kafka的，实现了许多kafka没有的功能，但是依旧没有在市场上打败kafka，kafka的性能这么高的原因得益于零拷贝技术。</p>
+<p>在传统io方式中是需要经过cpu的，用户调用read()方法，数据通过dma传输到内存缓冲区，然后通过cpu拷贝到用户态的用户缓冲区，得到了用户能见的数据。再通过write()将数据拷贝到操作系统内核态的socket写缓冲区，最后通过网卡发送数据。这个过程一共经历了四次用户态和内核态的切换：</p>
+<ol>
+<li>系统调用read，用户态-&gt;内核态</li>
+<li>dma后，cpu将数据从内核态拷贝回用户态</li>
+<li>系统调用write，用户态-&gt;内核态</li>
+<li>write方法返回，重新回到用户态</li>
+</ol>
+<p>以及四次数据的拷贝。</p>
+<p><strong>mmap</strong></p>
+<p>mmap是一种将内存映射到用户态空间的系统调用。简单来说就是用户态和内核态使用同一片空间，不用进行上下文切换。因此整个流程就会变为：</p>
+<ol>
+<li>mmap系统调用，用户态-&gt;内核态</li>
+<li>dma将磁盘数据写到内核态的缓冲区，返回给用户态，同时用户态也能看到这片缓冲区，可以进行操作。需要进行上下文切换但不用拷贝</li>
+<li>操作完了之后系统调用write写到网卡发送，用户态-&gt;内核态</li>
+<li>拷贝两次，从内核态缓冲区拷贝到socket缓冲区，再用dma方式写回磁盘或者网卡，最后回到用户态</li>
+</ol>
+<p>综上所述，总共经历了3次io和四次上下文切换。减少的这一次叫做零拷贝。</p>
+<p><strong>sendfile</strong></p>
+<p>sendfile不会给用户态返回具体的数据，直接从内核态走socket传输走了。</p>
+<ol>
+<li>sendfile系统调用，用户态-&gt;内核态</li>
+<li>dma拷贝到内核态的缓冲区，这里不会返回给用户态具体的信息，也就是说用户态操作不了，直接拷贝给socket</li>
+<li>再从socket拷贝到网卡，返回用户态</li>
+</ol>
+<p>综上所述，一共两次上下文切换和三次io，对比 mmap+write，主要是没有再用户态进行拷贝。</p>
+<p>说了这么多，到底跟kafka和rocketmq有什么关系呢？kafka是基于sendfile的，而rocketmq是基于mmap的，都使用了零拷贝技术，但是由于rocketmq新增了一些高级功能，需要直到具体的数据信息而不是直接发送，就用了能看见数据的mmap方式。kafka为了追求极致性能就没有这些花里胡哨的功能，使用了效率更高的sendfile</p>
+
+    
   </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/" class="archive-post-link">
-        redis项目-分布式锁
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      05-30
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E7%99%BB%E5%BD%95%E9%80%BB%E8%BE%91/" class="archive-post-link">
-        redis项目-登录逻辑
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/09/25/kafka%E9%9D%A2%E8%AF%95%E7%AF%87/">https://yyf1050886654.github.io/2024/09/25/kafka%E9%9D%A2%E8%AF%95%E7%AF%87/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
       
+      <a href="/tags/Kafka/">Kafka</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/09/22/Mysql%E9%9D%A2%E8%AF%95%E7%AF%87/">  
+        <span class="next-text nav-default">Mysql面试篇</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
@@ -371,6 +421,13 @@
     <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
   </div>
     
+    
+    
+    
+    
+    
+    
+  
 
   
 

@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C"><span class="toc-number">1.</span> <span class="toc-text">一致性哈希</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C"><span class="toc-number">1.</span> <span class="toc-text">一致性哈希</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">分布式限流算法</span></a></li></ol>
     </div>
   </div>
   
@@ -277,6 +277,15 @@
 <li>一致性哈希的虚拟节点：可以根据权重分配更多的虚拟节点，但是效果有待验证，因为毕竟也是随机的，增加节点并不一定就能获得更大的访问范围。</li>
 </ol>
 </blockquote>
+<h2 id="分布式限流算法"><a href="#分布式限流算法" class="headerlink" title="分布式限流算法"></a>分布式限流算法</h2><ul>
+<li>固定窗口计数器算法：在一分钟内设定n次访问量，如果超过了n次就拒绝访问。缺点是限流不够平滑，如果在1分钟内前30秒就处理了n个，后面半分钟就等于空转；也无法保证限流速率和攻击，如果服务器的承载力就是1分钟n个请求，在这分钟的后30s给出n个请求，后面一分钟的前半部分给出n个，也能将服务器击垮</li>
+<li>滑动窗口计数器算法：划分的更细了，例如划分一秒多少个请求，这样可以应对突发的请求增大，但是也有不平滑的问题，也不好控制速率</li>
+<li>漏桶算法：请求进入桶，慢慢漏下来，满了就丢弃请求。这样优点是可以控制速率，但是同时也会导致漏请求</li>
+<li>令牌桶算法：桶里面是令牌，可以通过控制令牌的流速改变处理速度</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Distributio/img_4.png" alt="" />
+</div>
 
     
   </div>

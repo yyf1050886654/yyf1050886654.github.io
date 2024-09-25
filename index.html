@@ -212,6 +212,70 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/25/kafka%E9%9D%A2%E8%AF%95%E7%AF%87/">消息队列面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-25
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h2><p>rocketMq的架构是类似于kafka的，实现了许多kafka没有的功能，但是依旧没有在市场上打败kafka，kafka的性能这么高的原因得益于零拷贝技术。</p>
+<p>在传统io方式中是需要经过cpu的，用户调用read()方法，数据通过dma传输到内存缓冲区，然后通过cpu拷贝到用户态的用户缓冲区，得到了用户能见的数据。再通过write()将数据拷贝到操作系统内核态的socket写缓冲区，最后通过网卡发送数据。这个过程一共经历了四次用户态和内核态的切换：</p>
+<ol>
+<li>系统调用read，用户态-&gt;内核态</li>
+<li>dma后，cpu将数据从内核态拷贝回用户态</li>
+<li>系统调用write，用户态-&gt;内核态</li>
+<li>write方法返回，重新回到用户态</li>
+</ol>
+<p>以及四次数据的拷贝。</p>
+<p><strong>mmap</strong></p>
+<p>mmap是一种将内存映射到用户态空间的系统调用。简单来说就是用户态和内核态使用同一片空间，不用进行上下文切换。因此整个流程就会变为：</p>
+<ol>
+<li>mmap系统调用，用户态-&gt;内核态</li>
+<li>dma将磁盘数据写到内核态的缓冲区，返回给用户态，同时用户态也能看到这片缓冲区，可以进行操作。需要进行上下文切换但不用拷贝</li>
+<li>操作完了之后系统调用write写到网卡发送，用户态-&gt;内核态</li>
+<li>拷贝两次，从内核态缓冲区拷贝到socket缓冲区，再用dma方式写回磁盘或者网卡，最后回到用户态</li>
+</ol>
+<p>综上所述，总共经历了3次io和四次上下文切换。减少的这一次叫做零拷贝。</p>
+<p><strong>sendfile</strong></p>
+<p>sendfile不会给用户态返回具体的数据，直接从内核态走socket传输走了。</p>
+<ol>
+<li>sendfile系统调用，用户态-&gt;内核态</li>
+<li>dma拷贝到内核态的缓冲区，这里不会返回给用户态具体的信息，也就是说用户态操作不了，直接拷贝给socket</li>
+<li>再从socket拷贝到网卡，返回用户态</li>
+</ol>
+<p>综上所述，一共两次上下文切换和三次io，对比 mmap+write，主要是没有再用户态进行拷贝。</p>
+<p>说了这么多，到底跟kafka和rocketmq有什么关系呢？kafka是基于sendfile的，而rocketmq是基于mmap的，都使用了零拷贝技术，但是由于rocketmq新增了一些高级功能，需要直到具体的数据信息而不是直接发送，就用了能看见数据的mmap方式。kafka为了追求极致性能就没有这些花里胡哨的功能，使用了效率更高的sendfile</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/22/Mysql%E9%9D%A2%E8%AF%95%E7%AF%87/">Mysql面试篇</a>
       
     </h1>
@@ -333,7 +397,7 @@
 <p><strong>存在什么问题：</strong></p>
 <ul>
 <li>多线程下需要原子性</li>
-<li>磁盘io很高</li>
+<li>如果是“双1配置”，一个事务io两次</li>
 </ul>
 
     
@@ -420,6 +484,16 @@
 <li>最小路径和：二维dp入门题目，看一眼肯定会</li>
 <li><strong>零钱兑换：</strong> dp数组长度为钱的多少，dp表示当前钱兑换的最少次数。每次往后移动都需要首尾指针一起动</li>
 <li><strong>排序链表：</strong> 菜就多练</li>
+<li>两数相加：两个链表做加法，太简单了不说，还有个2，就是反转之后相加</li>
+<li>k个一组翻转链表：虽然是hard但是很简单，思路一定要清晰</li>
+<li><strong>二叉树的最大路径和</strong>：树形dp，用一个全局变量保存全局最大路径和，返回的时候需要判断子树是否为负数，如果都为负数就返回自己，只要有一个是正数就返回自己+正数</li>
+<li>二叉树的直径：跟上面思路是一样的，但是dp返回的是当前树的高度，也是用全局变量保存最大值</li>
+<li>打家劫舍3：树形dp，根节点抢了子节点都不能抢了，取其中dp[0]的和再加自己的，不抢就找dp[0]和dp[1]中较大的那个</li>
+<li>求根到叶子节点数字之和：深度和广度+回溯</li>
+<li>路径总和：回溯</li>
+<li><strong>字符串解码：</strong> 双栈，存数和字符串，遇到]后进行循环拼接，再将前面的依次出栈直到[</li>
+<li>最长连续序列：首先set去重，然后遍历，如果有比当前元素小的就跳过，也就是说每次都找一段里面最小的元素。然后用一个全局变量保存最大的。</li>
+<li>最长公共前缀：按列遍历，注意长度是否超出</li>
 </ul>
 
     
@@ -764,6 +838,15 @@
 <li>一致性哈希的虚拟节点：可以根据权重分配更多的虚拟节点，但是效果有待验证，因为毕竟也是随机的，增加节点并不一定就能获得更大的访问范围。</li>
 </ol>
 </blockquote>
+<h2 id="分布式限流算法"><a href="#分布式限流算法" class="headerlink" title="分布式限流算法"></a>分布式限流算法</h2><ul>
+<li>固定窗口计数器算法：在一分钟内设定n次访问量，如果超过了n次就拒绝访问。缺点是限流不够平滑，如果在1分钟内前30秒就处理了n个，后面半分钟就等于空转；也无法保证限流速率和攻击，如果服务器的承载力就是1分钟n个请求，在这分钟的后30s给出n个请求，后面一分钟的前半部分给出n个，也能将服务器击垮</li>
+<li>滑动窗口计数器算法：划分的更细了，例如划分一秒多少个请求，这样可以应对突发的请求增大，但是也有不平滑的问题，也不好控制速率</li>
+<li>漏桶算法：请求进入桶，慢慢漏下来，满了就丢弃请求。这样优点是可以控制速率，但是同时也会导致漏请求</li>
+<li>令牌桶算法：桶里面是令牌，可以通过控制令牌的流速改变处理速度</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Distributio/img_4.png" alt="" />
+</div>
 
     
     
@@ -1247,148 +1330,6 @@
 </blockquote>
 <h2 id="HashSet"><a href="#HashSet" class="headerlink" title="HashSet"></a>HashSet</h2><p>HashSet是基于HashMap的，由于HashMap的特性会替换重复的key，HashSet直接把当前元素作为key，这样就可以达到去重的目的</p>
 <h1 id="未完待续。。。。。"><a href="#未完待续。。。。。" class="headerlink" title="未完待续。。。。。"></a>未完待续。。。。。</h1>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/08/16/jvm-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%92%8C%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/">jvm-类加载器和双亲委派机制</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-08-16
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="类加载器"><a href="#类加载器" class="headerlink" title="类加载器"></a>类加载器</h1><h2 id="类加载过程"><a href="#类加载过程" class="headerlink" title="类加载过程"></a>类加载过程</h2><p>首先回顾一下类加载的过程。类的生命周期分为以下七个阶段：加载-&gt;验证-&gt;准备-&gt;解析-&gt;初始化-&gt;使用-&gt;卸载。其中加载是生命周期的第一个阶段，类加载器用不同的方式加载jar包，可以从classpath，动态代理和网络获取要加载的类。</p>
-<p>类加载主要做了以下三件事：</p>
-<ol>
-<li>用类的全限定名找到类的class文件，也就是字节流</li>
-<li>将字节流文件转化为方法区中运行时数据结构InstanceKlass，保存常量池，字段，方法等内容</li>
-<li>在堆中创建相应Class对象，映射到方法区的数据结构，这部分是允许程序员操纵的</li>
-</ol>
-<blockquote>
-<p>在 Java 的类加载阶段，<code>InstanceKlass</code> 和 <code>Class</code> 对象各自扮演了不同的角色。理解它们的作用有助于更好地理解 Java 类加载和运行时的内部机制。</p>
-</blockquote>
-<h3 id="1-InstanceKlass"><a href="#1-InstanceKlass" class="headerlink" title="1. InstanceKlass"></a>1. <strong><code>InstanceKlass</code></strong></h3><p><code>InstanceKlass</code> 是在某些 Java 虚拟机（JVM）实现中用于表示类的内部数据结构的一个术语（例如在 HotSpot JVM 中）。它是 JVM 内部的一个概念，主要用于存储和管理类的各种元数据。<code>InstanceKlass</code> 包含了类的实例字段、方法、常量池等信息，主要用于：</p>
-<ul>
-<li><strong>表示和管理类的元数据</strong>：包括类的字段、方法、常量池等。</li>
-<li><strong>支持类的实例化和动态操作</strong>：在 JVM 内部用于实现类实例化、反射等操作。</li>
-<li><strong>管理类的加载和初始化</strong>：确保类在加载、链接和初始化过程中能够正确地管理其结构和状态。</li>
-</ul>
-<p><code>InstanceKlass</code> 是 JVM 内部对类的表示，主要用于实现 JVM 的各种内部操作，通常不会被应用程序直接访问或操作。</p>
-<h3 id="2-Class-对象"><a href="#2-Class-对象" class="headerlink" title="2. Class 对象"></a>2. <strong><code>Class</code> 对象</strong></h3><p><code>Class</code> 对象是 Java 语言层面提供的，用于表示和操作 Java 类的一个公共 API。每个 Java 类在运行时都有一个 <code>Class</code> 对象，用于提供对该类的元数据的访问。<code>Class</code> 对象的作用包括：</p>
-<ul>
-<li><strong>反射</strong>：提供了用于访问类的信息和操作类的方法（如获取类的字段、方法、构造函数等）。</li>
-<li><strong>类型检查</strong>：在运行时进行类型检查和类型转换。</li>
-<li><strong>动态实例化</strong>：允许在运行时创建类的实例（如 <code>Class.forName</code> 和 <code>newInstance</code>）。</li>
-</ul>
-<h3 id="类的加载阶段的角色和作用"><a href="#类的加载阶段的角色和作用" class="headerlink" title="类的加载阶段的角色和作用"></a>类的加载阶段的角色和作用</h3><ol>
-<li><p><strong>加载（Loading）</strong>：</p>
-<ul>
-<li>在这个阶段，JVM 会根据类的全限定名找到类文件（<code>.class</code> 文件），并将其字节码读入内存。此时，<code>InstanceKlass</code> 对象可能在内部被创建来管理这个类的字节码和元数据。</li>
-</ul>
-</li>
-<li><p><strong>链接（Linking）</strong>：</p>
-<ul>
-<li><strong>验证（Verification）</strong>：确保类文件的字节码符合 Java 虚拟机规范。</li>
-<li><strong>准备（Preparation）</strong>：为类的静态变量分配内存并初始化。</li>
-<li><strong>解析（Resolution）</strong>：将类中的符号引用解析为直接引用。</li>
-</ul>
-</li>
-<li><p><strong>初始化（Initialization）</strong>：</p>
-<ul>
-<li>执行类的静态初始化代码（如静态块）。</li>
-</ul>
-</li>
-</ol>
-<h3 id="InstanceKlass-和-Class-对象的关系"><a href="#InstanceKlass-和-Class-对象的关系" class="headerlink" title="InstanceKlass 和 Class 对象的关系"></a><code>InstanceKlass</code> 和 <code>Class</code> 对象的关系</h3><ul>
-<li>在内部，<code>InstanceKlass</code> 是 JVM 实现中的一个结构，用于存储和管理类的内部数据和状态。</li>
-<li><code>Class</code> 对象是 Java 语言层面的一个公共 API，提供了对类信息的访问。</li>
-</ul>
-<p><strong>在类加载阶段，<code>InstanceKlass</code> 负责 JVM 内部的类数据结构管理和维护</strong>，而 <code>Class</code> 对象则提供了给应用程序使用的接口来访问和操作这些数据。它们各自作用于不同的层面，但在类加载和运行时的操作中是相辅相成的。</p>
-<h3 id="关系总结"><a href="#关系总结" class="headerlink" title="关系总结"></a>关系总结</h3><ul>
-<li>**<code>InstanceKlass</code>**：JVM 内部用于表示和管理类的元数据，是实现细节。</li>
-<li><strong><code>Class</code> 对象</strong>：Java API 提供的类元数据的公共接口，让应用程序能够通过反射等机制与类进行交互。</li>
-</ul>
-<p><strong><code>InstanceKlass</code> 和 <code>Class</code> 对象</strong> 在类加载过程中相互协作，使得类的内部管理与外部访问得以实现。</p>
-<blockquote>
-<p>补充知识点：反射</p>
-<p>反射是通过操作Class文件，在类的运行过程中动态的获取一些信息，比如当前时刻的字段和方法。首先在某个类的加载阶段，会在jvm的方法区生成一个InstanceKlass文件，这是由c++实现的，同时也会在堆中生成一个Class对象，该对象有反射的功能。<br>在需要使用反射的时候，利用Class.forName(全限定名)，可以在堆中取出该Class对象，完成反射调用。</p>
-</blockquote>
-<h2 id="类加载器分类"><a href="#类加载器分类" class="headerlink" title="类加载器分类"></a>类加载器分类</h2><p>一般来说，自上而下可以分为四个类加载器：</p>
-<h3 id="启动类加载器-BootStrapClassLoader"><a href="#启动类加载器-BootStrapClassLoader" class="headerlink" title="启动类加载器(BootStrapClassLoader)"></a>启动类加载器(BootStrapClassLoader)</h3><p>由jvm提供c++编写，对于java程序员不可见，当打印类加载器名为null的时候即为启动类加载器。一般用于加载java核心类（rt）</p>
-<h3 id="扩展类加载器-ExtensionClassLoader"><a href="#扩展类加载器-ExtensionClassLoader" class="headerlink" title="扩展类加载器(ExtensionClassLoader)"></a>扩展类加载器(ExtensionClassLoader)</h3><p>加载一些拓展jar包，比如applet等一系列非java核心功能，但是有时候有需要用到的官方包</p>
-<h3 id="应用程序类加载器-ApplicationClassLoader"><a href="#应用程序类加载器-ApplicationClassLoader" class="headerlink" title="应用程序类加载器(ApplicationClassLoader)"></a>应用程序类加载器(ApplicationClassLoader)</h3><p>加载在classpath下用户编写的所有java类和jar包</p>
-<h3 id="自定义类加载器"><a href="#自定义类加载器" class="headerlink" title="自定义类加载器"></a>自定义类加载器</h3><p>用户为了实现某些特定功能编写的，首先说明在java中的ClassLoader继承结构，ClassLoader是一个抽象类，URLClassLoader实现了在对应路径下的二进制文件写入内存的操作。其中由几个重要方法：</p>
-<ul>
-<li><code>protected Class&lt;?&gt; findClass(String name)</code>：传入的参数为全限定名。默认实现是空方法，在URLClassLoader中将全限定名转换成了路径（.改成了&#x2F;，后缀添上了.class），自定义类加载器需要重写该方法，自定义逻辑去实际查找并加载类的字节码。例如，从网络、数据库或非标准路径加载类。</li>
-<li><code>public Class&lt;?&gt; loadClass(String name)</code>：入口方法，遵循双亲委派机制。<strong>双亲委派机制</strong>：当要加载一个类的时候，如果当前类加载器发现已经加载过该类（调用findLoadedClass，这个方法会使用native方法完成判断是否加载），就直接返回该Class对象，如果没有加载就委派父加载器进行加载，直到启动类加载器。启动类加载器会自顶向下判断是否能够加载当前类，比如启动类加载器加载不了的就给扩展类加载器，如果全部都加载不了，则报错ClassNotFoundException<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Class&lt;?&gt; loadClass(String name, <span class="type">boolean</span> resolve) <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (getClassLoadingLock(name)) &#123;</span><br><span class="line">        <span class="comment">// 检查类是否已经被加载</span></span><br><span class="line">        Class&lt;?&gt; c = findLoadedClass(name);</span><br><span class="line">        <span class="keyword">if</span> (c == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (parent != <span class="literal">null</span>) &#123;</span><br><span class="line">                    <span class="comment">// 委派给父类加载器</span></span><br><span class="line">                    c = parent.loadClass(name, <span class="literal">false</span>);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 使用引导类加载器加载</span></span><br><span class="line">                    c = findBootstrapClassOrNull(name);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                <span class="comment">// 父加载器找不到类</span></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (c == <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果父加载器也找不到类，则调用 findClass 方法加载</span></span><br><span class="line">                c = findClass(name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (resolve) &#123;</span><br><span class="line">            resolveClass(c);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><code>protected final Class&lt;?&gt; defineClass()</code>：做一些类名的校验，然后调用虚拟机的native方法将字节码信息加载到虚拟机缓存中</li>
-</ul>
-<blockquote>
-<p>defineClass() 与 loadClass() 和 findClass() 的关系:</p>
-<ul>
-<li>loadClass()：loadClass() 是类加载的入口方法，负责按照双亲委派模型加载类。如果父类加载器无法加载该类，loadClass() 最后会调用当前类加载器的 findClass()。 </li>
-<li>findClass()：findClass() 是自定义类加载器用于查找类字节码的地方。一般自定义类加载器会重写 findClass()，在找到类的字节码后，通过调用 defineClass() 将其定义为 Class 对象。 </li>
-<li>defineClass()：defineClass() 是类加载过程中的核心步骤，负责将字节码转化为 JVM 识别的 Class 对象。通常是 findClass() 方法中的最后一步。</li>
-<li>调用关系：loadClass双亲委派机制，用findClass实现文件到字节数组的转换，defineCLass完成字节数组到内存的转化</li>
-</ul>
-</blockquote>
-<p><strong>还有一个要注意的点：</strong></p>
-<p>loadClass()有一个resolve参数，这个参数默认为false，代表只进行加载阶段，不进行连接阶段。比如要加载的类中有静态代码块，只调用loadclass是不会初始化这个代码块的，原因是只有加载阶段，不会进行连接更不会初始化了。</p>
-<h1 id="双亲委派机制"><a href="#双亲委派机制" class="headerlink" title="双亲委派机制"></a>双亲委派机制</h1><ol>
-<li>自底向上委托父类加载器完成加载</li>
-<li>自顶向下加载类</li>
-<li>好处：可以避免重复加载类；保证安全性</li>
-</ol>
-<h2 id="打破双亲委派机制——Tomcat"><a href="#打破双亲委派机制——Tomcat" class="headerlink" title="打破双亲委派机制——Tomcat"></a>打破双亲委派机制——Tomcat</h2><p>在Tomcat中，往往包含了很多的web应用，这些应用的全限定名很可能相同（例如启动了两个相同的服务）。对于双亲委派机制而言，每一个web应用都会委派父类加载器进行加载来保证当前classpath下的全限定名唯一性，比如demo1加载了com&#x2F;yyf&#x2F;service.class而demo2也有这个类，此时根据机制由于存在一个全限定名相同的类，demo2下的新类不会被加载，这样就会出现问题，因此我们要打破双亲委派机制。</p>
-<h3 id="Tomcat的类加载器"><a href="#Tomcat的类加载器" class="headerlink" title="Tomcat的类加载器"></a>Tomcat的类加载器</h3><p>Tomcat定义了一系列类加载器：<br><img src="/../img/jvm/img_2.png"></p>
-<ul>
-<li>common：通用类，Tomcat和web应用都要使用的类</li>
-<li>catalina:Tomcat要使用的类（注意：在tomcat中默认没有配置这个的路径，此时catalina类加载器即为common加载器，如果需要使用catalina加载器，需要在catalina.properties中进行路径的配置）</li>
-<li>shared：web应用要使用的可以共享的类，比如spring和mybatis（注意：与上面的类似，tomcat默认没有配置，此时也为common类加载器）</li>
-<li>并行web应用类加载器：每个应用一个</li>
-</ul>
-<blockquote>
-<p>注：共享类加载器<br>如果所有的web应用都是基于SSM的，可以配置共享类加载器实现只加载一次Spring容器，但是可能由于版本不同可能导致兼容问题，以及由于存在的大量反射会导致类污染，所以需要谨慎选择shared加载的类</p>
-</blockquote>
-<h3 id="如何打破双亲委派机制"><a href="#如何打破双亲委派机制" class="headerlink" title="如何打破双亲委派机制"></a>如何打破双亲委派机制</h3><p>有了前面web应用隔离的需求，tomcat通过为每一个web应用创建一个并行web类加载器，只有当全限定名和加载器都是同一个时，才会被认为是重复加载，<br><img src="/../img/jvm/img_3.png"></p>
-<ul>
-<li>左边是双亲委派机制：当需要加载一些内部类的时候还是要走双亲委派机制到启动类加载器</li>
-<li>右边是打破双亲委派机制：比如com&#x2F;yyf&#x2F;myclass.class这个类，并行web应用类加载器就会直接自己加载，但是如果没有加载成功还是会委派父类加载器进行加载</li>
-</ul>
-<h2 id="打破双亲委派机制？——spi机制"><a href="#打破双亲委派机制？——spi机制" class="headerlink" title="打破双亲委派机制？——spi机制"></a>打破双亲委派机制？——spi机制</h2><p>spi机制是一种服务发现机制，分为服务提供者和调用者，spi机制规定了需要在classpath下的META-INF&#x2F;service下以服务调用者的全限定名为文件名创建一个文件，内容为服务提供者的全限定名。再使用ServiceLoader加载服务调用者，就可以调用多个服务提供者。</p>
-<p>在jdbc中，可能有多个数据库源。java.sql.Driver需要能够调用多个数据库的驱动比如mysql和Oracle，Driver位于rt中需要用启动类加载器进行加载，而mysql驱动是第三方jar包，需要用应用程序类加载器。<strong>但是在默认情况下，一个类及其依赖类由同一个类加载器加载。</strong>由于spi的存在，mysql的实现类也会在Driver加载的时候通过启动类加载器进行加载，这显然是错误的。</p>
-<h3 id="线程上下文类加载器"><a href="#线程上下文类加载器" class="headerlink" title="线程上下文类加载器"></a>线程上下文类加载器</h3><p>问题重述，对于Driver这个类，是需要用启动类加载器进行加载，但由于spi让其发现了mysql的实现类，需要对其进行加载，此时需要打破双亲委派机制，<strong>启动类加载器委派应用程序加载器加载mysql驱动</strong>。</p>
-<p>其实在每个线程都会默认保存一个应用程序类加载器，一般来说子线程会继承父线程的应用程序类加载器。在spi问题中，我们只需要取出线程保存的应用程序类加载器实现mysql驱动的加载即可。</p>
-<p>同样的，在前文所述的tomcat的spring加载中，我们的代码会使用到spring的一系列注解，在spring容器初始化的过程中也会产生依赖。也就是说，本来是shared（也有可能是common）类加载器加载的spring类，但需要用到classpath下的自己写的应该由并行web应用处理的类。这与spi机制所产生的问题是一致的。</p>
-<p>此时也是通过线程上下文类加载器进行解决，只不过这里在开辟一个线程的时候重新set这个变量为当前的并行web应用类加载器，原理与上面的类似。<br><img src="/../img/jvm/img_4.png"></p>
-<h3 id="真的打破了双亲委派机制吗？"><a href="#真的打破了双亲委派机制吗？" class="headerlink" title="真的打破了双亲委派机制吗？"></a>真的打破了双亲委派机制吗？</h3><p>其实没有，从宏观上看，这里的Driver还是启动类加载器进行加载，mysql还是应用程序类加载器进行加载，也没有重新写loadclass方法。但也确实是由启动类加载器委派应用程序类加载器进行了加载。只不过是角度不同的问题，从宏观上没有打破，微观上打破了。</p>
-
     
     
   </div>
