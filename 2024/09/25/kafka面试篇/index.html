@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">消息队列的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">Kafka的架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF%E4%B8%8D%E4%B8%A2%E5%A4%B1"><span class="toc-number">4.</span> <span class="toc-text">Kafka如何保证消息不丢失</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%8D%E9%87%8D%E5%A4%8D%E6%B6%88%E8%B4%B9%E4%BF%A1%E6%81%AF"><span class="toc-number">5.</span> <span class="toc-text">Kafka如何保证不重复消费信息</span></a></li></ol>
     </div>
   </div>
   
@@ -264,6 +264,43 @@
 </ol>
 <p>综上所述，一共两次上下文切换和三次io，对比 mmap+write，主要是没有再用户态进行拷贝。</p>
 <p>说了这么多，到底跟kafka和rocketmq有什么关系呢？kafka是基于sendfile的，而rocketmq是基于mmap的，都使用了零拷贝技术，但是由于rocketmq新增了一些高级功能，需要直到具体的数据信息而不是直接发送，就用了能看见数据的mmap方式。kafka为了追求极致性能就没有这些花里胡哨的功能，使用了效率更高的sendfile</p>
+<h2 id="消息队列的作用"><a href="#消息队列的作用" class="headerlink" title="消息队列的作用"></a>消息队列的作用</h2><ul>
+<li>异步：不用等待同步操作，把消息扔给mq然后就直接返回，mq连接的另一端会异步进行操作</li>
+<li>解耦：可以将业务进行拆分，也是上面异步的思想</li>
+<li>削峰：到来的高并发请求先进入mq，类似漏桶限流算法，避免打倒服务器和数据库</li>
+</ul>
+<h2 id="Kafka的架构"><a href="#Kafka的架构" class="headerlink" title="Kafka的架构"></a>Kafka的架构</h2><p>kafka是基于发布者-订阅者模型的，在这个模型中有发布者，订阅者，broker和服务发现中心。具体到kafka就是producer，consumer，broker，topic，partition，配置中心是zookeeper：</p>
+<ul>
+<li>broker：就是一个物理上的kafka服务实体</li>
+<li>topic：消息是按照主题划分的，例如业务消息和日志消息就可以用两个topic划分</li>
+<li>partition：一个topic内也不只有一个队列，这个分区就是队列的意思。需要注意的是kafka在逻辑上是一个整体，但是物理上一个topic内所有分区不一定在同一个broker上。</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/kafka/img.png" alt="" />
+</div>
+
+<ul>
+<li>生产者组：生成消息放入消息队列，是多对多的关系，一个生产者可以生成很多个topic的消息，也可以生成一个topic内多个partition的消息</li>
+<li>消费者组：消费的进度用offset表示，消费者组并不会真的把消息队列的信息删除，而是用一个偏移量来表示消费到了哪里。每一个消费者组的偏移量可以是不同的，一般来说一个partition最好只有一个消费者，如果多了的话并发控制也会成为性能影响因素</li>
+<li>zookeeper：对于如此庞大规模的kafka集群，实体之间是怎么互相发现对方的？这里使用了zookeeper作为服务发现框架。kafka高度依赖zookeeper</li>
+</ul>
+<p>kafka为了保证高可用，还有类似主从架构的副本机制，使得某个broker挂了之后，部署在其他地方的partition能够继续工作。总而言之，一个topic多个partition的机制能够使消息分散在多个broker上，实现负载均衡。partition的副本也会保存在不同的机器上。从逻辑上看是整体的，物理上看都不会集中在一块区域。</p>
+<h2 id="Kafka如何保证消息不丢失"><a href="#Kafka如何保证消息不丢失" class="headerlink" title="Kafka如何保证消息不丢失"></a>Kafka如何保证消息不丢失</h2><p>消息丢失不是Kafka一个管道能说了算的，可能在生产者传输的过程中丢失，也有可能消费者offset更新完了之后就掉了导致没有真正消费信息。</p>
+<ul>
+<li>生产者的信息丢失：类似tcp的各种握手，可以使用一个回调函数返回kafka是否接收到了信息，这里最好不要用同步操作get，用异步ListenableFuture&lt;SendResult&lt;String, Object&gt;&gt;开一个线程监听；如果失败了就重传，可以设置重传次数。</li>
+<li>消费者的信息丢失：offset默认是消费者接受了这个消息就更新，但是可能会发生拿到消息就掉电导致消息没有实际被消耗。可以采用offset手动更新，在消费者逻辑的最后手动提交offset，这样就能保证消费完了才更新offset</li>
+<li>kafka的信息丢失：架构中都有这么多副本在兜底了，但是副本之间不一定时时刻刻都保持同步。设置几个参数就能保证kafka的高可用</li>
+</ul>
+<blockquote>
+<ul>
+<li>acks&#x3D;all，表示所有副本都更新完写操作才返回，默认值是1，也就是主节点更新了就返回，但是这样依旧可能造成丢数据问题。因此为了绝对安全可以设置acks&#x3D;all，但是会极大的影响性能。</li>
+<li>设置副本数量&gt;&#x3D;3，虽然造成了数据冗余，但是可以保证高可用</li>
+<li>设置更新的副本数量&gt;1，这样配置代表消息至少要被写入到 2 个副本才算是被成功发送。min.insync.replicas 的默认值为 1 ，在实际生产中应尽量避免默认值 1，是acks&#x3D;all的一种折中</li>
+<li>设置 unclean.leader.election.enable &#x3D; false，当发生主从数据不一致的时候，只有完全同步的数据副本才能被选举为leader</li>
+</ul>
+</blockquote>
+<p>kafka是ap架构还cp架构？从上面的各种默认参数来看，比如acks&#x3D;1，默认的时候还是倾向于可用性的，也就是会牺牲一部分一致性。但是经过上面的种种配置之后，就可以使kafka集群是强一致性的，在某些场合下可以灵活改变配置。</p>
+<h2 id="Kafka如何保证不重复消费信息"><a href="#Kafka如何保证不重复消费信息" class="headerlink" title="Kafka如何保证不重复消费信息"></a>Kafka如何保证不重复消费信息</h2><p>如上面所述，即便是手动提交offset还是可能出现重复消费，这个时候只能通过消费者的幂等进行校验了</p>
 
     
   </div>
