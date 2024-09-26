@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">消息队列的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">Kafka的架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF%E4%B8%8D%E4%B8%A2%E5%A4%B1"><span class="toc-number">4.</span> <span class="toc-text">Kafka如何保证消息不丢失</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%8D%E9%87%8D%E5%A4%8D%E6%B6%88%E8%B4%B9%E4%BF%A1%E6%81%AF"><span class="toc-number">5.</span> <span class="toc-text">Kafka如何保证不重复消费信息</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">消息队列的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">Kafka的架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">Kafka的存储机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF%E4%B8%8D%E4%B8%A2%E5%A4%B1"><span class="toc-number">5.</span> <span class="toc-text">Kafka如何保证消息不丢失</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%90%91Kafka%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF%E7%9A%84%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">6.</span> <span class="toc-text">生产者向Kafka发送消息的执行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E8%B4%B9%E8%80%85%E6%B6%88%E8%B4%B9%E5%A4%B1%E8%B4%A5%E4%BC%9A%E6%80%8E%E6%A0%B7"><span class="toc-number">7.</span> <span class="toc-text">消费者消费失败会怎样</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%8D%E9%87%8D%E5%A4%8D%E6%B6%88%E8%B4%B9%E4%BF%A1%E6%81%AF"><span class="toc-number">8.</span> <span class="toc-text">Kafka如何保证不重复消费信息</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Exactly-Once-%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%9C%BA%E5%88%B6"><span class="toc-number">8.1.</span> <span class="toc-text">Exactly Once 的实现机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.2.</span> <span class="toc-text">总结</span></a></li></ol></li></ol>
     </div>
   </div>
   
@@ -285,6 +285,22 @@
 <li>zookeeper：对于如此庞大规模的kafka集群，实体之间是怎么互相发现对方的？这里使用了zookeeper作为服务发现框架。kafka高度依赖zookeeper</li>
 </ul>
 <p>kafka为了保证高可用，还有类似主从架构的副本机制，使得某个broker挂了之后，部署在其他地方的partition能够继续工作。总而言之，一个topic多个partition的机制能够使消息分散在多个broker上，实现负载均衡。partition的副本也会保存在不同的机器上。从逻辑上看是整体的，物理上看都不会集中在一块区域。</p>
+<h2 id="Kafka的存储机制"><a href="#Kafka的存储机制" class="headerlink" title="Kafka的存储机制"></a>Kafka的存储机制</h2><p>前情提要：一个topic可能横跨多个broker，每一个broker的文件系统只会保存自己实际物理存储的日志。只有通过zookeeper才能看到一个topic的全部分区信息。</p>
+<p>在一个broker下，文件信息是这么存储的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;kafka-log-dir&gt;/</span><br><span class="line">    └── &lt;topic-name&gt;/</span><br><span class="line">        └── &lt;partition-number&gt;/</span><br><span class="line">            ├── 00000000000000000000.log        # 日志文件</span><br><span class="line">            ├── 00000000000000000000.index      # 偏移量索引文件</span><br><span class="line">            ├── 00000000000000000000.timeindex  # 时间索引文件</span><br><span class="line">            ├── 00000000000000000001.log        # 下一日志段</span><br><span class="line">            ├── 00000000000000000001.index      # 下一日志段的偏移量索引文件</span><br><span class="line">            ├── 00000000000000000001.timeindex  # 下一日志段的时间索引文件</span><br></pre></td></tr></table></figure>
+<ul>
+<li>日志段（segment）：一个分区下有多个segment，segment中保存了实际的数据，这些数据的key是offset，每一个segment以当前最小的offset命名。查询的时候通过二分查找找到对应的offset</li>
+<li>索引（index）：同时会生成一个与segment同名的索引。保存当前segment下offset的索引信息（类似二级索引），加快日志内的查找速度</li>
+<li>时间索引文件：存储offset对应的时间戳，便于根据时间查找信息。</li>
+</ul>
+<p><strong>生产者</strong></p>
+<p>当收到生产者数据的时候，用户态内存接收到之后，会给操作系统内核态的page cache，os再择机刷盘。这个写过程是顺序写，也就是说在对应的分区的最后一个log后面写刚刚的消息。</p>
+<p><strong>消费者</strong></p>
+<p>消费者消费数据的时候，根据offset先在文件名中二分查找到segment，再用对应的索引来加速搜索。</p>
+<p><strong>日志滚动</strong></p>
+<p>如果一个segment达到了默认的1GB或者超过了7天没有新增，那就会有一个新的segment</p>
+<p><strong>日志删除</strong></p>
+<p>可以配置kafka的消息删除时间，这个时候上面的日志索引文件就有用了，通过判断时间戳来删除。在删除过程中会使用copyonwrite以避免有消费者这个时候消费消息。</p>
 <h2 id="Kafka如何保证消息不丢失"><a href="#Kafka如何保证消息不丢失" class="headerlink" title="Kafka如何保证消息不丢失"></a>Kafka如何保证消息不丢失</h2><p>消息丢失不是Kafka一个管道能说了算的，可能在生产者传输的过程中丢失，也有可能消费者offset更新完了之后就掉了导致没有真正消费信息。</p>
 <ul>
 <li>生产者的信息丢失：类似tcp的各种握手，可以使用一个回调函数返回kafka是否接收到了信息，这里最好不要用同步操作get，用异步ListenableFuture&lt;SendResult&lt;String, Object&gt;&gt;开一个线程监听；如果失败了就重传，可以设置重传次数。</li>
@@ -300,7 +316,55 @@
 </ul>
 </blockquote>
 <p>kafka是ap架构还cp架构？从上面的各种默认参数来看，比如acks&#x3D;1，默认的时候还是倾向于可用性的，也就是会牺牲一部分一致性。但是经过上面的种种配置之后，就可以使kafka集群是强一致性的，在某些场合下可以灵活改变配置。</p>
+<h2 id="生产者向Kafka发送消息的执行流程"><a href="#生产者向Kafka发送消息的执行流程" class="headerlink" title="生产者向Kafka发送消息的执行流程"></a>生产者向Kafka发送消息的执行流程</h2><ol>
+<li>配置生产者，一般消息有三个值，topic，key和value（保证顺序的话就要指定partition）。还可以配置acks的参数，reties的次数，配置完这些之后产生一个生产者对象。</li>
+<li>序列化消息，将key和value序列化，例如StringSerializer</li>
+<li>消息需要选择进入哪个分区，如果key没有配置的话就轮询（RR），如果有的话就hash然后取模</li>
+<li>如果配置了批处理，先把消息放在缓冲区，等达到了batchsize再传送</li>
+<li>请求压缩：kafka集群主要的瓶颈在网络io而不是cpu，在进入的时候压缩，在出去的时候解压，能够减少网络延迟</li>
+<li>当达到了batchsize，根据选择的分区发往broker。根据acks配置的参数返回消息</li>
+<li>超时重试</li>
+<li>如果有回调函数就会执行</li>
+</ol>
+<blockquote>
+<p>kafka可以在分区内保证顺序，但是消费的整体顺序是无法保证的，如果需要严格的顺序消费，以下有两种方法解决：</p>
+<ul>
+<li>指定key是相同的，在序列化的时候无法保证不同的key散列取余以后是在同一个分区，如果key是相同的就可以保证在一个分区</li>
+<li>key可以不同，指定partition相同就可以了，从根源上解决问题</li>
+</ul>
+</blockquote>
+<h2 id="消费者消费失败会怎样"><a href="#消费者消费失败会怎样" class="headerlink" title="消费者消费失败会怎样"></a>消费者消费失败会怎样</h2><p>消费者会有一个重试次数，如果由于网络导致消费失败，信息不会阻塞，会进入一个死信队列。可以在这个队列里面进一步分析原因，也可以继续消费这个队列的信息。</p>
+<p>重试次数默认是10次，并且间隔是0s，也就是立即重试10次，没有消费成功就进入死信队列，不会阻塞下一条信息。</p>
 <h2 id="Kafka如何保证不重复消费信息"><a href="#Kafka如何保证不重复消费信息" class="headerlink" title="Kafka如何保证不重复消费信息"></a>Kafka如何保证不重复消费信息</h2><p>如上面所述，即便是手动提交offset还是可能出现重复消费，这个时候只能通过消费者的幂等进行校验了</p>
+<p><strong>三种消息投递保证</strong></p>
+<ul>
+<li>At most once：至多一次，对应上面的消费者自动提交offset，这个时候掉电了这条消息就没有了</li>
+<li>At least once：对应手动提交offset，可能会重复多次。需要消费者自己做幂等</li>
+<li>Exactly once：消息精确传输一次。这不仅仅依赖于kafka，同时也要消费者的配合。</li>
+</ul>
+<p>kafka的生产者在发送的时候会用全局唯一id+offset来进行幂等发送，避免因为发送端超时重试而导致重复消费。同时开启事务，确保消息是原子性的。</p>
+<p>消费者只会消费已经提交过事务的消息（类似MVCC，未提交事务的信息是有可能回滚的，消费他们有风险）。同时类似At Least once，消费者也需要配合做幂等。</p>
+<h3 id="Exactly-Once-的实现机制"><a href="#Exactly-Once-的实现机制" class="headerlink" title="Exactly Once 的实现机制"></a>Exactly Once 的实现机制</h3><ol>
+<li><p><strong>生产者的角色</strong>：</p>
+<ul>
+<li><strong>幂等性</strong>：生产者通过启用幂等性功能（<code>enable.idempotence=true</code>）来确保在发送过程中，每条消息只有一个唯一的 ID。即使发生网络错误或重试，生产者也不会重复发送相同的消息。</li>
+<li><strong>事务支持</strong>：生产者使用事务来发送消息。在一个事务中，生产者可以发送多条消息，这些消息在调用 <code>commitTransaction()</code> 之前对消费者是不可见的。如果在发送过程中出现错误，生产者可以调用 <code>abortTransaction()</code>，此时所有消息都将被丢弃，确保没有未提交的消息被消费。</li>
+</ul>
+</li>
+<li><p><strong>消费者的角色</strong>：</p>
+<ul>
+<li>**配置为 <code>read_committed</code>**：消费者配置为 <code>isolation.level=read_committed</code>，确保只读取那些已成功提交的事务消息。这意味着消费者只会处理生产者通过 <code>commitTransaction()</code> 提交的消息。</li>
+<li><strong>手动提交偏移量</strong>：消费者在处理每条消息后手动提交偏移量（<code>commitSync()</code>），以标记这些消息已被成功处理。只有在确认消息处理成功后，才提交偏移量，以避免处理失败导致的重复消费。</li>
+<li><strong>实现幂等性处理</strong>：消费者在业务逻辑中需要实现幂等性，以确保即使同一条消息被多次消费，最终的业务效果也应该一致。例如，使用数据库的唯一约束来避免重复插入。</li>
+</ul>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>唯一性保证</strong>：通过生产者的唯一 ID 和事务管理，确保在 Kafka 中发送的消息是唯一的，并且不会因重试而重复。</li>
+<li><strong>消费的一致性</strong>：消费者通过手动提交偏移量和实现幂等性来确保消息的消费是唯一的，并且只处理那些已经提交的消息，避免了未提交消息可能引起的回滚和不一致。</li>
+<li><strong>消息可见性</strong>：未提交的事务消息对消费者是不可见的，确保了只有经过确认的消息才能被消费。</li>
+</ul>
+<p>这种机制结合起来，使得在 Kafka 中能够实现 <strong>Exactly Once</strong> 的消息处理语义，从而在关键任务和需要高一致性的数据流动场景中得以应用。</p>
 
     
   </div>
