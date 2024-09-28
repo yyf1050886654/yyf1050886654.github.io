@@ -212,6 +212,51 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/03/20/redis%E5%AE%9E%E7%8E%B0%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81-%E5%88%9D%E8%A7%81%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">redis实现分布式锁-初见分布式锁</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-20
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="什么是分布式锁"><a href="#什么是分布式锁" class="headerlink" title="什么是分布式锁"></a>什么是分布式锁</h1><p>分布式锁是控制分布式系统之间同步访问共享资源的一种方式，通过互斥来保持一致性。</p>
+<p>了解分布式锁之前先了解下线程锁和进程锁：</p>
+<p><strong>线程锁</strong>：主要用来给方法、代码块加锁。当某个方法或代码使用锁，在同一时刻仅有一个线程执行该方法或该代码段。线程锁只在同一JVM中有效果，因为线程锁的实现在根本上是依靠线程之间共享内存实现的，比如Synchronized、Lock等</p>
+<p><strong>进程锁</strong>：控制同一操作系统中多个进程访问某个共享资源，因为进程具有独立性，各个进程无法访问其他进程的资源，因此无法通过synchronized等线程锁实现进程锁</p>
+<p>比如Golang语言中的sync包就提供了基本的同步基元，如互斥锁</p>
+<p>但是以上两种适合在单体架构应用，但是分布式系统中多个服务节点，多个进程分散部署在不同节点机器中，此时对于资源的竞争，上诉两种对节点本地资源的锁就无效了。</p>
+<p>这个时候就需要分布式锁来对分布式系统多进程访问资源进行控制，因此分布式锁是为了解决分布式互斥问题！</p>
+<p><img src="/../img/coding/2024_3_20_2.png" alt="img.png"></p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/20/leetcode-2024-3-20/">leetcode-2024-3-20</a>
       
     </h1>
