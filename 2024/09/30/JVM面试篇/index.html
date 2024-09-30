@@ -18,7 +18,7 @@
 
 <!-- Website description -->
 
-<meta name="description" content="Spring面试篇" />
+<meta name="description" content="JVM面试篇" />
 
 
 <!-- Website keywords -->
@@ -39,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/14/Spring面试篇/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/09/30/JVM面试篇/" />
 
 <!-- Fancybox styling -->
 
@@ -72,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>Spring面试篇 - YYF&#39;s Blog</title>
+  <title>JVM面试篇 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -212,13 +212,13 @@
   <header class="post-header">
     <h1 class="post-title">
       
-      Spring面试篇
+      JVM面试篇
       
     </h1>
 
     <div class="post-meta">
       <span class="post-time">
-        2024-09-14
+        2024-09-30
       </span>
       
       
@@ -230,67 +230,39 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Spring%E7%9A%84%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E9%97%AE%E9%A2%98%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3"><span class="toc-number">1.</span> <span class="toc-text">Spring的循环依赖问题怎么解决</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bean%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">2.</span> <span class="toc-text">Bean的生命周期</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5%E7%9A%84%E4%B8%89%E7%A7%8D%E6%96%B9%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">依赖注入的三种方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Bean%E4%BC%9A%E6%9C%89%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98%E5%90%97"><span class="toc-number">4.</span> <span class="toc-text">Bean会有线程安全问题吗</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SpringMVC%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">SpringMVC执行流程</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#JVM%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E8%B7%A8%E4%BB%A3%E9%97%AE%E9%A2%98"><span class="toc-number">1.</span> <span class="toc-text">JVM如何解决跨代问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E8%89%B2%E6%A0%87%E8%AE%B0%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">三色标记算法</span></a></li></ol>
     </div>
   </div>
   
 
   <div class="post-content">
     
-    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2><p>循环依赖问题指的是在依赖注入过程中两个类互相依赖，这会导致实例化的过程混乱，因为一个类实例化需要另一个类已经实例化了，一般有三种循环依赖问题：</p>
+    <h2 id="JVM如何解决跨代问题"><a href="#JVM如何解决跨代问题" class="headerlink" title="JVM如何解决跨代问题"></a>JVM如何解决跨代问题</h2><p>如果在年轻代的某个对象引用了老年代的对象，在触发Young GC的时候只会检查年轻代而不会检查老年代，此时如果老年代引用了一个年轻代的对象就不会被YGC发现而回收了此对象。但是这种情况出现的比较少，除非是老年代动态的引用了一个刚产生的对象。</p>
+<p><strong>记忆集和卡表</strong><br>如果为了小概率事件每次YGC都去扫描一遍永久代，开销会很大。此时我们只需要保存从非扫描区域到扫描区域的指针就可以了。这个保存的扫描指针逻辑上叫做记忆集，放在新生代中。</p>
+<p>卡表是hotspot虚拟机对于记忆集的具体实现，类似位图，把非扫描区域分块，然后用一个卡表数组来记录对应块是否变脏，如果记录的为1说明变脏，在YGC的时候把对应块加入扫描。本质上是用空间换时间。</p>
+<p><strong>写屏障</strong><br>这里的写屏障跟volatile的不一样，这里仅仅是对引用操作做了一层aop，在写后屏障加入添加卡表的操作，在写前屏障添加该页是否脏的判断，可以解决伪共享问题。</p>
+<h2 id="三色标记算法"><a href="#三色标记算法" class="headerlink" title="三色标记算法"></a>三色标记算法</h2><p>三色标记算法是可达性分析的一个扫描过程，例如CMS，先做初始标记标记出GCroot，然后再并发标记，这个过程是通过三色标记算法实现的。最后扫描到的白色节点就被视为没有引用，在下一轮GC会被回收。</p>
+<ul>
+<li>黑色，直接或者间接连接到GCroot并且自身所有引用都被扫描过了</li>
+<li>灰色：从黑色节点扩散，但是自己的子节点还没有被完全扫描</li>
+<li>白色：没有被染指的节点，也就是不可达区域</li>
+</ul>
+<p><strong>三色标记的缺点</strong></p>
 <ol>
-<li>构造函数依赖循环，这个解决不了</li>
-<li>setter的依赖循环，其中bean是多例（prototype）</li>
-<li>setter的依赖循环，其中bean是单例。</li>
-</ol>
-<p>Spring仅仅对第三种进行了解决。第一种在new的时候就进行不下去了，无法生成对象；第二种由于无穷无尽的循环会生成很多的bean，最后导致oom。</p>
-<p><strong>如何解决</strong></p>
-<p>spring用一个三级缓存解决了，总的来说就是在一个类没有初始化的时候提前暴露bean存到三级缓存中，然后进行这个类初始化完成之后就放回第一层缓存中。</p>
-<p>创建 BeanA： Spring 首先将 BeanA 的实例存储在三级缓存中。 在创建 BeanA 的过程中，发现需要注入 BeanB。</p>
-<p>创建 BeanB： Spring 将 BeanB 的实例存储在三级缓存中（因为 BeanB 也需要 BeanA）。 在创建 BeanB 的过程中，Spring 发现 BeanA 还未完全初始化，所以从三级缓存中获取 BeanA 的代理对象。</p>
-<p>注入依赖： 当 BeanA 创建完成后，Spring 会将 BeanB 注入到 BeanA 的字段中。 同样地，BeanA 会注入到 BeanB 的字段中，完成依赖注入。</p>
-<blockquote>
-<p>在三级缓存这一块，主要记一下 Spring 是如何支持循环依赖的即可，也就是如果发生循环依赖的话，就去 三级缓存 singletonFactories 中拿到三级缓存中存储的 ObjectFactory 并调用它的 getObject() 方法来获取这个循环依赖对象的前期暴露对象（虽然还没初始化完成，但是可以拿到该对象在堆中的存储地址了），并且将这个前期暴露对象放到二级缓存中，这样在循环依赖时，就不会重复初始化了！</p>
-</blockquote>
-<h2 id="Bean的生命周期"><a href="#Bean的生命周期" class="headerlink" title="Bean的生命周期"></a>Bean的生命周期</h2><p>大的可以分为四个部分：</p>
-<ol>
-<li>bean创建阶段：通过调用反射api完成bean的实例化</li>
-<li>依赖注入：为bean设置相关属性和依赖</li>
-<li>初始化bean：首先检查是否实现了Aware包下面的各种aware接口，例如beanname，beanclassloader，beanfactory，其次再检查是否实现了Postbeanprocess接口，执行postbeanbeforeinitialization，再看有没有实现bean初始化方法InitializationBean和xml的init-method，最后再用postBeanAfterInitialization</li>
-<li>销毁，disposableBean和destory-bean</li>
+<li>多标问题：在一个节点被标记成灰色之后，上一个节点断开联系，最终这个节点还是会被染黑，但实际上是垃圾。这个现象称为浮动垃圾，在下一轮会被回收。</li>
+<li>漏标问题：多标至少可以通过下一轮垃圾回收清除，漏标就严重多了。当一个灰色节点与一个白色节点断掉之后立刻有黑色节点相连。这个时候三色标记算法还是会认为这个节点是白色的，就会被垃圾回收，而此时确实有黑色节点的引用，会报空指针异常。</li>
 </ol>
 <div style="text-align: center;">
-  <img src="../img/Spring/img.png" alt="" />
+  <img src="../img/jvm/img_5.png" alt="" />
 </div>
 
-<h2 id="依赖注入的三种方式"><a href="#依赖注入的三种方式" class="headerlink" title="依赖注入的三种方式"></a>依赖注入的三种方式</h2><ul>
-<li>字段注入：上面加@Autowired</li>
-<li>构造器注入：官方推荐</li>
-<li>setter注入：通过setter方法注入</li>
-</ul>
-<h2 id="Bean会有线程安全问题吗"><a href="#Bean会有线程安全问题吗" class="headerlink" title="Bean会有线程安全问题吗"></a>Bean会有线程安全问题吗</h2><p>首先来看看bean的作用域，常见的有：</p>
+<p><strong>如何解决</strong><br>两个条件同时发生才会有漏标现象：首先是有灰色节点与白色节点断开联系，又有黑色节点与白色节点产生联系。</p>
+<p>破坏一个就不会产生漏标：</p>
 <ul>
-<li>singleton：默认的bean是单例的</li>
-<li>prototype：每次获取都是不一样的bean</li>
-<li>request：一次http请求就一个bean</li>
+<li>增量更新：增量更新破坏了第一个条件：「至少有一个黑色对象新增了对白色对象的引用」，在并发标记阶段，黑色对象D指向了白色对象G，这时会把黑色对象D记录下来，在重新标记阶段，会把黑色对象D标记为灰色对象D，然后以灰色对象D为根节点，扫描整个引用链，白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。 缺点是会重新扫描以黑色对象为根节点的子树，时间长（CMS解决方案）</li>
+<li>原始快照：原始快照破坏了第二个条件：「所有灰色对象指向该白色对象的引用都断开了」，在并发标记阶段，灰色对象E断开了对白色对象G的引用，这是会把白色对象G记录下来，在最终标记阶段，会把白色对象G标记为灰色，然后以灰色对象G为根节点，扫描整个引用链，如此以来原来的白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。缺点是如果没有黑色对象来引用就会变成浮动垃圾（G1解决方案）</li>
 </ul>
-<p>如果作用范围是prototype，那不会有线程安全问题，一次获取就有一个bean。但是如果是单例的bean会有线程安全问题，可以通过以下几个方式解决：</p>
-<ul>
-<li>尽量使用无状态bean</li>
-<li>使用ThreadLocal</li>
-<li>加锁synchronized</li>
-</ul>
-<h2 id="SpringMVC执行流程"><a href="#SpringMVC执行流程" class="headerlink" title="SpringMVC执行流程"></a>SpringMVC执行流程</h2><ol>
-<li>客户端发送http请求，首先由DispatcherServlet接收</li>
-<li>DispatcherServlet去HandlerMapping里面找（这是一个哈希表，存储了请求路径和controller的映射关系）</li>
-<li>找到了对应的Controller，先去通过适配器HandlerAdapter，再去请求Controller</li>
-<li>调用完成后返回一个视图和模型ModelAndView。</li>
-<li>DispatcherServlet找视图解析器ViewResolver进行解析。</li>
-<li>解析得到的Model结合View进行渲染返回请求者</li>
-</ol>
-<div style="text-align: center;">
-  <img src="../img/Spring/img_1.png" alt="" />
-</div>
+
     
   </div>
 
@@ -304,7 +276,7 @@
   </p>
   <p class="copyright-item">
     <span>原文链接: </span>
-    <a href="https://yyf1050886654.github.io/2024/09/14/Spring%E9%9D%A2%E8%AF%95%E7%AF%87/">https://yyf1050886654.github.io/2024/09/14/Spring%E9%9D%A2%E8%AF%95%E7%AF%87/</a>
+    <a href="https://yyf1050886654.github.io/2024/09/30/JVM%E9%9D%A2%E8%AF%95%E7%AF%87/">https://yyf1050886654.github.io/2024/09/30/JVM%E9%9D%A2%E8%AF%95%E7%AF%87/</a>
   </p>
   <p class="copyright-item">
     <span>许可协议: </span>
@@ -329,15 +301,9 @@
       
   <nav class="post-nav">  
       
-      <a class="prev" href="/2024/09/14/%E5%88%86%E5%B8%83%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">  
-        <i class="iconfont icon-left"></i>  
-        <span class="prev-text nav-default">分布式面试篇</span>  
-        <span class="prev-text nav-mobile">上一篇</span>  
-      </a>  
       
-      
-      <a class="next" href="/2024/09/14/Java%E5%9F%BA%E7%A1%80%E7%AF%87/">  
-        <span class="next-text nav-default">Java基础篇</span>  
+      <a class="next" href="/2024/09/28/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">  
+        <span class="next-text nav-default">设计模式面试篇</span>  
         <span class="prev-text nav-mobile">下一篇</span>  
         <i class="iconfont icon-right"></i>  
       </a>  
