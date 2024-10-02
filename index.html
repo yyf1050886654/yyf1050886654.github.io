@@ -259,6 +259,14 @@
 <li>增量更新：增量更新破坏了第一个条件：「至少有一个黑色对象新增了对白色对象的引用」，在并发标记阶段，黑色对象D指向了白色对象G，这时会把黑色对象D记录下来，在重新标记阶段，会把黑色对象D标记为灰色对象D，然后以灰色对象D为根节点，扫描整个引用链，白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。 缺点是会重新扫描以黑色对象为根节点的子树，时间长（CMS解决方案）</li>
 <li>原始快照：原始快照破坏了第二个条件：「所有灰色对象指向该白色对象的引用都断开了」，在并发标记阶段，灰色对象E断开了对白色对象G的引用，这是会把白色对象G记录下来，在最终标记阶段，会把白色对象G标记为灰色，然后以灰色对象G为根节点，扫描整个引用链，如此以来原来的白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。缺点是如果没有黑色对象来引用就会变成浮动垃圾（G1解决方案）</li>
 </ul>
+<h2 id="类的回收"><a href="#类的回收" class="headerlink" title="类的回收"></a>类的回收</h2><p>类的元数据在方法区也就是元空间中，在fullGC是有可能会被垃圾回收的。一个类能被垃圾回收需要满足三个要求：</p>
+<ol>
+<li>没有实例对象</li>
+<li>没有静态方法的引用</li>
+<li>类加载器已经被GC</li>
+</ol>
+<p><strong>private static final int I &#x3D; 0，这个i会回收吗</strong></p>
+<p>看情况，跟着类走，本身这就是一个GCroot，一共有四种GCroot（类的常量引用类似这种，静态引用，虚拟机栈的引用，本地方法栈的引用）。如果不是类被卸载的话是不能被GC的。</p>
 
     
     
@@ -1178,6 +1186,18 @@
 <div style="text-align: center;">
   <img src="../img/Spring/img_1.png" alt="" />
 </div>
+
+<h2 id="spring的事务传播逻辑"><a href="#spring的事务传播逻辑" class="headerlink" title="spring的事务传播逻辑"></a>spring的事务传播逻辑</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247486668&idx=2&sn=0381e8c836442f46bdc5367170234abb&chksm=cea24307f9d5ca11c96943b3ccfa1fc70dc97dd87d9c540388581f8fe6d805ff548dff5f6b5b&token=1776990505&lang=zh_CN#rd">详情看这篇文章</a></p>
+</blockquote>
+<ol>
+<li>TransactionDefinition.PROPAGATION_REQUIRED：外部方法没有开启事务，那就自己开启事务，且开启的事务之间相互独立不打扰；如果外部方法有事务，那就与外部同生共死，如果外部事务回滚自己也回滚。外部事务中的一个子事务回滚那所有都回滚。且如果内部事务异常被捕获，外部事物还是会回滚</li>
+<li>TransactionDefinition.PROPAGATION_REQUIRES_NEW：外部事务回滚，内部的new不回滚。内部事务回滚，如果被catch了就不会造成外部事务回滚，如果没有catch就会回滚。（上一个是有无catch都会造成外部事物回滚）</li>
+<li>TransactionDefinition.PROPAGATION_NESTED：与上一个是反的，外部事务回滚会造成内部回滚，自身回滚也是看catch，如果catch了外部事物就不会滚</li>
+</ol>
+<h2 id="Transactional注解使用"><a href="#Transactional注解使用" class="headerlink" title="@Transactional注解使用"></a>@Transactional注解使用</h2><p>可以使用在方法和类上，使用在类上就是给所有方法都加上事务。常用参数有5个，事务隔离级别（读未提交，读提交，可重复读，串行化），传播行为，超时时间（在指定的时间内未完成回滚），是否只读，触发回滚的异常类型</p>
+<h2 id="spring自调用导致失效问题"><a href="#spring自调用导致失效问题" class="headerlink" title="spring自调用导致失效问题"></a>spring自调用导致失效问题</h2><p>由于Transaction这个注释用到了aop，进行事务的对象都是代理对象。如果是自己调用就无法拦截到这个内部调用，所以事务会失效。这个时候可以获取其代理对象。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyService</span> &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">method1</span><span class="params">()</span> &#123;</span><br><span class="line">     ((MyService)AopContext.currentProxy()).method2(); <span class="comment">// 先获取该类的代理对象，然后通过代理对象调用method2。</span></span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">method2</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
     
     
   </div>
@@ -1316,6 +1336,18 @@
 <h2 id="switch能否用String当作case"><a href="#switch能否用String当作case" class="headerlink" title="switch能否用String当作case"></a>switch能否用String当作case</h2><p>在jdk1.7以后有了这个语法糖。在底层原理中switch仅支持int，char等基本数据类型。switch中string是通过case哈希值，然后在equals内容得到的。哈希值是一个int类型的，由于也可能产生哈希碰撞，所以还得再检查字符串内容是否相同。</p>
 <h2 id="泛型"><a href="#泛型" class="headerlink" title="泛型"></a>泛型</h2><p>虚拟机中没有泛型，只有普通类和普通方法，所有泛型类的类型参数在编译时都会被擦除，泛型类并没有自己独有的Class类对象。比如并不存在List<String>.class或是List<Integer>.class，而只有List.class。</p>
 <p>也就是说泛型仅仅是在编译的时候做检查，而不会真正落到jvm里</p>
+<h2 id="Object有哪些方法"><a href="#Object有哪些方法" class="headerlink" title="Object有哪些方法"></a>Object有哪些方法</h2><ul>
+<li>wait和notify以及notifyAll：wait方法是放弃当前监视器锁，进入waitSet，状态变为WAIT。notify和notifyAll是唤醒当前监视器锁下面wait的线程，在hotspot中是分别是随机唤醒一个和全部唤醒。这个方法仅能在synchronized方法块中使用</li>
+<li>hashCode和equals：下面讲</li>
+<li>getClass：获取Class对象，与类.class方法是一样的，一共有四种方法获取Class对象（getClass，.class，类加载器loadClass,Class.forName）</li>
+</ul>
+<h2 id="hashCode和equals"><a href="#hashCode和equals" class="headerlink" title="hashCode和equals"></a>hashCode和equals</h2><p>说这两个就离不开集合，例如hashMap存储是按照hashCode散列找Entry，如果hashCode相同则在一个Entry下，但是有可能是哈希碰撞，所以还要比较equals，当且仅当hashCode相等并且equals返回为真的时候才会被认为是一个。在Object中默认hashCode是两个对象的内存散列，equals是比较内存地址是否相同。</p>
+<p><strong>String重写的hashCode和equals</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">System.out.println(s.hashCode()+<span class="string">&quot;  &quot;</span>+s1.hashCode());</span><br><span class="line">System.out.println(s.equals(s1));</span><br></pre></td></tr></table></figure>
+
+<p>按道理来说s和s1是两个不同的对象，由于之前说的s应该是在字符串常量池，而s1是在堆中，hashCode按照Object默认的比较地址肯定是不相同的。但是String重写了hashCode，通过字符累加的方式计算哈希码，在保证了分散的同时使得相同字符串的哈希码相等。也重写了equals，比较字符串内容而不是比较地址。</p>
+<p><strong>为什么重写了equals就必须重写hashCode</strong></p>
+<p>如果两个对象内容相同就是一个对象的话，在set里面不能重复。需要重写equals，但是不重写hashCode可能会分配到不同的Entry，这样两个对象同时会被存储。所以保证equals为真的同时hashCode也要相同。</p>
 
     
     

@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#JVM%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E8%B7%A8%E4%BB%A3%E9%97%AE%E9%A2%98"><span class="toc-number">1.</span> <span class="toc-text">JVM如何解决跨代问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E8%89%B2%E6%A0%87%E8%AE%B0%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">三色标记算法</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#JVM%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E8%B7%A8%E4%BB%A3%E9%97%AE%E9%A2%98"><span class="toc-number">1.</span> <span class="toc-text">JVM如何解决跨代问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E8%89%B2%E6%A0%87%E8%AE%B0%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">三色标记算法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B1%BB%E7%9A%84%E5%9B%9E%E6%94%B6"><span class="toc-number">3.</span> <span class="toc-text">类的回收</span></a></li></ol>
     </div>
   </div>
   
@@ -262,6 +262,14 @@
 <li>增量更新：增量更新破坏了第一个条件：「至少有一个黑色对象新增了对白色对象的引用」，在并发标记阶段，黑色对象D指向了白色对象G，这时会把黑色对象D记录下来，在重新标记阶段，会把黑色对象D标记为灰色对象D，然后以灰色对象D为根节点，扫描整个引用链，白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。 缺点是会重新扫描以黑色对象为根节点的子树，时间长（CMS解决方案）</li>
 <li>原始快照：原始快照破坏了第二个条件：「所有灰色对象指向该白色对象的引用都断开了」，在并发标记阶段，灰色对象E断开了对白色对象G的引用，这是会把白色对象G记录下来，在最终标记阶段，会把白色对象G标记为灰色，然后以灰色对象G为根节点，扫描整个引用链，如此以来原来的白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。缺点是如果没有黑色对象来引用就会变成浮动垃圾（G1解决方案）</li>
 </ul>
+<h2 id="类的回收"><a href="#类的回收" class="headerlink" title="类的回收"></a>类的回收</h2><p>类的元数据在方法区也就是元空间中，在fullGC是有可能会被垃圾回收的。一个类能被垃圾回收需要满足三个要求：</p>
+<ol>
+<li>没有实例对象</li>
+<li>没有静态方法的引用</li>
+<li>类加载器已经被GC</li>
+</ol>
+<p><strong>private static final int I &#x3D; 0，这个i会回收吗</strong></p>
+<p>看情况，跟着类走，本身这就是一个GCroot，一共有四种GCroot（类的常量引用类似这种，静态引用，虚拟机栈的引用，本地方法栈的引用）。如果不是类被卸载的话是不能被GC的。</p>
 
     
   </div>
