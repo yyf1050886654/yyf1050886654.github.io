@@ -606,10 +606,41 @@
 </ul>
 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引是为了加快搜索而建立的数据结构</p>
 <ul>
-<li>按照数据结构划分：B+树索引，Hash索引</li>
-<li>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</li>
-<li>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</li>
-<li>字段个数：单列索引，联合索引</li>
+<li><p>按照数据结构划分：B+树索引，Hash索引</p>
+</li>
+<li><p>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</p>
+</li>
+<li><p>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</p>
+<blockquote>
+<p>唯一索引：create unique index index_name on table(index_column_1)</p>
+<p>普通索引：create index index_name on table(index_column_1)</p>
+<p>前缀索引：create index index_name on table(length(index_column_1))</p>
+</blockquote>
+</li>
+<li><p>字段个数：单列索引，联合索引</p>
+</li>
+</ul>
+<blockquote>
+<p>联合索引：create index index_name on table(index_column_1,index_column_2)</p>
+</blockquote>
+<h2 id="联合索引范围查询"><a href="#联合索引范围查询" class="headerlink" title="联合索引范围查询"></a>联合索引范围查询</h2><p><strong>select * from t_table where a &gt; 1 and b &#x3D; 1</strong></p>
+<p>这里只会用到a一个索引，因为只有a能缩小范围，b是无序的，无法缩小范围。如果没有索引下推只能一个个回表通过b进行筛选</p>
+<p><strong>select * from t_table where a &gt;&#x3D; 1 and b &#x3D; 1</strong></p>
+<p>这里会用到两个索引，因为a&#x3D;1的时候b是有序的，b能够缩小范围</p>
+<p><strong>select * from t_table where a between 1 and 2 and b &#x3D; 1</strong></p>
+<p>mysql中between是左闭右闭区间，所以两个都能用</p>
+<p><strong>select * from t_table where a like ‘m%’ and b &#x3D; 1</strong></p>
+<p>mysql中between是左闭区间，所以b也能用</p>
+<h2 id="索引失效场景"><a href="#索引失效场景" class="headerlink" title="索引失效场景"></a>索引失效场景</h2><blockquote>
+<p>什么时候无法使用索引？就是通过某些手段找不到原先的顺序了</p>
+</blockquote>
+<ul>
+<li>左或左右模糊匹配：例如%like和%like%，索引在这个字段上是根据最左匹配的，如果第一个字符都不知道，那后续的就是无序的了</li>
+<li>对索引使用函数：例如count()某个索引，这个时候也是走不了的，因为count不是一个索引</li>
+<li>对索引进行表达式计算：只要是在等号左边的也用不了，mysql没做这部分优化</li>
+<li>对索引隐式类型转换：在mysql中字符串会自动变成数字进行比较，索引当索引为字符串，而查询的时候用id&#x3D;1来比较，会自动类型转换，相当于索引使用了隐式函数变成数字于查询条件进行比较</li>
+<li>联合索引非最左匹配：联合索引（a,b,c）如果查询条件只有b，c，就不会走索引。但是如果是ac还是可以走a的索引，如果有索引下推的话在二级索引可以通过判断c减少回表次数；如果没有就只能用a减少判断，最后回到server也就是索引是id的那个表中一个个判断c，这样会有很多回表</li>
+<li>where子句中的or：如果只有一个条件是有索引，那就会失效，因为在or条件下只用满足一个就可以了</li>
 </ul>
 <h2 id="Mysql事务"><a href="#Mysql事务" class="headerlink" title="Mysql事务"></a>Mysql事务</h2><p>首先是事务的ACID四个特性：</p>
 <ul>
@@ -692,6 +723,72 @@
 <li>多线程下需要原子性</li>
 <li>如果是“双1配置”，一个事务io两次</li>
 </ul>
+<h2 id="Mysql的锁"><a href="#Mysql的锁" class="headerlink" title="Mysql的锁"></a>Mysql的锁</h2><ol>
+<li>数据库锁：只有在进行数据库备份或者迁移的时候才会用</li>
+<li>表级锁：表级读锁写锁，读写意向锁，自增锁，元数据锁</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>X</th>
+<th>IX</th>
+<th>S</th>
+<th>IS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>X</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>不兼容</td>
+</tr>
+<tr>
+<td>IX</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>不兼容</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>S</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>IS</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>解释一下：IX表示表内已经有行在进行X操作了，此时不允许全局上锁，所以全局X和S都不允许；全局X的条件是里面没有任何一个在进行读写操作，所以与所有都不兼容；IS和IX能兼容是因为都只是作为指示作用，IS和IX可能锁住的列不一样，他们的存在只能影响全局锁。<br>3. 行级锁：记录锁（锁住id&#x3D;1这条记录），间隔锁（锁住（2，5）区间的），临键锁（锁住（2,5]）</p>
+</blockquote>
+<h2 id="Mysql什么时候上锁"><a href="#Mysql什么时候上锁" class="headerlink" title="Mysql什么时候上锁"></a>Mysql什么时候上锁</h2><p>执行select for update或者update的时候，在事务执行范围内会上一个对当前事务有效的锁，一般锁的单位是<strong>临键锁</strong>，在某些情况下会退化成记录锁或者间隔锁。这一部分的提出正是为了解决。</p>
+<p><strong>唯一索引等值查询</strong></p>
+<ol>
+<li>select * from user where id &#x3D; 1 for update;如果有id&#x3D;1这条记录，临键锁就会退化为记录锁，只锁住当前这个id&#x3D;1，因为这样就不会有别的事务来进行更改避免不可重复读</li>
+<li>select * from user where id &#x3D; 1 for update；如果没有id&#x3D;1这条记录，就会退化为间隔锁，找到最近的两个区间例如（0，3）锁住这段，不允许添加数据避免幻读</li>
+</ol>
+<p><strong>唯一索引范围查询</strong></p>
+<ol>
+<li>select * from user where id &gt; 15 for update;如果有id&#x3D;20的记录，那就会加锁(15,20]，(20,INf]</li>
+<li>select * from user where id &gt;&#x3D; 15 for update;如果有id&#x3D;15，加锁15，(15,20]，(20,INf]</li>
+<li>select * from user where id &lt; 6 for update;如果有id&#x3D;1,5,10的记录，加锁(-INF,1],(1,5],(5,10)</li>
+<li>select * from user where id &lt;&#x3D; 5 for update;(-INF,1],(1,5]</li>
+</ol>
+<p><strong>非唯一索引等值查找</strong></p>
+<p>只用记住一点，非唯一索引是按照大小排序的，索引值相同再按照id升序排序。{(15,14),(25,20)}，锁住非唯一索引（15，25），如果新增的值在其中就不允许插入，如果&#x3D;15且id&gt;14也是不允许的，右边同理。</p>
+<h2 id="Mysql死锁"><a href="#Mysql死锁" class="headerlink" title="Mysql死锁"></a>Mysql死锁</h2><div style="text-align: center;">
+  <img src="../img/Mysql/img_18.png" alt="" />
+</div>
+
+<p>由于间隙锁是可以重复的，两边都锁住了不允许添加。</p>
 
     
     
