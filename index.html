@@ -212,6 +212,57 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/10/04/%E5%9C%BA%E6%99%AF%E9%A2%98/">场景题</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-10-04
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="如何设计一个秒杀系统"><a href="#如何设计一个秒杀系统" class="headerlink" title="如何设计一个秒杀系统"></a>如何设计一个秒杀系统</h2><ul>
+<li>高性能：高性能核心就是响应时间快，一般来说都会把热点数据放在redis中，但是秒杀高峰的时候有可能连redis都应付不了。有几种解决方案：首先是二级缓存，redis之外用jvm的缓存例如caffeine，一定要控制空间大小，所以必须上淘汰策略例如lru；或者在业务层面进行UV统计，但是需要改写redis的jar；或者直接使用开源解决方案比如京东的hotkey。此外为了提高响应速度还可以将静态资源放到cdn上，例如七牛云阿里云，图片不会再占用服务器的带宽，但是这种属于钞能力的解决方案。</li>
+<li>高可用：保证节点的故障恢复。需要用集群。包括但不限redis-sentinel，redis-cluster；此外还可以用分布式限流框架sentinel，实现服务限流和降级；优化异步请求可以用mq，mq对于高可用的贡献是流量削峰，将请求打入消息队列，对于高性能的贡献是将减库存缓存和减数据异步化，更快返回请求。</li>
+<li>一致性：如何防止超卖，可以用lua脚本查询redis中的余量，但是lua的原子性保证的是脚本内都是一条语句，而不是事务上的原子性，出错了是不会回滚的；redis减库存后需要同步到mysql中，可以用mq完成。扣减余额也要考虑并发问题，可以用mysql的排他锁。</li>
+<li>幂等性：也就是常说的一人一单，可以考虑用分布式锁来锁住当前用户。</li>
+</ul>
+<h2 id="大文件断点续传问题"><a href="#大文件断点续传问题" class="headerlink" title="大文件断点续传问题"></a>大文件断点续传问题</h2><ul>
+<li>前端文件分片，并且通过sha算法生成一个校验和。</li>
+<li>后端根据这个校验和先去查minio是否有当前分片，如果有就直接跳过</li>
+<li>如果没有先检验sha校验和，如果匹配说明有效。可以采用并行的方式加快传输</li>
+<li>所有分片发送完毕后，前端会进行校验，发送整个的sha，与后端合并后的文件进行校验</li>
+</ul>
+<h2 id="40亿qq号，如何去重"><a href="#40亿qq号，如何去重" class="headerlink" title="40亿qq号，如何去重"></a>40亿qq号，如何去重</h2><p>哈希表和哈希集肯定是不行的，可以考虑用位图。或者数据结构那种外部归并排序</p>
+<h2 id="动态线程池"><a href="#动态线程池" class="headerlink" title="动态线程池"></a>动态线程池</h2><p>要用到nacos动态配置核心参数</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/30/JVM%E9%9D%A2%E8%AF%95%E7%AF%87/">JVM面试篇</a>
       
     </h1>
@@ -599,6 +650,12 @@
 <blockquote>
 <p>定点型是指定小数点后几位的。char是定长的，varchar是可变的，一般设计的是最大长度。如果超过长度char是需要修改表结构的。而且相同字符串在存储层面两者是相同的。但是varchar内存占用稍高，某些高级操作是需要遍历。</p>
 </blockquote>
+<h2 id="Mysql查询流程"><a href="#Mysql查询流程" class="headerlink" title="Mysql查询流程"></a>Mysql查询流程</h2><ol>
+<li>连接器：连接客户端的http请求，校验用户名密码</li>
+<li>查询缓存，如果缓存里面有就直接返回（这里在8版本就废弃了，因为命中率实在太低了）</li>
+<li>词法分析语法分析</li>
+<li>执行器：包括预处理，例如将*换成表的字段；优化器，选择效率较高的执行计划执行，能用索引就不用全表扫描；执行器，执行sql然后返回结果给客户端</li>
+</ol>
 <h2 id="InnoDB和MyISAM"><a href="#InnoDB和MyISAM" class="headerlink" title="InnoDB和MyISAM"></a>InnoDB和MyISAM</h2><ol>
 <li>事务</li>
 <li>行级锁</li>
@@ -802,6 +859,31 @@
 </div>
 
 <p>由于间隙锁是可以重复的，两边都锁住了不允许添加。</p>
+<h2 id="慢sql"><a href="#慢sql" class="headerlink" title="慢sql"></a>慢sql</h2><p><strong>产生慢sql的原因</strong></p>
+<ol>
+<li>索引未生效或者根本没有索引，导致全表扫描</li>
+<li>数据量太大了，加索引都不行。这个时候就要考虑分库分表了</li>
+<li>sql书写不当，过多的join操作或者子查询过多，子查询会产生一张新表；或者是深度分页；用了比较长的排序</li>
+<li>数据量比较大的时候，redolog满了，在更新checkpoint的时候会阻塞</li>
+<li>等待行级锁</li>
+</ol>
+<p><strong>如何发现慢sql</strong></p>
+<ol>
+<li>mysql自己可以开启慢sql查询日志，将查询时间大于1s的记录下来</li>
+<li>预防慢sql，做全局sql扫描。阿里的<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/LZRSQJufGRpRw6u4h_Uyww">这篇文章</a>提到了可以使用JVM的沙箱模型。相当于一个大的aop模型（值得一提的是gclib也是跟这个原理类似），通过在实例前后进行监听就可以无侵入式地录制HTTP&#x2F;Java&#x2F;Dubbo入参&#x2F;返回值，业务系统无感知。基于这个能力，我们可以方便的采集和SQL执行相关的Java方法参数以及返回值。通过配置采集点，来采集执行sql的java代码的相关方法、参数和返回值，辅助实现sql采集功能。</li>
+</ol>
+<p><strong>如何识别高危sql</strong></p>
+<ul>
+<li>不符合规范的sql：不允许使用外键，深度分页优化，子查找过多，有*</li>
+<li>用explain观察，row字段过多需要优化，type字段是否使用索引，extra是否有排序操作，以及是否索引下推，索引覆盖。</li>
+</ul>
+<h2 id="常见的sql优化手段"><a href="#常见的sql优化手段" class="headerlink" title="常见的sql优化手段"></a>常见的sql优化手段</h2><ol>
+<li>避免使用*：因为在查询的过程中还有一个预处理过程，可以自己写的就不要交给sql去查询，而且无法使用覆盖索引，也就是不用回表</li>
+<li>深度分页优化：比如有1000000页，查询这个页的时候就是深度分页了。可以用子表查询这个页的第一条记录，然后再去查比这个大的10条记录作为范围。有两个缺点，首先是id必须自增，其次是子表查询不推荐</li>
+<li>避免多join，避免使用外键</li>
+<li>优化慢sql</li>
+<li>正确使用索引：选择合适的字段创建索引（不为NULL的字段，频繁查找但是不是频繁增删的字段）；避免索引失效；考虑在字符串上建立前缀索引；避免冗余索引</li>
+</ol>
 
     
     
@@ -1365,157 +1447,6 @@
 <h2 id="Transactional注解使用"><a href="#Transactional注解使用" class="headerlink" title="@Transactional注解使用"></a>@Transactional注解使用</h2><p>可以使用在方法和类上，使用在类上就是给所有方法都加上事务。常用参数有5个，事务隔离级别（读未提交，读提交，可重复读，串行化），传播行为，超时时间（在指定的时间内未完成回滚），是否只读，触发回滚的异常类型</p>
 <h2 id="spring自调用导致失效问题"><a href="#spring自调用导致失效问题" class="headerlink" title="spring自调用导致失效问题"></a>spring自调用导致失效问题</h2><p>由于Transaction这个注释用到了aop，进行事务的对象都是代理对象。如果是自己调用就无法拦截到这个内部调用，所以事务会失效。这个时候可以获取其代理对象。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyService</span> &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">method1</span><span class="params">()</span> &#123;</span><br><span class="line">     ((MyService)AopContext.currentProxy()).method2(); <span class="comment">// 先获取该类的代理对象，然后通过代理对象调用method2。</span></span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">method2</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/14/Java%E5%9F%BA%E7%A1%80%E7%AF%87/">Java基础篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-14
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="Java的异常体系"><a href="#Java的异常体系" class="headerlink" title="Java的异常体系"></a>Java的异常体系</h2><p>分为异常Exception和错误Error，异常是可以用try&#x2F;catch来解决的，但是error就很严重了，会直接导致线程终止。他们都继承自ThrowAble接口。</p>
-<p>其中exception分为可以检查到的异常（checked exception），表示能够在编译阶段就发现并且抛出错误的异常，比如sqlexception或者ioexception；编译时无法检测出的异常（unchecked exception），指的就是运行时异常（runtimeException）例如数组越界，空指针这种。 runtimeException都是无法检测出的异常，其余的都是可以在编译阶段检测出来的。</p>
-<p>error是比较严重的错误，例如oom或者stackoverflow，还有虚拟机内部的一些问题，这些error会导致线程直接终止，<del>并不能用try&#x2F;catch</del></p>
-<blockquote>
-<p>gpt了一下，其实error也可以用catch，因为都是继承自throwable接口，throwable满足这个语法糖。但是出现了error就算catch了程序还是出现了严重错误，捕获这些问题并不能修复，继续运行可能导致更加严重的问题。</p>
-</blockquote>
-<h2 id="finally方法块"><a href="#finally方法块" class="headerlink" title="finally方法块"></a>finally方法块</h2><ul>
-<li>finally并不一定会执行：如果出现了电源掉电或者cpu卡死就不会（<del>这有点幽默了</del>）</li>
-<li>不建议在finally里面写返回：try&#x2F;catch&#x2F;finally方法块的逻辑是，即使在try中已经返回了，也会执行finally里面的语句，try的返回值保存起来，同时如果finally里面也有return，就会覆盖try的返回值。</li>
-</ul>
-<h2 id="序列化和反序列化"><a href="#序列化和反序列化" class="headerlink" title="序列化和反序列化"></a>序列化和反序列化</h2><p>Java数据的传输是通过字节流的，也就是一个byte[]数组，如何将Java转化为这个数组就是序列化要干的事情，原生提供的序列化可以提供实现serialization接口并且指定serialVersionUID完成序列化，这个serialVersionUID会为反序列化提供一个校验，如果id与当前要强制类型转换的类是一样的，那就可以转换，否则就会抛出异常。</p>
-<p>比如下面这个代码，文件模拟的是传输的数据流。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">1L</span>; <span class="comment">// 显式定义版本号</span></span><br><span class="line">    String name;</span><br><span class="line">    <span class="type">int</span> age;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Person</span><span class="params">(String name, <span class="type">int</span> age)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 序列化</span></span><br><span class="line">            <span class="type">ObjectOutputStream</span> <span class="variable">out</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(<span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="string">&quot;person.ser&quot;</span>));</span><br><span class="line">            <span class="type">Person</span> <span class="variable">person</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Person</span>(<span class="string">&quot;Alice&quot;</span>, <span class="number">30</span>);</span><br><span class="line">            out.writeObject(person);</span><br><span class="line">            out.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 模拟反序列化后类发生变化</span></span><br><span class="line">            <span class="comment">// 修改 serialVersionUID 为 2L，模拟版本不匹配</span></span><br><span class="line">            <span class="comment">// private static final long serialVersionUID = 2L;</span></span><br><span class="line"></span><br><span class="line">            <span class="comment">// 反序列化</span></span><br><span class="line">            <span class="type">ObjectInputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(<span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;person.ser&quot;</span>));</span><br><span class="line">            <span class="type">Person</span> <span class="variable">deserializedPerson</span> <span class="operator">=</span> (Person) in.readObject();  <span class="comment">// 读取对象</span></span><br><span class="line">            in.close();</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">&quot;Deserialized Person: &quot;</span> + deserializedPerson.name + <span class="string">&quot;, &quot;</span> + deserializedPerson.age);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();  <span class="comment">// 如果 serialVersionUID 不匹配，这里会抛出 InvalidClassException</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>注意几点：</p>
-<ol>
-<li>序列化转化的是对象，也就是说static修饰的字段是不会被序列化的，反正最终反序列化变成了一个对象之后类的静态属性又不会有变化，</li>
-<li>不想序列化的变量用transient修饰，例如下面这个代码</li>
-</ol>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Example</span> <span class="keyword">implements</span> <span class="title class_">Serializable</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">1L</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">static</span> <span class="type">int</span> <span class="variable">staticField</span> <span class="operator">=</span> <span class="number">10</span>; <span class="comment">// static 字段</span></span><br><span class="line">    <span class="keyword">transient</span> <span class="type">int</span> <span class="variable">transientField</span> <span class="operator">=</span> <span class="number">20</span>; <span class="comment">// transient 字段</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">instanceField</span> <span class="operator">=</span> <span class="number">30</span>; <span class="comment">// 实例字段</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Example</span> <span class="variable">example</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Example</span>();</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 序列化对象</span></span><br><span class="line">            <span class="type">ObjectOutputStream</span> <span class="variable">out</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(<span class="keyword">new</span> <span class="title class_">FileOutputStream</span>(<span class="string">&quot;example.ser&quot;</span>));</span><br><span class="line">            out.writeObject(example);</span><br><span class="line">            out.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 修改 staticField 值以查看序列化和反序列化的影响</span></span><br><span class="line">            Example.staticField = <span class="number">100</span>;</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 反序列化对象</span></span><br><span class="line">            <span class="type">ObjectInputStream</span> <span class="variable">in</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(<span class="keyword">new</span> <span class="title class_">FileInputStream</span>(<span class="string">&quot;example.ser&quot;</span>));</span><br><span class="line">            <span class="type">Example</span> <span class="variable">deserializedExample</span> <span class="operator">=</span> (Example) in.readObject();</span><br><span class="line">            in.close();</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 打印结果</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Deserialized Example:&quot;</span>);</span><br><span class="line">            System.out.println(<span class="string">&quot;Static Field: &quot;</span> + Example.staticField); <span class="comment">// staticField 仍然是 100</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Instance Field: &quot;</span> + deserializedExample.instanceField); <span class="comment">// instanceField 是 30</span></span><br><span class="line">            System.out.println(<span class="string">&quot;Transient Field: &quot;</span> + deserializedExample.transientField); <span class="comment">// transientField 是 0</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-<p>但是Java默认的这个序列化并不好，至少我在开发的时候都用的是Json，为什么呢？</p>
-<ol>
-<li>不支持跨平台，java序列化得到的字节流只能java反序列化出来，json不一样，java转化为的json可以用python再反序列化回来</li>
-<li>性能较差，转化后的字节数组大</li>
-<li>安全性</li>
-</ol>
-<h2 id="String-StringBuffer-StringBuilder"><a href="#String-StringBuffer-StringBuilder" class="headerlink" title="String,StringBuffer,StringBuilder"></a>String,StringBuffer,StringBuilder</h2><ul>
-<li>string是被final修饰的，同时内部的实现数组（char[]或者byte[]）是private，无法通过外界修改。因此字符串的拼接是需要新生成对象的。</li>
-<li>stringbuffer：方法由synchronized修饰，是线程安全的，其拼接字符串不会创建一个新的stringbuffer类，效率比string不知道高到哪里去了</li>
-<li>stringbuilder：在大部分情况下string的操作都不太需要线程同步，这个类就取消了同步操作，效率比上一个高。</li>
-</ul>
-<p><strong>字符串的拼接</strong></p>
-<p>java是没有运算符重载的，但是唯一为了string的拼接修改了+和+&#x3D;，使得string可以通过+和+&#x3D;操作</p>
-<p>查看字节码我们可以知道，其实string的+和+&#x3D;是基于stringbuilder调用append方法，最后再使用tostring赋值给String，但是每次进行这样一个拼接操作就需要new一个stringbuilder，对于循环来说，这样的开销就非常大了。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">String[] arr = &#123;<span class="string">&quot;he&quot;</span>, <span class="string">&quot;llo&quot;</span>, <span class="string">&quot;world&quot;</span>&#125;;</span><br><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; arr.length; i++) &#123;</span><br><span class="line">    s += arr[i];</span><br><span class="line">&#125;</span><br><span class="line">System.out.println(s);</span><br></pre></td></tr></table></figure>
-
-<p>如果直接使用append来拼接，就不会有这个问题了。所以在大量字符串操作的时候用buffer或者builder比较好。</p>
-<h2 id="字符串常量池和String对象"><a href="#字符串常量池和String对象" class="headerlink" title="字符串常量池和String对象"></a>字符串常量池和String对象</h2><p><strong>字符串常量池</strong><br>首先做个区分，java程序在编译成了class文件之后会有一个常量池，也叫做静态常量池。当在被类加载器加载进内存时会将其分为字符串常量池和运行时常量池。</p>
-<ul>
-<li>运行时常量池是一直跟着方法区的，方法区在哪里它在哪里。在jdk1.7的时候方法区叫做永久代，放在运行时数据区，也就是和堆栈在一起的区域，为了减少oom的可能和内存的压力，在jdk1.8以后被搬到了直接内存中，由操作系统管理不由jvm虚拟机管理，从而减少了jvm的内存压力。但是虚拟机参数可以配置元空间的大小，并不是可以无限扩大的，也会有oom：metaspace的报错。说回运行时常量池，包含了class文件里静态常量池里的字面量和符号引用，但唯独没有字符串。<strong>也就是说除字符串以外的字面量比如整形和浮点，符号引用的类与接口全限定名，方法和字段的名称和描述符，都还在运行时常量池；维度字符串排除出去了</strong></li>
-<li>字符串常量池：在jdk1.6的时候是没有与运行时常量池分开来的，也是跟着方法区的，到了1.7被分到堆内存去了。原因是本来方法区进行垃圾回收的机会就很少，除了fullgc基本到不了这里，字符串又是一个很容易产生大量对象的地方。所以就放到heap中了，可以进行垃圾回收，这里创建出的也被称之为字符串对象。实际上String的引用都是在字符串常量池里的地址。</li>
-</ul>
-<p><strong>new String(“abc”)的问题</strong></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);</span><br></pre></td></tr></table></figure>
-<p>我们假设前面都没有关于abc这个字符串的创建，这个操作会创建两个对象：</p>
-<ul>
-<li>首先会在字符串常量池上创建abc这个对象</li>
-<li>由于new了一个String对象，会在堆上创建一个新的对象</li>
-</ul>
-<p>但是如果前面有String s2&#x3D;”abc”，也就是前面已经有在字符串常量池里面创建对象了，前面这个new的代码只会创建一个对象，即堆内存上的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">s2</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"></span><br><span class="line">System.out.println(s1 == s2);  <span class="comment">// true，因为 s1 和 s2 都引用常量池中的同一个对象</span></span><br></pre></td></tr></table></figure>
-
-
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;              <span class="comment">// 常量池中的 &quot;abc&quot; 对象</span></span><br><span class="line"><span class="type">String</span> <span class="variable">s2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);  <span class="comment">// 堆中的新对象</span></span><br><span class="line"></span><br><span class="line">System.out.println(s1 == s2);   <span class="comment">// false，s1 和 s2 是不同的对象，s1 是常量池中的，s2 是堆中的</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>那我在new了一个String以后，我怎么找到字符串常量池里面的对象？<br>intern可以直接找，返回的是在字符串常量池里的地址，这样就保证了字符串内容是一致的情况下，地址也完全一样，在某些要用锁的场合下，使用intern可以保证锁的对象是唯一的。<br>例如在黑马点评这个锁代码块里面：</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"><span class="keyword">public</span>  Result <span class="title function_">createVoucherOrder</span><span class="params">(Long voucherId)</span> &#123;</span><br><span class="line">	<span class="type">Long</span> <span class="variable">userId</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">	<span class="keyword">synchronized</span>(userId.toString().intern())&#123;</span><br><span class="line">        ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>这里面每一个id的toString都会创建一个新的对象，为了保证锁对象的唯一性，需要用intern直接取出常量池的地址</p>
-</blockquote>
-<p>为什么要有这种设计？字符串常量池本身就是为了可重复才扩展的，有的时候不想要与字符串的常量池共享，就需要创建一个新的字符串。</p>
-<h2 id="Double和BigDecimal的区别"><a href="#Double和BigDecimal的区别" class="headerlink" title="Double和BigDecimal的区别"></a>Double和BigDecimal的区别</h2><ul>
-<li>double是基本数据类型，bigDecimal是类</li>
-<li>double双精度浮点型可能会有数据溢出的情况，bigdecimal是用字符串做运算的，精度有保障，由于是字符串，会频繁创建对象，开销较大</li>
-<li>精度要求特别高比如在金融领域需要用big</li>
-</ul>
-<h2 id="反射"><a href="#反射" class="headerlink" title="反射"></a>反射</h2><p>类加载器加载字节码文件分为三部分：通过类的全限定名获取字节码文件，将字节码文件生成一个InstanceKlass文件在方法区，保存了类的元数据包括字段，方法，虚方法表登；同时会在堆中生成一个Class对象，作为访问这个InstanceKlass对象的接口。 正是这个Class对象为Java反射提供了基础。</p>
-<p>获取Class对象有以下四种方式：</p>
-<ol>
-<li>Class.forName传入路径</li>
-<li>通过对象获取class（instance.getClass()）</li>
-<li>通过类加载器传入loadClass路径获取（走的就是双亲委派机制那一套了，估计findClass是根据路径改造成全限定名然后找，但是这里仅仅是加载类，没有连接过程，所有静态代码块不会执行）</li>
-<li>可以直接.class获取</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.lang.reflect.Constructor;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Field;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ReflectionExample</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 1. 获取Class对象</span></span><br><span class="line">            Class&lt;?&gt; clazz = Class.forName(<span class="string">&quot;com.example.Person&quot;</span>);</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 2. 获取构造器并创建对象</span></span><br><span class="line">            Constructor&lt;?&gt; constructor = clazz.getConstructor(String.class, <span class="type">int</span>.class);</span><br><span class="line">            <span class="type">Object</span> <span class="variable">person</span> <span class="operator">=</span> constructor.newInstance(<span class="string">&quot;张三&quot;</span>, <span class="number">25</span>);</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 3. 获取并调用方法</span></span><br><span class="line">            <span class="type">Method</span> <span class="variable">sayHello</span> <span class="operator">=</span> clazz.getMethod(<span class="string">&quot;sayHello&quot;</span>);</span><br><span class="line">            sayHello.invoke(person);</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 4. 获取并修改字段</span></span><br><span class="line">            <span class="type">Field</span> <span class="variable">ageField</span> <span class="operator">=</span> clazz.getDeclaredField(<span class="string">&quot;age&quot;</span>);</span><br><span class="line">            ageField.setAccessible(<span class="literal">true</span>); <span class="comment">// 如果字段是private的，需要设置可访问</span></span><br><span class="line">            <span class="type">int</span> <span class="variable">age</span> <span class="operator">=</span> (<span class="type">int</span>) ageField.get(person);</span><br><span class="line">            System.out.println(<span class="string">&quot;年龄: &quot;</span> + age);</span><br><span class="line">            ageField.set(person, <span class="number">30</span>);</span><br><span class="line">            System.out.println(<span class="string">&quot;修改后的年龄: &quot;</span> + ageField.get(person));</span><br><span class="line">            </span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 假设存在如下Person类</span></span><br><span class="line"><span class="keyword">package</span> com.example;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> age;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Person</span><span class="params">(String name, <span class="type">int</span> age)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">        <span class="built_in">this</span>.age = age;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;你好，我是&quot;</span> + name + <span class="string">&quot;，今年&quot;</span> + age + <span class="string">&quot;岁。&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>如何获得私有变量&#x2F;方法：setAccessible</p>
-</blockquote>
-<p><strong>反射的优缺点</strong></p>
-<ul>
-<li>优点：灵活度高，多种框架都是基于反射的，能够在运行时动态操作类和对象</li>
-<li>缺点：安全性，private字段可以访问，性能开销</li>
-</ul>
-<blockquote>
-<p>总结：为什么反射的效率低？<br>反射效率低的原因可以归结为以下几点：</p>
-<ul>
-<li>需要进行动态的类型解析，耗费额外时间。 </li>
-<li>反射的调用绕过了编译时的优化。 </li>
-<li>反射需要执行额外的安全性检查。 </li>
-<li>方法调用的间接性导致了额外的步骤和开销。 </li>
-<li>缺乏JIT对反射的优化支持。 </li>
-<li>频繁使用时，开销会明显累积。 </li>
-<li>反射可能会引发对象包装和拆箱操作，进一步降低效率。</li>
-</ul>
-</blockquote>
-<h2 id="switch能否用String当作case"><a href="#switch能否用String当作case" class="headerlink" title="switch能否用String当作case"></a>switch能否用String当作case</h2><p>在jdk1.7以后有了这个语法糖。在底层原理中switch仅支持int，char等基本数据类型。switch中string是通过case哈希值，然后在equals内容得到的。哈希值是一个int类型的，由于也可能产生哈希碰撞，所以还得再检查字符串内容是否相同。</p>
-<h2 id="泛型"><a href="#泛型" class="headerlink" title="泛型"></a>泛型</h2><p>虚拟机中没有泛型，只有普通类和普通方法，所有泛型类的类型参数在编译时都会被擦除，泛型类并没有自己独有的Class类对象。比如并不存在List<String>.class或是List<Integer>.class，而只有List.class。</p>
-<p>也就是说泛型仅仅是在编译的时候做检查，而不会真正落到jvm里</p>
-<h2 id="Object有哪些方法"><a href="#Object有哪些方法" class="headerlink" title="Object有哪些方法"></a>Object有哪些方法</h2><ul>
-<li>wait和notify以及notifyAll：wait方法是放弃当前监视器锁，进入waitSet，状态变为WAIT。notify和notifyAll是唤醒当前监视器锁下面wait的线程，在hotspot中是分别是随机唤醒一个和全部唤醒。这个方法仅能在synchronized方法块中使用</li>
-<li>hashCode和equals：下面讲</li>
-<li>getClass：获取Class对象，与类.class方法是一样的，一共有四种方法获取Class对象（getClass，.class，类加载器loadClass,Class.forName）</li>
-</ul>
-<h2 id="hashCode和equals"><a href="#hashCode和equals" class="headerlink" title="hashCode和equals"></a>hashCode和equals</h2><p>说这两个就离不开集合，例如hashMap存储是按照hashCode散列找Entry，如果hashCode相同则在一个Entry下，但是有可能是哈希碰撞，所以还要比较equals，当且仅当hashCode相等并且equals返回为真的时候才会被认为是一个。在Object中默认hashCode是两个对象的内存散列，equals是比较内存地址是否相同。</p>
-<p><strong>String重写的hashCode和equals</strong></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">s</span> <span class="operator">=</span> <span class="string">&quot;abc&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;abc&quot;</span>);</span><br><span class="line">System.out.println(s.hashCode()+<span class="string">&quot;  &quot;</span>+s1.hashCode());</span><br><span class="line">System.out.println(s.equals(s1));</span><br></pre></td></tr></table></figure>
-
-<p>按道理来说s和s1是两个不同的对象，由于之前说的s应该是在字符串常量池，而s1是在堆中，hashCode按照Object默认的比较地址肯定是不相同的。但是String重写了hashCode，通过字符累加的方式计算哈希码，在保证了分散的同时使得相同字符串的哈希码相等。也重写了equals，比较字符串内容而不是比较地址。</p>
-<p><strong>为什么重写了equals就必须重写hashCode</strong></p>
-<p>如果两个对象内容相同就是一个对象的话，在set里面不能重复。需要重写equals，但是不重写hashCode可能会分配到不同的Entry，这样两个对象同时会被存储。所以保证equals为真的同时hashCode也要相同。</p>
-
     
     
   </div>

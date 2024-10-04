@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="场景题" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/archives/2024/07/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/10/04/场景题/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>归档 - 2024/7 · YYF&#39;s Blog</title>
+  <title>场景题 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,111 +208,108 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      场景题
+      
+    </h1>
 
-<section id="archive" class="archive">
+    <div class="post-meta">
+      <span class="post-time">
+        2024-10-04
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
   
-  
-  <div class="archive-title">
-    <span class="archive-post-counter">
-      目前共计 56 篇日志
-    </span>
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E8%AE%BE%E8%AE%A1%E4%B8%80%E4%B8%AA%E7%A7%92%E6%9D%80%E7%B3%BB%E7%BB%9F"><span class="toc-number">1.</span> <span class="toc-text">如何设计一个秒杀系统</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%A7%E6%96%87%E4%BB%B6%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E9%97%AE%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">大文件断点续传问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#40%E4%BA%BFqq%E5%8F%B7%EF%BC%8C%E5%A6%82%E4%BD%95%E5%8E%BB%E9%87%8D"><span class="toc-number">3.</span> <span class="toc-text">40亿qq号，如何去重</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E7%BA%BF%E7%A8%8B%E6%B1%A0"><span class="toc-number">4.</span> <span class="toc-text">动态线程池</span></a></li></ol>
+    </div>
   </div>
   
-  
 
-  
-  
-  
-  
-  
-  
-  <div class="collection-title">
-    <h2 class="archive-year">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </h2>
+  <div class="post-content">
+    
+    <h2 id="如何设计一个秒杀系统"><a href="#如何设计一个秒杀系统" class="headerlink" title="如何设计一个秒杀系统"></a>如何设计一个秒杀系统</h2><ul>
+<li>高性能：高性能核心就是响应时间快，一般来说都会把热点数据放在redis中，但是秒杀高峰的时候有可能连redis都应付不了。有几种解决方案：首先是二级缓存，redis之外用jvm的缓存例如caffeine，一定要控制空间大小，所以必须上淘汰策略例如lru；或者在业务层面进行UV统计，但是需要改写redis的jar；或者直接使用开源解决方案比如京东的hotkey。此外为了提高响应速度还可以将静态资源放到cdn上，例如七牛云阿里云，图片不会再占用服务器的带宽，但是这种属于钞能力的解决方案。</li>
+<li>高可用：保证节点的故障恢复。需要用集群。包括但不限redis-sentinel，redis-cluster；此外还可以用分布式限流框架sentinel，实现服务限流和降级；优化异步请求可以用mq，mq对于高可用的贡献是流量削峰，将请求打入消息队列，对于高性能的贡献是将减库存缓存和减数据异步化，更快返回请求。</li>
+<li>一致性：如何防止超卖，可以用lua脚本查询redis中的余量，但是lua的原子性保证的是脚本内都是一条语句，而不是事务上的原子性，出错了是不会回滚的；redis减库存后需要同步到mysql中，可以用mq完成。扣减余额也要考虑并发问题，可以用mysql的排他锁。</li>
+<li>幂等性：也就是常说的一人一单，可以考虑用分布式锁来锁住当前用户。</li>
+</ul>
+<h2 id="大文件断点续传问题"><a href="#大文件断点续传问题" class="headerlink" title="大文件断点续传问题"></a>大文件断点续传问题</h2><ul>
+<li>前端文件分片，并且通过sha算法生成一个校验和。</li>
+<li>后端根据这个校验和先去查minio是否有当前分片，如果有就直接跳过</li>
+<li>如果没有先检验sha校验和，如果匹配说明有效。可以采用并行的方式加快传输</li>
+<li>所有分片发送完毕后，前端会进行校验，发送整个的sha，与后端合并后的文件进行校验</li>
+</ul>
+<h2 id="40亿qq号，如何去重"><a href="#40亿qq号，如何去重" class="headerlink" title="40亿qq号，如何去重"></a>40亿qq号，如何去重</h2><p>哈希表和哈希集肯定是不行的，可以考虑用位图。或者数据结构那种外部归并排序</p>
+<h2 id="动态线程池"><a href="#动态线程池" class="headerlink" title="动态线程池"></a>动态线程池</h2><p>要用到nacos动态配置核心参数</p>
+
+    
   </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      07-21
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/07/21/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E4%B8%8B%E5%8D%95/" class="archive-post-link">
-        代驾微服务项目-乘客下单
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      07-19
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/07/19/%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE-%E4%B9%98%E5%AE%A2%E7%AB%AF%E6%A0%B8%E5%BF%83%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91/" class="archive-post-link">
-        代驾微服务项目-乘客端核心业务逻辑
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      07-19
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/07/19/%E6%96%B0%E5%9D%91-%E4%BB%A3%E9%A9%BE%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%A1%B9%E7%9B%AE/" class="archive-post-link">
-        新坑-代驾微服务项目
-      </a>
-    </span>
-  </div>
-  
-  
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      07-11
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/07/11/%E8%AE%BA%E6%96%87%E7%B2%BE%E8%AF%BB-DOMINANT/" class="archive-post-link">
-        论文精读-DOMINANT
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/10/04/%E5%9C%BA%E6%99%AF%E9%A2%98/">https://yyf1050886654.github.io/2024/10/04/%E5%9C%BA%E6%99%AF%E9%A2%98/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
       
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/09/30/JVM%E9%9D%A2%E8%AF%95%E7%AF%87/">  
+        <span class="next-text nav-default">JVM面试篇</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
@@ -407,6 +408,13 @@
     <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
   </div>
     
+    
+    
+    
+    
+    
+    
+  
 
   
 

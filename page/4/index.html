@@ -212,6 +212,69 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/05/mysql-%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB%E4%B8%8EMVCC/">mysql-事务隔离级别与MVCC</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-05
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="事务的特性（ACID）"><a href="#事务的特性（ACID）" class="headerlink" title="事务的特性（ACID）"></a>事务的特性（ACID）</h1><ul>
+<li>原子性（Atomicity）：要么一起成功，要么一起失败，是一个操作，不可分割</li>
+<li>一致性（Consistency）：是指事务的执行不能破坏数据库数据的完整性和一致性，一个事务在执行前后，数据库都必须处于一致性状态。换句话说，事务的执行结果必须是使数据库从一个一致性状态转变到另一个一致性状态。</li>
+<li>隔离性（Isolation）：多个并发事务操作是隔离的，不会彼此打扰</li>
+<li>持久性（Durability）：修改之后是持久的，不会掉电就失效了</li>
+</ul>
+<h1 id="并发导致的不一致性"><a href="#并发导致的不一致性" class="headerlink" title="并发导致的不一致性"></a>并发导致的不一致性</h1><ul>
+<li>脏读<br><strong>如果一个事务「读到」了另一个「未提交事务修改过的数据」，就意味着发生了「脏读」现象。</strong></li>
+</ul>
+<p>假设有 A 和 B 这两个事务同时在处理，事务 A 先开始从数据库中读取小林的余额数据，然后再执行更新操作，如果此时事务 A 还没有提交事务，而此时正好事务 B 也从数据库中读取小林的余额数据，那么事务 B 读取到的余额数据是刚才事务 A 更新后的数据，即使没有提交事务。</p>
+<p><img src="/../img/Mysql/img_14.png"></p>
+<p>因为事务 A 是还没提交事务的，也就是它随时可能发生回滚操作，如果在上面这种情况事务 A 发生了回滚，那么事务 B 刚才得到的数据就是过期的数据，这种现象就被称为脏读</p>
+<blockquote>
+<p>也就是事务B在A还没提交之前就已经读到了修改的数据，但是A因为某些原因回滚了，这个时候B就读到了脏数据，称为脏读</p>
+</blockquote>
+<ul>
+<li>不可重复读<br><strong>在一个事务内多次读取同一个数据，如果出现前后两次读到的数据不一样的情况，就意味着发生了「不可重复读」现象。</strong></li>
+</ul>
+<p>假设有 A 和 B 这两个事务同时在处理，事务 A 先开始从数据库中读取小林的余额数据，然后继续执行代码逻辑处理，在这过程中如果事务 B 更新了这条数据，并提交了事务，那么当事务 A 再次读取该数据时，就会发现前后两次读到的数据是不一致的，这种现象就被称为不可重复读。</p>
+<p><img src="/../img/Mysql/img_15.png"></p>
+<blockquote>
+<p>也就是A读到了B修改前和修改后的两次数据，不一致的问题，就是不可重复读</p>
+</blockquote>
+<ul>
+<li>幻读</li>
+</ul>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/04/03/mysql-B-%E6%A0%91%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%9D%97/">mysql-B+树与数据页</a>
       
     </h1>
@@ -1154,158 +1217,6 @@
 <li>如果 x&gt;s，或者遍历完了 coins 数组，这意味着我们无法得到 s，那么就一定要把 s 加到数组中（加一个比 s 还小的数字就没法得到更大的数，不够贪），这样就可以得到了 $[s,2s−1]$ 中的所有整数，再与 $[0,s−1]$ 合并，可以得到 $[0,2s−1]$ 中的所有整数。然后再考虑 x 和 2s 的大小关系，继续分类讨论。<br>当 s&gt;targets 时，我们就得到了 $[1,target]$ 中的所有整数，退出循环。</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">minimumAddedCoins</span><span class="params">(<span class="type">int</span>[] coins, <span class="type">int</span> target)</span> &#123;</span><br><span class="line">        Arrays.sort(coins);</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>, s = <span class="number">1</span>, i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (s &lt;= target) &#123;</span><br><span class="line">            <span class="keyword">if</span> (i &lt; coins.length &amp;&amp; coins[i] &lt;= s) &#123;</span><br><span class="line">                s += coins[i++];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                s *= <span class="number">2</span>; <span class="comment">// 必须添加 s</span></span><br><span class="line">                ans++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/29/leetcode-2024-3-29/">leetcode-2024-3-29</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-29
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>经过一天的冲业绩终于上了200题，说实话有点追求数量不追求质量了。但是我确实也感觉记性没以前那么好了，菜就多练。</p>
-<p><img src="/../img/coding/2024_3_29_2.png"></p>
-</blockquote>
-<h1 id="2908-元素和最小的山形三元组（Eazy）"><a href="#2908-元素和最小的山形三元组（Eazy）" class="headerlink" title="2908 元素和最小的山形三元组（Eazy）"></a>2908 元素和最小的山形三元组（Eazy）</h1><p>给你一个下标从 0 开始的整数数组 nums 。</p>
-<p>如果下标三元组$ (i, j, k) $满足下述全部条件，则认为它是一个 <strong>山形三元组</strong> ：</p>
-<ul>
-<li>$i &lt; j &lt; k$</li>
-<li>$nums[i] &lt; nums[j]$ 且 $nums[k] &lt; nums[j]$<br>请你找出 nums 中 <strong>元素和最小</strong> 的山形三元组，并返回其 <strong>元素和</strong> 。如果不存在满足条件的三元组，返回 -1 。</li>
-</ul>
-<p>示例 1：</p>
-<p>输入：$nums &#x3D; [8,6,1,5,3]$<br>输出：9<br>解释：三元组 (2, 3, 4) 是一个元素和等于 9 的山形三元组，因为：</p>
-<ul>
-<li>2 &lt; 3 &lt; 4</li>
-<li>$nums[2] &lt; nums[3]$ 且 $nums[4] &lt; nums[3]$</li>
-</ul>
-<p>这个三元组的元素和等于 $nums[2] + nums[3] + nums[4] &#x3D; 9$ 。可以证明不存在元素和小于 9 的山形三元组。</p>
-<h2 id="暴力枚举（居然没超时）"><a href="#暴力枚举（居然没超时）" class="headerlink" title="暴力枚举（居然没超时）"></a>暴力枚举（居然没超时）</h2><blockquote>
-<p>没什么好说的直接遍历所有三元组，判断是否是山形</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">minimumSum</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">min</span> <span class="operator">=</span> Integer.MAX_VALUE;</span><br><span class="line">        <span class="comment">//遍历所有三元组</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length - <span class="number">2</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> i+<span class="number">1</span>; j &lt; nums.length-<span class="number">1</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> j+<span class="number">1</span>; k &lt; nums.length; k++) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (nums[i] &lt; nums[j] &amp;&amp; nums[j] &gt;nums[k])&#123;</span><br><span class="line">                        <span class="comment">//找最小值</span></span><br><span class="line">                        min = Math.min(min,nums[i]+nums[j]+nums[k]);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (min == Integer.MAX_VALUE)&#123;</span><br><span class="line">            min = -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> min;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度：o(n^3)，这么高的复杂度没超时就算了，居然还77%？有点搞笑了<br>空间复杂度：o(1)，只用了一个min来保存最大值</p>
-<h1 id="有效的括号（Easy）"><a href="#有效的括号（Easy）" class="headerlink" title="有效的括号（Easy）"></a>有效的括号（Easy）</h1><blockquote>
-<p>今天的主菜是各种栈，先从最简单的说起</p>
-</blockquote>
-<p>给定一个只包括 ‘(‘，’)’，’{‘，’}’，’[‘，’]’ 的字符串 s ，判断字符串是否有效。</p>
-<p>有效字符串需满足：</p>
-<ol>
-<li>左括号必须用相同类型的右括号闭合。</li>
-<li>左括号必须以正确的顺序闭合。</li>
-<li>每个右括号都有一个对应的相同类型的左括号。</li>
-</ol>
-<p>示例 1：</p>
-<p>输入：s &#x3D; “()”</p>
-<p>输出：true</p>
-<p>示例 2：</p>
-<p>输入：s &#x3D; “()[]{}”</p>
-<p>输出：true</p>
-<p>示例 3：</p>
-<p>输入：s &#x3D; “(]”</p>
-<p>输出：false</p>
-<h2 id="简单栈"><a href="#简单栈" class="headerlink" title="简单栈"></a>简单栈</h2><blockquote>
-<p>最基础的括号匹配问题，所有左边括号进栈，如果能和右边括号匹配就出栈，到最后如果还有括号没有匹配上，就返回false，如果为空就是true</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isValid</span><span class="params">(String s)</span> &#123;</span><br><span class="line">        Stack&lt;Character&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//flag用来表示栈顶不是匹配的，比如“]”，栈顶没有元素，返回false</span></span><br><span class="line">        <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; s.length(); i++) &#123;</span><br><span class="line">            <span class="type">char</span> <span class="variable">temp</span> <span class="operator">=</span> s.charAt(i);</span><br><span class="line">            <span class="keyword">if</span> (temp == <span class="string">&#x27;&#125;&#x27;</span>)&#123;</span><br><span class="line">                <span class="comment">//匹配左边括号，出栈</span></span><br><span class="line">                <span class="keyword">if</span> (!stack.isEmpty()&amp;&amp;stack.peek() == <span class="string">&#x27;&#123;&#x27;</span>)&#123;</span><br><span class="line">                    stack.pop();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    flag = <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (temp == <span class="string">&#x27;)&#x27;</span>)&#123;</span><br><span class="line">                <span class="comment">//匹配左边括号，出栈</span></span><br><span class="line">                <span class="keyword">if</span> (!stack.isEmpty()&amp;&amp;stack.peek() == <span class="string">&#x27;(&#x27;</span>)&#123;</span><br><span class="line">                    stack.pop();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    flag = <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> <span class="keyword">if</span> (temp == <span class="string">&#x27;]&#x27;</span>)&#123;</span><br><span class="line">                <span class="comment">//匹配左边括号，出栈</span></span><br><span class="line">                <span class="keyword">if</span> (!stack.isEmpty()&amp;&amp;stack.peek() == <span class="string">&#x27;[&#x27;</span>)&#123;</span><br><span class="line">                    stack.pop();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    flag = <span class="literal">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//不是右边括号的话进栈</span></span><br><span class="line">            <span class="keyword">else</span> stack.push(temp);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> flag &amp; stack.isEmpty();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度:o(n)<br>空间复杂度:o(n)，因为维护了一个栈</p>
-<h1 id="394-字符串解码（Medium）"><a href="#394-字符串解码（Medium）" class="headerlink" title="394 字符串解码（Medium）"></a>394 字符串解码（Medium）</h1><p>给定一个经过编码的字符串，返回它解码后的字符串。</p>
-<p>编码规则为: $k[encoded_string]$，表示其中方括号内部的 encoded_string 正好重复 k 次。注意 k 保证为正整数。</p>
-<p>你可以认为输入字符串总是有效的；输入字符串中没有额外的空格，且输入的方括号总是符合格式要求的。</p>
-<p>此外，你可以认为原始数据不包含数字，所有的数字只表示重复的次数 k ，例如不会出现像 3a 或 2[4] 的输入。</p>
-<p>示例 1：</p>
-<p>输入：s &#x3D; “3[a]2[bc]”</p>
-<p>输出：”aaabcbc”</p>
-<p>示例 2：</p>
-<p>输入：s &#x3D; “3[a2[c]]”</p>
-<p>输出：”accaccacc”</p>
-<h2 id="简单栈-1"><a href="#简单栈-1" class="headerlink" title="简单栈"></a>简单栈</h2><blockquote>
-<p>先进后出，又是用栈的经典问题，维护两个栈，一个放数字，一个放符号，这里考虑到数字也会又多位数字，所以在字符串中需要特意考虑多位数字。<br>另一个栈用于放字符串，这里刚开始考虑用Char的栈，但是这样就会频繁出栈入栈，所以还不如就用字符串。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">decodeString</span><span class="params">(String s)</span> &#123;</span><br><span class="line">        Stack&lt;String&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        Stack&lt;Integer&gt; numstack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//这里i手动改，因为涉及到多位数字的问题，需要拼接字符串</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; s.length();) &#123;</span><br><span class="line">            <span class="comment">//如果是数字，需要考虑多位数字的情况</span></span><br><span class="line">            <span class="keyword">if</span> (judgeNumOrChar(s.charAt(i)))&#123;</span><br><span class="line">                <span class="type">StringBuilder</span> <span class="variable">num</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">                <span class="comment">//拼接字符串</span></span><br><span class="line">                <span class="keyword">while</span> (judgeNumOrChar(s.charAt(i)))&#123;</span><br><span class="line">                    num.append(s.charAt(i));</span><br><span class="line">                    i++;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//此时i的位置肯定是[</span></span><br><span class="line">                numstack.push(Integer.parseInt(num.toString()));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//左括号直接进</span></span><br><span class="line">                <span class="keyword">if</span> (s.charAt(i) != <span class="string">&#x27;]&#x27;</span>)&#123;</span><br><span class="line">                    stack.push(<span class="string">&quot;&quot;</span>+s.charAt(i));</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="type">StringBuilder</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">                    <span class="comment">//当前的数字出栈</span></span><br><span class="line">                    <span class="type">int</span> <span class="variable">count</span> <span class="operator">=</span> numstack.pop();</span><br><span class="line">                    <span class="comment">//字符串拼接加在左边，因为先进后出</span></span><br><span class="line">                    <span class="keyword">while</span> (!Objects.equals(stack.peek(), <span class="string">&quot;[&quot;</span>))&#123;</span><br><span class="line">                        temp.insert(<span class="number">0</span>, stack.pop());</span><br><span class="line">                        <span class="comment">//System.out.println(stack);</span></span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//最后一个左括号出栈</span></span><br><span class="line">                    stack.pop();</span><br><span class="line">                    <span class="comment">//接下来就是循环count次，字符串入栈，这里其实也可以拼接好了再放一个位置，我怕会有问题就没这么做</span></span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; count; j++) &#123;</span><br><span class="line">                        stack.push(temp.toString());</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                &#125;</span><br><span class="line">                i++;</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//System.out.println(stack);</span></span><br><span class="line">            <span class="comment">//System.out.println(numstack);</span></span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">StringBuilder</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">        <span class="keyword">while</span> (!stack.isEmpty())&#123;</span><br><span class="line">            ans.insert(<span class="number">0</span>, stack.pop());</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans.toString();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//判断是否为数字</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">judgeNumOrChar</span><span class="params">(Character character)</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (character &lt; <span class="string">&#x27;a&#x27;</span> || character &gt; <span class="string">&#x27;z&#x27;</span>) &amp;&amp; character != <span class="string">&#x27;[&#x27;</span> &amp;&amp; character != <span class="string">&#x27;]&#x27;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度o(n)<br>空间复杂度，就是解码出的字符串的长度，这个没办法跟n有关</p>
-<h1 id="739-每日温度（Medium）"><a href="#739-每日温度（Medium）" class="headerlink" title="739 每日温度（Medium）"></a>739 每日温度（Medium）</h1><p>给定一个整数数组 temperatures ，表示每天的温度，返回一个数组 answer ，其中 answer[i] 是指对于第 i 天，下一个更高温度出现在几天后。如果气温在这之后都不会升高，请在该位置用 0 来代替。</p>
-<p>示例 1:</p>
-<p>输入: temperatures &#x3D; [73,74,75,71,69,72,76,73]</p>
-<p>输出: [1,1,4,2,1,1,0,0]</p>
-<h2 id="单调栈"><a href="#单调栈" class="headerlink" title="单调栈"></a>单调栈</h2><blockquote>
-<p>维护一个存储下标的单调递减栈，当要进入的元素比栈顶元素大的时候，弹出栈顶，那么栈顶对应的今日最高温度就是当前这个，数组中放进两者的日期差值，以此循环。直到进入元素比栈顶小</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[] dailyTemperatures(<span class="type">int</span>[] temperatures) &#123;</span><br><span class="line">        <span class="comment">//int[]，0表示当前元素，1表示下标</span></span><br><span class="line">        <span class="comment">//其实可以完全存下标的，这里浪费空间了</span></span><br><span class="line">        Stack&lt;<span class="type">int</span>[]&gt; monoStack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span>[] ans = <span class="keyword">new</span> <span class="title class_">int</span>[temperatures.length];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; temperatures.length; i++) &#123;</span><br><span class="line">            <span class="comment">//进入元素比栈顶大，直到比栈顶小</span></span><br><span class="line">            <span class="keyword">while</span> (!monoStack.isEmpty() &amp;&amp; monoStack.peek()[<span class="number">0</span>] &lt; temperatures[i])&#123;</span><br><span class="line">                <span class="type">int</span>[] latest = monoStack.pop();</span><br><span class="line">                <span class="comment">//计算当前元素和出栈的差值，放在出栈的那个元素的下标位置</span></span><br><span class="line">                ans[latest[<span class="number">1</span>]] = i-latest[<span class="number">1</span>];</span><br><span class="line">            &#125;</span><br><span class="line">            monoStack.push(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;temperatures[i],i&#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//最后如果留下几个递减的元素，那么表示后续没有更高温度，就全部为0</span></span><br><span class="line">        <span class="keyword">while</span> (!monoStack.isEmpty())&#123;</span><br><span class="line">            <span class="type">int</span>[] latest = monoStack.pop();</span><br><span class="line">            ans[latest[<span class="number">1</span>]] = <span class="number">0</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度o(n)<br>空间复杂度o(n)</p>
-<blockquote>
-<p>接下来是两个单调栈难题</p>
-</blockquote>
-<h1 id="84-柱状图中最大的矩形（Hard）"><a href="#84-柱状图中最大的矩形（Hard）" class="headerlink" title="84 柱状图中最大的矩形（Hard）"></a>84 柱状图中最大的矩形（Hard）</h1><p>给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1 。</p>
-<p>求在该柱状图中，能够勾勒出来的矩形的最大面积。</p>
-<p><img src="/../img/coding/2024_3_29_3.png"></p>
-<h2 id="单调栈-1"><a href="#单调栈-1" class="headerlink" title="单调栈"></a>单调栈</h2><blockquote>
-<p>假设当前元素nums[i]，我只要找到在他左边第一个比当前元素小，和右边第一个比当前元素小的，那么他们围成的矩形的高度就是nums[i]，长度就是右边-左边-1（因为实际上不能到比它小的位置），</p>
-<p>这样问题就简化了，有了左边右边这些元素，只需要遍历一次，计算（右边-左边-1）*当前元素，找到最大值就是答案。</p>
-<p>那么怎么样找到这些第一个比它小的元素呢，用<strong>单调栈</strong></p>
-<p>对于左边来说，维护一个单调递增的栈，那么每一个比栈顶进去大的元素，最左边第一个比它小的元素肯定是栈顶的。如果进入元素比栈顶小，那就一直出栈，直到进入元素比栈顶大，这个时候出栈的元素肯定都是大于当前元素的，<br>也就是不是最左边比它小的元素，此时栈顶的才比它小，这就算出了最左边比它小的元素位置，但是如果此时栈空了，说明左边的全比自己大，那就返回-1.</p>
-<p>右边的同理，只不过栈空对应的是nums.length</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">largestRectangleArea</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">        Stack&lt;Integer&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="comment">//保存最左边的比当前元素小的下标</span></span><br><span class="line">        <span class="type">int</span>[] left = <span class="keyword">new</span> <span class="title class_">int</span>[nums.length];</span><br><span class="line">        <span class="comment">//保存最右边的比当前元素小的下标</span></span><br><span class="line">        <span class="type">int</span>[] right = <span class="keyword">new</span> <span class="title class_">int</span>[nums.length];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="comment">//单调栈的下一个肯定是比当前元素小的，也肯定是最左边的</span></span><br><span class="line">            <span class="keyword">while</span> (!stack.isEmpty() &amp;&amp; nums[stack.peek()] &gt;= nums[i])&#123;</span><br><span class="line">                stack.pop();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (stack.isEmpty())&#123;</span><br><span class="line">                left[i] = -<span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                left[i] = stack.peek();</span><br><span class="line">            &#125;</span><br><span class="line">            stack.push(i);</span><br><span class="line">            <span class="comment">//System.out.println(stack);</span></span><br><span class="line">        &#125;</span><br><span class="line">        stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> nums.length-<span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">            <span class="keyword">while</span> (!stack.isEmpty() &amp;&amp; nums[stack.peek()] &gt;= nums[i])&#123;</span><br><span class="line">                stack.pop();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (stack.isEmpty())&#123;</span><br><span class="line">                right[i] = nums.length;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                right[i] = stack.peek();</span><br><span class="line">            &#125;</span><br><span class="line">            stack.push(i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(left));</span></span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(right));</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> Integer.MIN_VALUE;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">            <span class="comment">//计算宽度</span></span><br><span class="line">            max = Math.max(max,(right[i]-left[i]-<span class="number">1</span>)*nums[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> max;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>很重要这个题，这种思想已经不是第一次见到了，分别按照左边右边两个数组，遍历三次</p>
-</blockquote>
-<p>时间复杂度：o(n)<br>空间复杂度：o(n)</p>
-<h1 id="接雨水（Hard）"><a href="#接雨水（Hard）" class="headerlink" title="接雨水（Hard）"></a>接雨水（Hard）</h1><p>给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。</p>
-<p><img src="/../img/coding/2024_3_29_4.png"></p>
-<h2 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h2><blockquote>
-<p>其实也用了上一题的思想</p>
-</blockquote>
-<p>对于下标 i，下雨后水能到达的最大高度等于下标 i 两边的最大高度的最小值，下标 i 处能接的雨水量等于下标 i 处的水能到达的最大高度减去 height[i]。</p>
-<p>朴素的做法是对于数组 height 中的每个元素，分别向左和向右扫描并记录左边和右边的最大高度，然后计算每个下标位置能接的雨水量。假设数组 height 的长度为 n，该做法需要对每个下标位置使用 O(n) 的时间向两边扫描并得到最大高度，因此总时间复杂度是 O(n^2)</p>
-<p>上述做法的时间复杂度较高是因为需要对每个下标位置都向两边扫描。如果已经知道每个位置两边的最大高度，则可以在 O(n)的时间内得到能接的雨水总量。使用动态规划的方法，可以在 O(n) 的时间内预处理得到每个位置两边的最大高度。</p>
-<p>创建两个长度为 n 的数组 leftMax 和 rightMax。对于 0≤i&lt;n0 ，leftMax[i] 表示下标 i 及其左边的位置中，height 的最大高度，rightMax[i] 表示下标 i 及其右边的位置中，height 的最大高度。</p>
-<p>显然，$leftMax[0]&#x3D;height[0]$，$rightMax[n−1]&#x3D;height[n−1]$。两个数组的其余元素的计算如下：</p>
-<ul>
-<li>当 $1≤i≤n−1$ 时，$leftMax[i]&#x3D;max(leftMax[i−1],height[i])$；</li>
-<li>当 $0≤i≤n−2$ 时，$rightMax[i]&#x3D;max(rightMax[i+1],height[i])$。</li>
-</ul>
-<p>因此可以正向遍历数组 height 得到数组 leftMax 的每个元素值，反向遍历数组 height 得到数组 rightMax 的每个元素值。</p>
-<p>在得到数组 leftMax 和 rightMax 的每个元素值之后，对于 0≤i&lt;n，下标 i 处能接的雨水量等于 $min(leftMax[i],rightMax[i])−height[i]$。遍历每个下标位置即可得到能接的雨水总量。</p>
-<p><img src="/../img/coding/2024_3_29_5.png"></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">trap</span><span class="params">(<span class="type">int</span>[] height)</span> &#123;</span><br><span class="line">        <span class="type">int</span>[] left = <span class="keyword">new</span> <span class="title class_">int</span>[height.length];</span><br><span class="line">        left[<span class="number">0</span>] = height[<span class="number">0</span>];</span><br><span class="line">        <span class="type">int</span>[] right = <span class="keyword">new</span> <span class="title class_">int</span>[height.length];</span><br><span class="line">        right[height.length-<span class="number">1</span>] = height[height.length-<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt; height.length; i++) &#123;</span><br><span class="line">            left[i] = Math.max(left[i-<span class="number">1</span>],height[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> height.length-<span class="number">2</span>; i &gt;=<span class="number">0</span> ; i--) &#123;</span><br><span class="line">            right[i] = Math.max(right[i+<span class="number">1</span>],height[i]);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; height.length; i++) &#123;</span><br><span class="line">            ans += Math.min(left[i],right[i])-height[i];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="单调栈-2"><a href="#单调栈-2" class="headerlink" title="单调栈"></a>单调栈</h2><blockquote>
-<p>这个挺难理解的</p>
-</blockquote>
-<p>除了计算并存储每个位置两边的最大高度以外，也可以用单调栈计算能接的雨水总量。</p>
-<p>维护一个单调栈，单调栈存储的是下标，满足从栈底到栈顶的下标对应的数组 height 中的元素递减。</p>
-<p>从左到右遍历数组，遍历到下标 i 时，如果栈内至少有两个元素，记栈顶元素为 top，top 的下面一个元素是 left，则一定有 $height[left]≥height[top]$。如果 $height[i]&gt;height[top]$，则得到一个可以接雨水的区域，该区域的宽度是 $i−left−1$，高度是 $min(height[left],height[i])−height[top]$，根据宽度和高度即可计算得到该区域能接的雨水量。</p>
-<p>为了得到 left，需要将 top 出栈。在对 top 计算能接的雨水量之后，left 变成新的 top，重复上述操作，直到栈变为空，或者栈顶下标对应的 height 中的元素大于或等于 height[i]。</p>
-<p>在对下标 i 处计算能接的雨水量之后，将 i 入栈，继续遍历后面的下标，计算能接的雨水量。遍历结束之后即可得到能接的雨水总量。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">trap</span><span class="params">(<span class="type">int</span>[] height)</span> &#123;</span><br><span class="line">        Stack&lt;Integer&gt; stack = <span class="keyword">new</span> <span class="title class_">Stack</span>&lt;&gt;();</span><br><span class="line">        <span class="type">int</span> <span class="variable">ans</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; height.length; i++) &#123;</span><br><span class="line">            <span class="keyword">while</span> (!stack.isEmpty() &amp;&amp; height[i] &gt; height[stack.peek()]) &#123;</span><br><span class="line">                <span class="type">int</span> <span class="variable">top</span> <span class="operator">=</span> stack.pop();</span><br><span class="line">                <span class="keyword">if</span> (stack.isEmpty()) &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="type">int</span> <span class="variable">left</span> <span class="operator">=</span> stack.peek();</span><br><span class="line">                <span class="type">int</span> <span class="variable">currWidth</span> <span class="operator">=</span> i - left - <span class="number">1</span>;</span><br><span class="line">                <span class="type">int</span> <span class="variable">currHeight</span> <span class="operator">=</span> Math.min(height[left], height[i]) - height[top];</span><br><span class="line">                ans += currWidth * currHeight;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            stack.push(i);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
     
     
   </div>

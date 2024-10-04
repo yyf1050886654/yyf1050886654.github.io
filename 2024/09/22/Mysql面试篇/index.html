@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">Mysql的数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E5%92%8CMyISAM"><span class="toc-number">2.</span> <span class="toc-text">InnoDB和MyISAM</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">3.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">4.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95"><span class="toc-number">5.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%81%94%E5%90%88%E7%B4%A2%E5%BC%95%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2"><span class="toc-number">6.</span> <span class="toc-text">联合索引范围查询</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88%E5%9C%BA%E6%99%AF"><span class="toc-number">7.</span> <span class="toc-text">索引失效场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">8.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">9.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%88%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%EF%BC%89"><span class="toc-number">10.</span> <span class="toc-text">MVCC（多版本并发控制）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#redolog"><span class="toc-number">11.</span> <span class="toc-text">redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog"><span class="toc-number">12.</span> <span class="toc-text">binlog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog%E5%B0%B1%E5%A4%9F%E4%BA%86%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81redolog"><span class="toc-number">13.</span> <span class="toc-text">binlog就够了为什么还需要redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-number">14.</span> <span class="toc-text">两阶段提交</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E7%9A%84%E9%94%81"><span class="toc-number">15.</span> <span class="toc-text">Mysql的锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E4%B8%8A%E9%94%81"><span class="toc-number">16.</span> <span class="toc-text">Mysql什么时候上锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E6%AD%BB%E9%94%81"><span class="toc-number">17.</span> <span class="toc-text">Mysql死锁</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="toc-number">1.</span> <span class="toc-text">Mysql的数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B"><span class="toc-number">2.</span> <span class="toc-text">Mysql查询流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E5%92%8CMyISAM"><span class="toc-number">3.</span> <span class="toc-text">InnoDB和MyISAM</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#InnoDB%E7%9A%84%E5%AD%98%E5%82%A8%E5%BD%A2%E5%BC%8F"><span class="toc-number">4.</span> <span class="toc-text">InnoDB的存储形式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8B-%E6%A0%91%E8%80%8C%E4%B8%8D%E6%98%AFB%E6%A0%91%EF%BC%8C%E7%BA%A2%E9%BB%91%E6%A0%91%E6%88%96%E8%80%85%E8%B7%B3%E8%A1%A8"><span class="toc-number">5.</span> <span class="toc-text">为什么用B+树而不是B树，红黑树或者跳表</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95"><span class="toc-number">6.</span> <span class="toc-text">索引</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%81%94%E5%90%88%E7%B4%A2%E5%BC%95%E8%8C%83%E5%9B%B4%E6%9F%A5%E8%AF%A2"><span class="toc-number">7.</span> <span class="toc-text">联合索引范围查询</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B4%A2%E5%BC%95%E5%A4%B1%E6%95%88%E5%9C%BA%E6%99%AF"><span class="toc-number">8.</span> <span class="toc-text">索引失效场景</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BA%8B%E5%8A%A1"><span class="toc-number">9.</span> <span class="toc-text">Mysql事务</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB"><span class="toc-number">10.</span> <span class="toc-text">事务隔离级别</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MVCC%EF%BC%88%E5%A4%9A%E7%89%88%E6%9C%AC%E5%B9%B6%E5%8F%91%E6%8E%A7%E5%88%B6%EF%BC%89"><span class="toc-number">11.</span> <span class="toc-text">MVCC（多版本并发控制）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#redolog"><span class="toc-number">12.</span> <span class="toc-text">redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog"><span class="toc-number">13.</span> <span class="toc-text">binlog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#binlog%E5%B0%B1%E5%A4%9F%E4%BA%86%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81redolog"><span class="toc-number">14.</span> <span class="toc-text">binlog就够了为什么还需要redolog</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%8F%90%E4%BA%A4"><span class="toc-number">15.</span> <span class="toc-text">两阶段提交</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E7%9A%84%E9%94%81"><span class="toc-number">16.</span> <span class="toc-text">Mysql的锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E4%B8%8A%E9%94%81"><span class="toc-number">17.</span> <span class="toc-text">Mysql什么时候上锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mysql%E6%AD%BB%E9%94%81"><span class="toc-number">18.</span> <span class="toc-text">Mysql死锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%85%A2sql"><span class="toc-number">19.</span> <span class="toc-text">慢sql</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84sql%E4%BC%98%E5%8C%96%E6%89%8B%E6%AE%B5"><span class="toc-number">20.</span> <span class="toc-text">常见的sql优化手段</span></a></li></ol>
     </div>
   </div>
   
@@ -245,6 +245,12 @@
 <blockquote>
 <p>定点型是指定小数点后几位的。char是定长的，varchar是可变的，一般设计的是最大长度。如果超过长度char是需要修改表结构的。而且相同字符串在存储层面两者是相同的。但是varchar内存占用稍高，某些高级操作是需要遍历。</p>
 </blockquote>
+<h2 id="Mysql查询流程"><a href="#Mysql查询流程" class="headerlink" title="Mysql查询流程"></a>Mysql查询流程</h2><ol>
+<li>连接器：连接客户端的http请求，校验用户名密码</li>
+<li>查询缓存，如果缓存里面有就直接返回（这里在8版本就废弃了，因为命中率实在太低了）</li>
+<li>词法分析语法分析</li>
+<li>执行器：包括预处理，例如将*换成表的字段；优化器，选择效率较高的执行计划执行，能用索引就不用全表扫描；执行器，执行sql然后返回结果给客户端</li>
+</ol>
 <h2 id="InnoDB和MyISAM"><a href="#InnoDB和MyISAM" class="headerlink" title="InnoDB和MyISAM"></a>InnoDB和MyISAM</h2><ol>
 <li>事务</li>
 <li>行级锁</li>
@@ -448,6 +454,31 @@
 </div>
 
 <p>由于间隙锁是可以重复的，两边都锁住了不允许添加。</p>
+<h2 id="慢sql"><a href="#慢sql" class="headerlink" title="慢sql"></a>慢sql</h2><p><strong>产生慢sql的原因</strong></p>
+<ol>
+<li>索引未生效或者根本没有索引，导致全表扫描</li>
+<li>数据量太大了，加索引都不行。这个时候就要考虑分库分表了</li>
+<li>sql书写不当，过多的join操作或者子查询过多，子查询会产生一张新表；或者是深度分页；用了比较长的排序</li>
+<li>数据量比较大的时候，redolog满了，在更新checkpoint的时候会阻塞</li>
+<li>等待行级锁</li>
+</ol>
+<p><strong>如何发现慢sql</strong></p>
+<ol>
+<li>mysql自己可以开启慢sql查询日志，将查询时间大于1s的记录下来</li>
+<li>预防慢sql，做全局sql扫描。阿里的<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/LZRSQJufGRpRw6u4h_Uyww">这篇文章</a>提到了可以使用JVM的沙箱模型。相当于一个大的aop模型（值得一提的是gclib也是跟这个原理类似），通过在实例前后进行监听就可以无侵入式地录制HTTP&#x2F;Java&#x2F;Dubbo入参&#x2F;返回值，业务系统无感知。基于这个能力，我们可以方便的采集和SQL执行相关的Java方法参数以及返回值。通过配置采集点，来采集执行sql的java代码的相关方法、参数和返回值，辅助实现sql采集功能。</li>
+</ol>
+<p><strong>如何识别高危sql</strong></p>
+<ul>
+<li>不符合规范的sql：不允许使用外键，深度分页优化，子查找过多，有*</li>
+<li>用explain观察，row字段过多需要优化，type字段是否使用索引，extra是否有排序操作，以及是否索引下推，索引覆盖。</li>
+</ul>
+<h2 id="常见的sql优化手段"><a href="#常见的sql优化手段" class="headerlink" title="常见的sql优化手段"></a>常见的sql优化手段</h2><ol>
+<li>避免使用*：因为在查询的过程中还有一个预处理过程，可以自己写的就不要交给sql去查询，而且无法使用覆盖索引，也就是不用回表</li>
+<li>深度分页优化：比如有1000000页，查询这个页的时候就是深度分页了。可以用子表查询这个页的第一条记录，然后再去查比这个大的10条记录作为范围。有两个缺点，首先是id必须自增，其次是子表查询不推荐</li>
+<li>避免多join，避免使用外键</li>
+<li>优化慢sql</li>
+<li>正确使用索引：选择合适的字段创建索引（不为NULL的字段，频繁查找但是不是频繁增删的字段）；避免索引失效；考虑在字符串上建立前缀索引；避免冗余索引</li>
+</ol>
 
     
   </div>
