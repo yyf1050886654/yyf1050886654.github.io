@@ -591,7 +591,22 @@
     
 
     
-    <h2 id="InnoDB的存储形式"><a href="#InnoDB的存储形式" class="headerlink" title="InnoDB的存储形式"></a>InnoDB的存储形式</h2><p>众所周知InnoDB存储数据的数据结构是B+树，其中树的节点就是数据页。</p>
+    <h2 id="Mysql的数据结构"><a href="#Mysql的数据结构" class="headerlink" title="Mysql的数据结构"></a>Mysql的数据结构</h2><ul>
+<li>数字型：整型（tinyint,smallint,int,bigint），浮点型（float,double），定点型（decimal）</li>
+<li>字符串：char，varchar，tinytext，text，mediumtext，longtext，tinyblob，blob，mediumblob，longblob</li>
+<li>日期：date，timestamp</li>
+</ul>
+<blockquote>
+<p>定点型是指定小数点后几位的。char是定长的，varchar是可变的，一般设计的是最大长度。如果超过长度char是需要修改表结构的。而且相同字符串在存储层面两者是相同的。但是varchar内存占用稍高，某些高级操作是需要遍历。</p>
+</blockquote>
+<h2 id="InnoDB和MyISAM"><a href="#InnoDB和MyISAM" class="headerlink" title="InnoDB和MyISAM"></a>InnoDB和MyISAM</h2><ol>
+<li>事务</li>
+<li>行级锁</li>
+<li>索引</li>
+<li>支持外键</li>
+<li>崩溃恢复redolog</li>
+</ol>
+<h2 id="InnoDB的存储形式"><a href="#InnoDB的存储形式" class="headerlink" title="InnoDB的存储形式"></a>InnoDB的存储形式</h2><p>众所周知InnoDB存储数据的数据结构是B+树，其中树的节点就是数据页。</p>
 <p>数据页内部：</p>
 <p>一个数据页上会有多条记录，对应着实际的记录。在数据页内部是按照主键id顺序排列的。除此之外还有一个页目录，将顺序排列的某些记录归为一个槽。例如一个数据页有12345，可能12是一个槽，345是另一个，槽只保存最大的那个节点。当搜索的时候，比如我要搜索4，由于4大于12这个页的最大值2，所以会在345里面搜索。这个时候需要遍历的成本就低很多了。一般来说槽只会包含不超过8条记录。使用二分法找到这个槽，然后在在这个槽进行遍历。页目录只是为了加快在页内的查找速度。实际上每一个页里面记录也是通过链表串起来的。对外只会暴露当前页主键最大值和最小值。方便b+树的查找。</p>
 <p>B+树：</p>
@@ -606,19 +621,17 @@
 </ul>
 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引是为了加快搜索而建立的数据结构</p>
 <ul>
-<li><p>按照数据结构划分：B+树索引，Hash索引</p>
-</li>
-<li><p>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</p>
-</li>
-<li><p>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</p>
+<li>按照数据结构划分：B+树索引，Hash索引</li>
+<li>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</li>
+<li>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</li>
+</ul>
 <blockquote>
 <p>唯一索引：create unique index index_name on table(index_column_1)</p>
 <p>普通索引：create index index_name on table(index_column_1)</p>
 <p>前缀索引：create index index_name on table(length(index_column_1))</p>
 </blockquote>
-</li>
-<li><p>字段个数：单列索引，联合索引</p>
-</li>
+<ul>
+<li>字段个数：单列索引，联合索引</li>
 </ul>
 <blockquote>
 <p>联合索引：create index index_name on table(index_column_1,index_column_2)</p>
