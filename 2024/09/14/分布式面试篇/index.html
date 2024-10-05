@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C"><span class="toc-number">1.</span> <span class="toc-text">一致性哈希</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">分布式限流算法</span></a></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E5%93%88%E5%B8%8C"><span class="toc-number">1.</span> <span class="toc-text">一致性哈希</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">分布式限流算法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8FID%E7%94%9F%E6%88%90%E7%AE%97%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">分布式ID生成算法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">分布式事务</span></a></li></ol>
     </div>
   </div>
   
@@ -286,6 +286,20 @@
 <div style="text-align: center;">
   <img src="../img/Distributio/img_4.png" alt="" />
 </div>
+
+<h2 id="分布式ID生成算法"><a href="#分布式ID生成算法" class="headerlink" title="分布式ID生成算法"></a>分布式ID生成算法</h2><ul>
+<li>UUID：jdk自带就有这个算法，有五个版本。优点是生成很简单，本地就可以生成；缺点是要用到mac地址，安全性不好，而且不是连续的，对于InnoDB非顺序的id插入可能造成页分裂的问题，影响性能，而且长度也很长，mysql不建议这么长的id</li>
+<li>雪花算法：时间戳+机房id+机器id+序列号。正常情况下一毫秒一个机器可以生成4096个。大致是有序的，只不过时间戳是在高位；缺点是高度依赖时间系统，如果服务器出现时间回退就会导致出错</li>
+<li>数据库自增：用一个专门的表来插入自增，然后需要id的时候找这个表插入一条，返回的id即为自己的id。优点是简单；缺点是自增的太明显了，而且不适合分布式</li>
+<li>美团开源生成算法leaf</li>
+</ul>
+<h2 id="分布式事务"><a href="#分布式事务" class="headerlink" title="分布式事务"></a>分布式事务</h2><ul>
+<li>2pc：两阶段提交。分布式事务有两个角色，一个是事务管理者，一个是事务执行者（比如mysql或者redis）。两个阶段指的是准备阶段和提交阶段。事务管理者会询问当前事务下所有的执行器是否已经准备就绪，执行器接到这个询问后开始执行自己的逻辑，如果没有出错就返回yes，出错了返回no；第二阶段是提交，如果所有都返回yes，管理者就会让其提交事务，如果有一个是no就会回滚。缺点是会有单点问题，极度依赖事务管理者，如果宕机就会一直卡住，其次是会有阻塞，在事务执行期间会阻塞其他事务</li>
+<li>3pc：三阶段提交，比上面的多了一个开始的询问阶段，首先是准备阶段，事务管理者只会问他们准备好了吗，而不会实际的执行自己的任务；如果此时有人返回no就会回滚，但是由于没有执行任务所以回滚的代价小很多；二阶段是预提交阶段，当所有人都准备好了就会执行自己的任务，此时跟上面的一样，如果有no就回滚，这是最后的回滚机会了；三阶段是提交，如果所有都返回为yes，事务管理器就会让他们提交事务。优点是这里都有超时机制，避免了阻塞；但是还是有不一致的现象，3pc用的比较少</li>
+<li>TCC：需要代码实现的两阶段提交，分为try，confirm，cancel。首先try是预留业务资源；confirm确认执行业务逻辑，并且消耗try的业务资源，如果出现错误就会cancel，取消这个操作并且释放try的资源</li>
+<li>AT：seata的一种模式，可以视为2pc的一种实现模式。原理一阶段是通过代理sql，先解析sql保存执行前后的数据快照和undolog；二阶段如果有出错就按照这个undolog进行回滚。</li>
+<li>saga：将事务变成线性链表，然后一个一个做，中间某个事务出现了问题就会给前面已经提交的事务一个补偿措施。</li>
+</ul>
 
     
   </div>
