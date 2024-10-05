@@ -230,7 +230,7 @@
   <div class="post-toc" id="post-toc">
     <h2 class="post-toc-title">文章目录</h2>
     <div class="post-toc-content">
-      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">消息队列的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">Kafka的架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">Kafka的存储机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF%E4%B8%8D%E4%B8%A2%E5%A4%B1"><span class="toc-number">5.</span> <span class="toc-text">Kafka如何保证消息不丢失</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%90%91Kafka%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF%E7%9A%84%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">6.</span> <span class="toc-text">生产者向Kafka发送消息的执行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E8%B4%B9%E8%80%85%E6%B6%88%E8%B4%B9%E5%A4%B1%E8%B4%A5%E4%BC%9A%E6%80%8E%E6%A0%B7"><span class="toc-number">7.</span> <span class="toc-text">消费者消费失败会怎样</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%8D%E9%87%8D%E5%A4%8D%E6%B6%88%E8%B4%B9%E4%BF%A1%E6%81%AF"><span class="toc-number">8.</span> <span class="toc-text">Kafka如何保证不重复消费信息</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Exactly-Once-%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%9C%BA%E5%88%B6"><span class="toc-number">8.1.</span> <span class="toc-text">Exactly Once 的实现机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.2.</span> <span class="toc-text">总结</span></a></li></ol></li></ol>
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9B%B6%E6%8B%B7%E8%B4%9D"><span class="toc-number">1.</span> <span class="toc-text">零拷贝</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">消息队列的作用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="toc-number">3.</span> <span class="toc-text">Kafka的架构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E7%9A%84%E5%AD%98%E5%82%A8%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">Kafka的存储机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%B6%88%E6%81%AF%E4%B8%8D%E4%B8%A2%E5%A4%B1"><span class="toc-number">5.</span> <span class="toc-text">Kafka如何保证消息不丢失</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E4%BA%A7%E8%80%85%E5%90%91Kafka%E5%8F%91%E9%80%81%E6%B6%88%E6%81%AF%E7%9A%84%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">6.</span> <span class="toc-text">生产者向Kafka发送消息的执行流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B6%88%E8%B4%B9%E8%80%85%E6%B6%88%E8%B4%B9%E5%A4%B1%E8%B4%A5%E4%BC%9A%E6%80%8E%E6%A0%B7"><span class="toc-number">7.</span> <span class="toc-text">消费者消费失败会怎样</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Kafka%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%8D%E9%87%8D%E5%A4%8D%E6%B6%88%E8%B4%B9%E4%BF%A1%E6%81%AF"><span class="toc-number">8.</span> <span class="toc-text">Kafka如何保证不重复消费信息</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Exactly-Once-%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%9C%BA%E5%88%B6"><span class="toc-number">8.1.</span> <span class="toc-text">Exactly Once 的实现机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">8.2.</span> <span class="toc-text">总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RocketMQ"><span class="toc-number">9.</span> <span class="toc-text">RocketMQ</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#elasticsearch"><span class="toc-number">10.</span> <span class="toc-text">elasticsearch</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#segment"><span class="toc-number">10.1.</span> <span class="toc-text">segment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#shard"><span class="toc-number">10.2.</span> <span class="toc-text">shard</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#node"><span class="toc-number">10.3.</span> <span class="toc-text">node</span></a></li></ol></li></ol>
     </div>
   </div>
   
@@ -365,6 +365,45 @@
 <li><strong>消息可见性</strong>：未提交的事务消息对消费者是不可见的，确保了只有经过确认的消息才能被消费。</li>
 </ul>
 <p>这种机制结合起来，使得在 Kafka 中能够实现 <strong>Exactly Once</strong> 的消息处理语义，从而在关键任务和需要高一致性的数据流动场景中得以应用。</p>
+<blockquote>
+<p>乱入一下rocketmq</p>
+</blockquote>
+<h2 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h2><p>阿里的rocketmq参考了kafka的架构，在架构上做减法，在功能上做加法。主要区别有：</p>
+<ul>
+<li>存储模式：kafka的数据存储是按照segment，一个partition有很多segment，做的是追加写，但是一个broker下面有很多的topic，访问量大起来就不是追加写会退化为随机写。rocketmq发现了这一点，他将所有的queue都放在一个文件上commitlog，而queue只放offset和对应索引。这样就能一直是追加写了</li>
+<li>同步模式：按照上面的逻辑，kafka那种replica就不行了，因为kafka是按照partition进行同步和冗余的，partition可以分布在不同的broker上的一个原因就是segment是分开来的。rocketmq把这一点优化了，所以rocketmq是类似redis和mysql那样，以broker为单位进行主从同步</li>
+<li>简化协调节点：kafka高度依靠zookeeper，太重了。rocketmq直接用nacos就可以了，作为微服务的一个模块</li>
+<li>零拷贝：kafka是sendfile而rocketmq是mmap+write</li>
+<li>功能增强：延迟队列，死信队列，按照tag过滤消息，事务</li>
+</ul>
+<blockquote>
+<p>乱入一下elasticsearch，估计问的也不多，简单了解一下</p>
+</blockquote>
+<h2 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h2><p>微观到宏观，最小单元segment-&gt;shard-&gt;node-&gt;集群。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">服务器实体 (Node 1)                服务器实体 (Node 2)</span><br><span class="line">+---------------------+            +---------------------+</span><br><span class="line">|  Primary Shard 1    |            |  Primary Shard 2    |</span><br><span class="line">|  (Lucene Instance 1)|            |  (Lucene Instance 2)|</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|     | Segment 1   | |            |     | Segment 3   | |</span><br><span class="line">|     | Segment 2   | |            |     | Segment 4   | |</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|                     |            |                     |</span><br><span class="line">|  Replica Shard 2    |            |  Replica Shard 1    |</span><br><span class="line">|  (Lucene Instance 3)|            |  (Lucene Instance 4)|</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|     | Segment 5   | |            |     | Segment 6   | |</span><br><span class="line">|     | Segment 6   | |            |     | Segment 7   | |</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">+---------------------+            +---------------------+</span><br></pre></td></tr></table></figure>
+<h3 id="segment"><a href="#segment" class="headerlink" title="segment"></a>segment</h3><ol>
+<li>倒排索引：用分词器将每个单词作为键，值为对应的句子id就可以方便关键词查找了</li>
+<li>前缀索引：单靠上面的倒排索引查询起来还是很费劲。可以使用前缀树trie完成。放在内存里方便查询</li>
+<li>句子实际的存储位置：倒排索引只是放了句子的id，真正的句子存储在这里</li>
+<li>一种方便排序和聚合的数据结构：某些时候用户可能想要按照时间排序，但是这些字段放在3中是很不好的，需要回表再去排序。不如直接用空间换时间，将时间信息提取出来单独做一个表</li>
+</ol>
+<p>以上的四个部分共同构成了一个segment，这是搜索引擎的最小单元。但是由于前缀索引不好进行扩容，可以约定新增几条句子就开辟一个新的segment，同时也解决了读写问题。问题是文件会变多，可以采用定时合并的方法。这样多个segment就构成了lucene（shard）。如果有搜索请求就会并发在所有segment里面进行搜索。</p>
+<h3 id="shard"><a href="#shard" class="headerlink" title="shard"></a>shard</h3><p>其实上面的多个segment加起来就是一个lucene，在es中如果只有一个lucene那么读写效率会变得很慢：</p>
+<ul>
+<li>在垂直上可以参考kafka的topic设置多个index_name，例如分体育新闻和娱乐新闻。一个index对应一个lucene。</li>
+<li>在水平上可以将lucene再分小一点，每个段少分一点segment，这就变成了标题所说的shard，本质上shard就是lucene的一个实例。这样读写操作有可能会被分开，提高效率</li>
+</ul>
+<p>同时为了高可用还未每个shard提供了副本机制，分散在不同的node中</p>
+<h3 id="node"><a href="#node" class="headerlink" title="node"></a>node</h3><p>一个node就是一个服务器节点，类似kafka的broker，可以放很多不同topic的不同partition，包括副本啥的。这里就会要一个类似zookeeper的服务发现中心，但在es里是去中心化的，通过raft协议选举。</p>
+<p>node有很多职责，有负责管理集群的（类似哨兵负责故障转移和选主），有存储数据的。有实现restful接口的，在集群环境下可以分开。每一个node负责不同的职责。</p>
+<p><strong>数据如何查找</strong></p>
+<ol>
+<li>客户端发送rest的http请求给集群中负责接收的node</li>
+<li>在指定index_name下hash分片找到对应的shard</li>
+<li>在shard中并行查找segment</li>
+<li>segment根据倒排索引找到对应句子的id返回</li>
+<li>再去根据id进行回表，找到句子返回</li>
+</ol>
 
     
   </div>
