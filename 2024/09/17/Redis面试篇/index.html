@@ -376,6 +376,9 @@
 <li>手动清理大的string（其实在redis桌面客户端就可以手动清理了，估计背后也是这一条命令）</li>
 <li>采用合适的数据结构：不要拿string来存照片或者文本</li>
 </ul>
+<blockquote>
+<p>redis里有一个非常大的key，比如一个set，set里面可能有几亿条数据，我现在需要把这个key删掉，你会怎么做？<br>一般情况下del是同步删除，手动清理会阻塞。在4.0版本以上提供了一个unlink命令，可以异步删除。非得用del的话可以先把其二次哈希到不同set，大事化小。</p>
+</blockquote>
 <h2 id="redis的阻塞原因"><a href="#redis的阻塞原因" class="headerlink" title="redis的阻塞原因"></a>redis的阻塞原因</h2><ol>
 <li>使用了o(n)的命令，例如keys，这个会在全表找key匹配，还有一些查询范围的数据（zset那些，这个时候又要吟唱跳表的好处了）</li>
 <li>大key</li>

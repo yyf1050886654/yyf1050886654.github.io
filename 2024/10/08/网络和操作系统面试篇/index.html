@@ -18,8 +18,12 @@
 
 <!-- Website description -->
 
+<meta name="description" content="网络和操作系统面试篇" />
+
 
 <!-- Website keywords -->
+
+<meta name="keywords" content="Java, YYF&#39;s Blog" />
 
 
 
@@ -35,7 +39,7 @@
 
 
 <!-- Canonical, good for google search engine -->
-<link rel="canonical" href="https://yyf1050886654.github.io/tags/Java/page/2/" />
+<link rel="canonical" href="https://yyf1050886654.github.io/2024/10/08/网络和操作系统面试篇/" />
 
 <!-- Fancybox styling -->
 
@@ -68,7 +72,7 @@
   window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
 </script>
   
-  <title>Java · YYF&#39;s Blog</title>
+  <title>网络和操作系统面试篇 - YYF&#39;s Blog</title>
 
 <meta name="generator" content="Hexo 7.1.1"></head>
 
@@ -204,149 +208,126 @@
     <main id="main" class="main">
       <div class="content-wrapper">
         <div id="content" class="content">
-          
-
-<section id="archive" class="archive">
-  
-
-  
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
       
-      2024-08-14
+      网络和操作系统面试篇
       
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/08/14/jvm-class%E6%96%87%E4%BB%B6%E5%92%8C%E7%B1%BB%E7%9A%84%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/" class="archive-post-link">
-        jvm-class文件和类的加载过程
-      </a>
-    </span>
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-10-08
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#http%E5%92%8Chttps"><span class="toc-number">1.</span> <span class="toc-text">http和https</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#http%E7%9A%84%E7%8A%B6%E6%80%81%E7%A0%81"><span class="toc-number">2.</span> <span class="toc-text">http的状态码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#http%E7%89%88%E6%9C%AC"><span class="toc-number">3.</span> <span class="toc-text">http版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#tcp%E4%B8%89%E6%AC%A1%E6%8F%A1%E6%89%8B"><span class="toc-number">4.</span> <span class="toc-text">tcp三次握手</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#tcp%E5%9B%9B%E6%AC%A1%E6%8F%A1%E6%89%8B"><span class="toc-number">5.</span> <span class="toc-text">tcp四次握手</span></a></li></ol>
+    </div>
   </div>
   
-  
 
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-06-11
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/" class="archive-post-link">
-        redis项目-elasticsearch与mongodb
-      </a>
-    </span>
+  <div class="post-content">
+    
+    <h2 id="http和https"><a href="#http和https" class="headerlink" title="http和https"></a>http和https</h2><p>https主要有非对称加密，对称加密和数字签名三部分。具体流程是服务器先向证书颁发机构注册和验证。客户端请求服务器的时候，服务器会把自己非对称加密的钥匙发给客户端，这个钥匙是需要数字签名进行盖章的，这样客户端就知道这个网站是合法的而不是钓鱼网站。接收到了服务器非对称加密的钥匙，再把对称加密的钥匙通过这个公钥发给服务器，服务器用私钥进行解密。后续就根据对称加密进行传输。</p>
+<h2 id="http的状态码"><a href="#http的状态码" class="headerlink" title="http的状态码"></a>http的状态码</h2><ul>
+<li>1xx：正在处理的状态，一般见不到</li>
+<li>2xx：成功状态码</li>
+<li>3XX：301永久重定向，302临时重定向</li>
+<li>4XX：401资源未授权，403被屏蔽了，404找不到</li>
+<li>5XX：500服务器问题。502网关收到了，但是服务器转发有问题</li>
+</ul>
+<h2 id="http版本"><a href="#http版本" class="headerlink" title="http版本"></a>http版本</h2><ul>
+<li>http1.0：短链接，一个资源一次tcp。</li>
+<li>http1.1：长连接，但是还是有hol问题，即大文件传输会挡住小文件传输从而影响体验</li>
+<li>http2.0：长连接，通过二进制帧解决了hol的问题，将大文件分成小份传输。同时长连接也改进成了多路复用</li>
+<li>http3.0：tcp+quic（udp）优化了握手，安全性也进行了更新</li>
+</ul>
+<h2 id="tcp三次握手"><a href="#tcp三次握手" class="headerlink" title="tcp三次握手"></a>tcp三次握手</h2><ul>
+<li>客户端先发送同步信号SYN，再带上自己的seq，进入syn-send状态</li>
+<li>服务器接收到了发送ack和sys，进入syn-recv</li>
+<li>客户端收到了之后在发送一个ack，建立连接</li>
+</ul>
+<p><strong>为什么是三次握手</strong></p>
+<p>因为只有三次握手才能使双方都知道各方面正常。</p>
+<ul>
+<li>第一次握手，客户端什么都不能确认，服务器可以确认自己接受正常，客户端发送正常。</li>
+<li>第二次握手，客户端可以确认自己发送和接收正常，服务器发送和接收正常；服务器可以确认自己接收正常，客户端发送正常</li>
+<li>第三次握手，服务器可以确认自己发送和接收正常，客户端发送和接收正常</li>
+</ul>
+<h2 id="tcp四次握手"><a href="#tcp四次握手" class="headerlink" title="tcp四次握手"></a>tcp四次握手</h2><ul>
+<li>客户端发送fin和seq，进入fin-wait-1</li>
+<li>服务器接收到发送ack和seq，进入close-wait，客户端接收到了变为fin-wait-2</li>
+<li>可能服务器还会有要发送的，发送完了发送fin，变为last-ack</li>
+<li>客户端接收到了变为time-wait，等到2ttl时间，如果没有等到服务器的消息就自己关闭。</li>
+</ul>
+
+    
   </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-06-04
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/06/04/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B-CompletableFuture/" class="archive-post-link">
-        java-多线程-CompletableFuture
-      </a>
-    </span>
-  </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-04-08
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/08/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E4%B8%8A%EF%BC%89/" class="archive-post-link">
-        java-虚拟机（上）
-      </a>
-    </span>
-  </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/java-%E5%A4%9A%E7%BA%BF%E7%A8%8B%EF%BC%88%E4%B8%AD/" class="archive-post-link">
-        java-多线程-ThreadLocal和线程池
-      </a>
-    </span>
-  </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-04-07
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/04/07/zjava-%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E4%B8%8A/" class="archive-post-link">
-        java-多线程-volatile，synchronized和lock
-      </a>
-    </span>
-  </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-03-26
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/26/Collections%E9%9B%86%E5%90%88%E7%AF%87-Map/" class="archive-post-link">
-        Collections集合篇-Map
-      </a>
-    </span>
-  </div>
-  
-  
-
-  <div class="archive-post">
-    <span class="archive-post-time">
-      
-      2024-03-26
-      
-    </span>
-    <span class="archive-post-title">
-      <a href="/2024/03/26/Collections%E9%9B%86%E5%90%88%E7%AF%87-List/" class="archive-post-link">
-        Collections集合篇-List
-      </a>
-    </span>
-  </div>
-  
-</section>
 
   
-  <nav class="pagination">  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2024/10/08/%E7%BD%91%E7%BB%9C%E5%92%8C%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E9%9D%A2%E8%AF%95%E7%AF%87/">https://yyf1050886654.github.io/2024/10/08/%E7%BD%91%E7%BB%9C%E5%92%8C%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E9%9D%A2%E8%AF%95%E7%AF%87/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
       
-      <a class="prev" href="/tags/Java/">  
-        <i class="iconfont icon-left"></i>  
-        <span class="prev-text">上一页</span>  
+      <a href="/tags/Java/">Java</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2024/10/05/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1-seata/">  
+        <span class="next-text nav-default">分布式事务-seata</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
       </a>  
-      
       
   </nav>  
   
 
+  </footer>
+  
+
+</article>
         </div>
           
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
 
       </div>
     </main>
