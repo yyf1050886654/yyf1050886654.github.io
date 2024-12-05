@@ -212,6 +212,131 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/04/01/redis-%E6%8C%81%E4%B9%85%E5%8C%96%E7%AF%87/">redis-持久化篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-04-01
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="Redis持久化"><a href="#Redis持久化" class="headerlink" title="Redis持久化"></a>Redis持久化</h1><p>Redis 是<strong>内存数据库</strong>，如果不将内存中的数据库状态保存到磁盘，那么一旦服务器进程退出，服务器中的数据库状态也会消失。所以 Redis 提供了**持久化功能 **!</p>
+<h2 id="RDB"><a href="#RDB" class="headerlink" title="RDB"></a>RDB</h2><p>RDB全称Redis Database Backup file（Redis数据备份文件），也被叫做Redis数据快照。简单来说就是定期把内存所有数据都记录到磁盘中。</p>
+<p>一旦Redis实例出现故障重启，就会从磁盘中读取快照文件，恢复数据</p>
+<blockquote>
+<p>什么是快照？可以理解成定期给当前的内存中的redis数据拍一张照，然后保存下来。</p>
+</blockquote>
+<h3 id="RDB触发机制"><a href="#RDB触发机制" class="headerlink" title="RDB触发机制"></a>RDB触发机制</h3><p>  可以分为手动触发和自动触发，手动的save占用主进程，bgsave是fork一个新进程来完成快照保存，在此期间主进程通过copyonwrite的机制（类似copyonwrite的Arraylist那样），拷贝一份当前数据，在拷贝的地方进行修改，等到子进程完成磁盘写之后再进行覆盖。</p>
+<p>  自动触发写在redis.conf上，save X Y，表示在X秒内如果有Y个key修改，那么就save（注意这里触发的还是bgsave）<br><img src="/../img/Redis/img_7.png"></p>
+<ul>
+<li>手动触发<br><img src="/../img/Redis/img_6.png"><br>用bgsave可以防止主进程被阻塞，提高效率</li>
+</ul>
+<p>fork采用的是copy-on-write</p>
+<ul>
+<li>当主进程执行读操作的时候可以访问共享内存</li>
+<li>当主进程执行写操作的时候，则会拷贝一份数据</li>
+</ul>
+<p><img src="/../img/Redis/img_9.png"></p>
+<blockquote>
+<p>子进程和主线程怎么共享内存，也就是怎么让子进程知道redis的内存是那些块？通过拷贝主进程的页表（没错就是计组那个页表），这样就知道主进程占用的虚拟地址和物理地址的映射关系，从而找到这些块。</p>
+<p>copyonwrite会将此时的共享内存变成<strong>只读</strong>，主进程来读的时候就可以直接读，写的时候拷贝一份。</p>
+</blockquote>
+<ul>
+<li>自动触发<br><img src="/../img/Redis/img_8.png"><blockquote>
+<p>注意这里save其实也是bgsave，一般都不会影响主进程</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="优缺点"><a href="#优缺点" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
+<ul>
+<li>只有一个dump.rdb，方便持久化，是一个紧凑的二进制文件，恢复的时候速度也比AOF更快，在数据量大的时候更明显。</li>
+<li>实现了性能的最大化，fork子进程来完成而不影响主进程，保证了Redis的高性能。</li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>可能存在数据丢失，在两次RDB的时间里，如果出现宕机，这段时间没有写入的数据都将丢失</li>
+<li>没有办法做到秒级持久化&#x2F;实时持久化</li>
+<li>对于cpu和内存的开销比较大，毕竟要fork一个新进程占用cpu，还要进行COW占用内存而，AOF主要占用的是IO资源</li>
+</ul>
+<p><strong>使用场景</strong>：</p>
+<ul>
+<li>可以容忍数分钟数据丢失，追求更快的启动速度和恢复速度。</li>
+</ul>
+<h2 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h2><p>AOF（append only file） 持久化，采用日志的形式来记录每个写操作，追加到AOF文件的末尾。</p>
+<blockquote>
+<p>意思就是把操作的每一条语句都记录下来，那肯定占用的空间大</p>
+</blockquote>
+<p>Redis默认情况是不开启AOF的。重启时再重新执行AOF文件中的命令来恢复数据。它主要解决数据持久化的实时性问题。</p>
+<p><img src="/../img/Redis/img_10.png"></p>
+<p>AOF是<strong>执行完命令后才记录日志</strong>的。为什么不先记录日志再执行命令呢？这是因为Redis在向AOF记录日志时，不会先对这些命令进行语法检查，如果先记录日志再执行命令，日志中可能记录了错误的命令，Redis使用日志回复数据时，可能会出错。</p>
+<p>正是因为执行完命令后才记录日志，所以不会阻塞当前的写操作。但是会存在两个风险：</p>
+<ul>
+<li>更执行完命令还没记录日志时，宕机了会导致数据丢失</li>
+<li>AOF不会阻塞当前命令，但是可能会阻塞下一个操作。</li>
+</ul>
+<blockquote>
+<p>这两个风险最好的解决方案是折中妙用AOF机制的三种写回策略 appendfsync：</p>
+<ul>
+<li>always，同步写回，每个子命令执行完，都立即将日志写回磁盘。</li>
+<li>everysec，每个命令执行完，只是先把日志写到AOF内存缓冲区，每隔一秒同步到磁盘。</li>
+<li>no：只是先把日志写到AOF内存缓冲区，有操作系统去决定何时写入磁盘。</li>
+</ul>
+</blockquote>
+<p><img src="/../img/Redis/img_11.png"></p>
+<p>always同步写回，可以基本保证数据不丢失，no策略则性能高但是数据可能会丢失，一般可以考虑折中选择everysec。</p>
+<p>如果接受的命令越来越多，AOF文件也会越来越大，文件过大还是会带来性能问题。日志文件过大怎么办呢？</p>
+<blockquote>
+<p><strong>AOF重写机制</strong>就是随着时间推移，AOF文件会有一些冗余的命令如：无效命令、过期数据的命令等等，AOF重写机制就是把它们合并为一个命令（类似批处理命令），从而达到精简压缩空间的目的。</p>
+<p>AOF重写会阻塞嘛？AOF日志是由主线程会写的，而重写则不一样，重写过程是由后台子进程bgrewriteaof完成。</p>
+</blockquote>
+<h3 id="优缺点-1"><a href="#优缺点-1" class="headerlink" title="优缺点"></a>优缺点</h3><p><strong>优点</strong>：</p>
+<ul>
+<li>实时持久化，数据安全，AOF持久化配置为always就可以基本上避免丢失，但是开销比较大，通常用容忍1s内丢失的everysec</li>
+<li>通过append模式写文件，那么即使中途服务器宕机，也可以尽量解决一致性问题（取决于刷盘策略）</li>
+<li>重写机制，在文件太大的时候可以压缩空间</li>
+</ul>
+<p><strong>缺点</strong>：</p>
+<ul>
+<li>文件比RDB大，恢复时间也会慢很多</li>
+<li>启动效率低</li>
+<li>文件体积迅速变大，需要定期执行重写机制降低文件体积。</li>
+</ul>
+<p><strong>使用场景</strong>：</p>
+<ul>
+<li>对数据安全性有较高需求的场景</li>
+</ul>
+<blockquote>
+<p>Redis4.0开始支持RDB和AOF的混合持久化，就是内存快照以一定频率执行，两次快照之间，再使用AOF记录这期间的所有命令操作。</p>
+</blockquote>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/31/redis-%E7%BC%93%E5%AD%98%E4%B8%89%E5%85%84%E5%BC%9F/">redis-缓存三兄弟</a>
       
     </h1>
@@ -1138,69 +1263,6 @@
 </tr>
 </tbody></table>
 
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/26/leetcode-2024-3-26/">leetcode-2024-3-26</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-26
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="2642-设计可以求最短路径的图类（Hard）"><a href="#2642-设计可以求最短路径的图类（Hard）" class="headerlink" title="2642 设计可以求最短路径的图类（Hard）"></a>2642 设计可以求最短路径的图类（Hard）</h1><blockquote>
-<p>题目太长了就换成图片了</p>
-</blockquote>
-<p><img src="/../img/coding/2024_3_26_1.png"></p>
-<h2 id="迪杰斯特拉"><a href="#迪杰斯特拉" class="headerlink" title="迪杰斯特拉"></a>迪杰斯特拉</h2><blockquote>
-<p>我自己的做法是Dijkstra+邻接矩阵，还可以有Floyd，考虑到这个邻接矩阵都已经内存99%了，所以应该矩阵+Floyd是最佳方案</p>
-</blockquote>
-<blockquote>
-<p>就当是复习Dijkstra了</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Graph</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[][] matrix;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[] finalArr;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span>[] visited;</span><br><span class="line">    <span class="comment">//用邻接矩阵表示图</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Graph</span><span class="params">(<span class="type">int</span> n, <span class="type">int</span>[][] edges)</span> &#123;</span><br><span class="line">        matrix = <span class="keyword">new</span> <span class="title class_">int</span>[n][n];</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; n; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; n; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (i != j)&#123;</span><br><span class="line">                    matrix[i][j] = Integer.MAX_VALUE;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; edges.length; i++) &#123;</span><br><span class="line">            matrix[edges[i][<span class="number">0</span>]][edges[i][<span class="number">1</span>]] = edges[i][<span class="number">2</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//增加一条边就是再改一个值</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addEdge</span><span class="params">(<span class="type">int</span>[] edge)</span> &#123;</span><br><span class="line">        matrix[edge[<span class="number">0</span>]][edge[<span class="number">1</span>]] = edge[<span class="number">2</span>];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Dijkstra，n次找到n个最短路径，所以需要一个visited矩阵保存已经找到最短路径的点</span></span><br><span class="line"><span class="comment">     * finalArr存放最短路径，初始化为初始点的邻接数组，每次找到其中最小的</span></span><br><span class="line"><span class="comment">     * 更新距离</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> node1</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> node2</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">shortestPath</span><span class="params">(<span class="type">int</span> node1, <span class="type">int</span> node2)</span> &#123;</span><br><span class="line">        finalArr = matrix[node1].clone();</span><br><span class="line">        visited = <span class="keyword">new</span> <span class="title class_">int</span>[matrix.length];</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(finalArr));</span></span><br><span class="line">        <span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> node1;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length-<span class="number">1</span>; i++) &#123;</span><br><span class="line">            visited[k] = <span class="number">1</span>;</span><br><span class="line">            <span class="type">int</span>[] adj = getMin(finalArr);</span><br><span class="line">            k = adj[<span class="number">0</span>];</span><br><span class="line">            <span class="type">int</span> <span class="variable">price</span> <span class="operator">=</span> adj[<span class="number">1</span>];</span><br><span class="line">            <span class="comment">//如果这里返回-1说明找不到最小值，最小值都已经是正无穷了</span></span><br><span class="line">            <span class="comment">//说明此时其他的都已经最优，直接跳出循环</span></span><br><span class="line">            <span class="keyword">if</span> (k ==-<span class="number">1</span>)&#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix.length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (matrix[k][j] != Integer.MAX_VALUE&amp;&amp;price != Integer.MAX_VALUE &amp;&amp; visited[j] == <span class="number">0</span> &amp;&amp; matrix[k][j]+price &lt; finalArr[j])&#123;</span><br><span class="line">                    finalArr[j] = matrix[k][j]+price;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//System.out.println(Arrays.toString(finalArr));</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (finalArr[node2] == Integer.MAX_VALUE)&#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> finalArr[node2];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[] getMin(<span class="type">int</span>[] arr)&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">min</span> <span class="operator">=</span> Integer.MAX_VALUE;</span><br><span class="line">        <span class="type">int</span> <span class="variable">vexNum</span> <span class="operator">=</span> -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; arr.length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (visited[i] ==<span class="number">0</span> &amp;&amp; arr[i] != <span class="number">0</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (arr[i] &lt;min)&#123;</span><br><span class="line">                    min = arr[i];</span><br><span class="line">                    vexNum = i;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">int</span>[]&#123;vexNum,min&#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Your Graph object will be instantiated and called as such:</span></span><br><span class="line"><span class="comment"> * Graph obj = new</span></span><br><span class="line"><span class="comment"> * Graph(n, edges);</span></span><br><span class="line"><span class="comment"> * obj.addEdge(edge);</span></span><br><span class="line"><span class="comment"> * int param_2 = obj.shortestPath(node1,node2);</span></span><br><span class="line"><span class="comment"> */</span></span><br></pre></td></tr></table></figure>
-
-<h1 id="矩阵置零（Medium）"><a href="#矩阵置零（Medium）" class="headerlink" title="矩阵置零（Medium）"></a>矩阵置零（Medium）</h1><p><img src="/../img/coding/2024_3_26_2.png"></p>
-<h2 id="广度优先搜索"><a href="#广度优先搜索" class="headerlink" title="广度优先搜索"></a>广度优先搜索</h2><blockquote>
-<p>其实本来是想多源广度优先搜索的，后来发现好像不用这复杂。直接暴力每一行每一列都变成0就可以了</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setZeroes</span><span class="params">(<span class="type">int</span>[][] matrix)</span> &#123;</span><br><span class="line">        <span class="comment">//存储在里面找到的0</span></span><br><span class="line">        List&lt;<span class="type">int</span>[]&gt; points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (matrix[i][j] == <span class="number">0</span>)&#123;</span><br><span class="line">                    points.add(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;i,j&#125;);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//遍历每一个0，使其横竖都变为0</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="type">int</span>[] point:points)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; matrix.length; i++) &#123;</span><br><span class="line">                matrix[i][point[<span class="number">1</span>]] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; matrix[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                matrix[point[<span class="number">0</span>]][j] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>row为行，col为列</p>
-<p>时间复杂度：o(row*col)</p>
-<p>空间复杂度：o(row+col)</p>
-<h1 id="130-被围绕的区域（Medium）"><a href="#130-被围绕的区域（Medium）" class="headerlink" title="130 被围绕的区域（Medium）"></a>130 被围绕的区域（Medium）</h1><p><img src="/../img/coding/2024_3_26_3.png"></p>
-<h2 id="深度优先搜索"><a href="#深度优先搜索" class="headerlink" title="深度优先搜索"></a>深度优先搜索</h2><blockquote>
-<p>主要思路是，首先找到一个区域先把其全部变为X，用一个数组保存，如果这个区域里面包含在边界的块，那么这个数组用于后续再把他变为O</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    List&lt;<span class="type">int</span>[]&gt; points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    List&lt;List&lt;<span class="type">int</span>[]&gt;&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">solve</span><span class="params">(<span class="type">char</span>[][] board)</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; board.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; board[<span class="number">0</span>].length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (board[i][j] == <span class="string">&#x27;O&#x27;</span>)&#123;</span><br><span class="line">                    points = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">                    <span class="comment">//如果有链接到边界,随后把这些改回来</span></span><br><span class="line">                    <span class="keyword">if</span> (!dfs(board,i,j))&#123;</span><br><span class="line">                        list.add(points);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (List&lt;<span class="type">int</span>[]&gt; points:list)&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span>[] point:points)&#123;</span><br><span class="line">                board[point[<span class="number">0</span>]][point[<span class="number">1</span>]] = <span class="string">&#x27;O&#x27;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.deepToString(board));</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//一个区域块，首先全部变为X，返回真在后续把他变回O</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">dfs</span><span class="params">(<span class="type">char</span>[][] board,<span class="type">int</span> i,<span class="type">int</span> j)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (board[i][j] == <span class="string">&#x27;O&#x27;</span>)&#123;</span><br><span class="line">            <span class="type">boolean</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="literal">true</span>;</span><br><span class="line">            points.add(<span class="keyword">new</span> <span class="title class_">int</span>[]&#123;i,j&#125;);</span><br><span class="line">            board[i][j] = <span class="string">&#x27;X&#x27;</span>;</span><br><span class="line">            <span class="keyword">if</span> (i == <span class="number">0</span>||j==<span class="number">0</span>||i==board.length-<span class="number">1</span>||j==board[<span class="number">0</span>].length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp = <span class="literal">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (i+<span class="number">1</span>&lt;=board.length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i+<span class="number">1</span>,j);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (i-<span class="number">1</span> &gt;=<span class="number">0</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i-<span class="number">1</span>,j);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (j+<span class="number">1</span> &lt;= board[<span class="number">0</span>].length-<span class="number">1</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i,j+<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (j-<span class="number">1</span> &gt;= <span class="number">0</span>)&#123;</span><br><span class="line">                temp &amp;= dfs(board,i,j-<span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> temp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>时间复杂度：o(m<em>n)<br>空间复杂度：o(m</em>n)</p>
-<h2 id="还有两题太简单了我就当复习了"><a href="#还有两题太简单了我就当复习了" class="headerlink" title="还有两题太简单了我就当复习了"></a>还有两题太简单了我就当复习了</h2><h3 id="排序链表"><a href="#排序链表" class="headerlink" title="排序链表"></a>排序链表</h3><h3 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span>[] sortArray(<span class="type">int</span>[] nums) &#123;</span><br><span class="line">        quickSort(nums,<span class="number">0</span>,nums.length-<span class="number">1</span>);</span><br><span class="line">    </span><br><span class="line">        <span class="keyword">return</span> nums;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">quickSort</span><span class="params">(<span class="type">int</span>[] nums,<span class="type">int</span> head,<span class="type">int</span> rear)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (head &lt; rear)&#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">mid</span> <span class="operator">=</span> partition(nums,head,rear);</span><br><span class="line">            quickSort(nums,head,mid-<span class="number">1</span>);</span><br><span class="line">            quickSort(nums,mid+<span class="number">1</span>,rear);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">partition</span><span class="params">(<span class="type">int</span>[] arr,<span class="type">int</span> head,<span class="type">int</span> rear)</span>&#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">temp</span> <span class="operator">=</span> arr[head];</span><br><span class="line">        <span class="keyword">while</span>(head &lt; rear)&#123;</span><br><span class="line">            <span class="comment">//主要是要记得这里是每个都要带=，</span></span><br><span class="line">            <span class="keyword">while</span> (head &lt; rear &amp;&amp; arr[rear] &gt;= temp)&#123;</span><br><span class="line">                rear--;</span><br><span class="line">            &#125;</span><br><span class="line">            arr[head] = arr[rear];</span><br><span class="line">            <span class="keyword">while</span> (head &lt; rear &amp;&amp; arr[head] &lt;= temp)&#123;</span><br><span class="line">                head++;</span><br><span class="line">            &#125;</span><br><span class="line">            arr[rear] = arr[head];</span><br><span class="line">        &#125;</span><br><span class="line">        arr[head] = temp;</span><br><span class="line">        <span class="comment">//System.out.println(Arrays.toString(arr));</span></span><br><span class="line">        <span class="keyword">return</span> head;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
     
     
   </div>
