@@ -212,6 +212,158 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/03/26/Collections%E9%9B%86%E5%90%88%E7%AF%87-List/">Collections集合篇-List</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-26
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>今天开始学习Java基础八股文，先从我用的最多的一个数据结构开始看起。虽然我学Java接触了这个概念快两三年了，但是不看源码还是不知道ArrayList的具体实现。</p>
+</blockquote>
+<h1 id="Collections"><a href="#Collections" class="headerlink" title="Collections"></a>Collections</h1><p>集合分为两大类，Collection是单列集合，包含常用的Set，List，Queue等，其中Set里面使用HashSet比较多，List里面使用Arraylist比较多，Queue中有一个优先队列PriorityQueue的概念。</p>
+<ul>
+<li>Set：HashSet，LinkedHashSet，SortedSet和继承其的TreeSet</li>
+<li>List：ArrayList，LinkedList，Vector</li>
+<li>Queue：PriorityQueue</li>
+</ul>
+<p>还有一类是双列集合Map，使用的比较多的有HashMap，LinkedHashMap，TreeMap，HashTable</p>
+<p><img src="/../img/Java/img.png"></p>
+<h2 id="List"><a href="#List" class="headerlink" title="List"></a>List</h2><p>首先我们先复习一下顺序存储和链式存储的区别以及时间复杂度和空间复杂度。</p>
+<h3 id="顺序存储："><a href="#顺序存储：" class="headerlink" title="顺序存储："></a>顺序存储：</h3><p>支持随机查找，空间连续，数据密度大（不像链表那样有额外的指针空间），删除和插入麻烦，不适合频繁在其中删除插入</p>
+<ul>
+<li>插入：如果在表尾就不需要移动元素为o(1)，如果是在内部，需要移动的期望为 (1+2+3+…+n)&#x2F;(n+1) &#x3D; n(n+1)&#x2F;2(n+1) &#x3D; n&#x2F;2，时间复杂度为o(n)。</li>
+<li>删除：如果在表尾删除也不用移动，如果在内部，期望为 (1+2+…+n-1)&#x2F;n &#x3D; n(n-1)&#x2F;2n &#x3D; (n-1)&#x2F;2 也是o(n)</li>
+<li>查找：平均查找期望 (1+2+..+n)&#x2F;n &#x3D; (n+1)&#x2F;2 也为o(n)</li>
+</ul>
+<h3 id="链式存储："><a href="#链式存储：" class="headerlink" title="链式存储："></a>链式存储：</h3><p>不支持随机查找，但是相对于顺序的插入和删除效率还是高那么一点，空间不连续，数据的密度小，因为要存指针。</p>
+<ul>
+<li>插入：插入这个操作本身是o(1)的只需要改指针，但是要找到这个插入的位置是需要o(n)，删除同理。</li>
+<li>查找：不支持随机查找，每次找都需要从头开始找(双向链表可以解决这个问题)，也是o(n)</li>
+</ul>
+<h3 id="ArrayList"><a href="#ArrayList" class="headerlink" title="ArrayList"></a>ArrayList</h3><blockquote>
+<p>ArrayList和Vector是基于数组实现的，但是是动态的，每次添加之前都要判断是否下一个就要超过了，如果溢出就要重新开辟一个更长的数组。</p>
+</blockquote>
+<h4 id="成员变量"><a href="#成员变量" class="headerlink" title="成员变量"></a>成员变量</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 默认的初始容量为10</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">DEFAULT_CAPACITY</span> <span class="operator">=</span> <span class="number">10</span>;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 如果初始化为new ArrayList(n)，但是还没有在这个里面加东西的时候，elementData就是这个</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Object[] EMPTY_ELEMENTDATA = &#123;&#125;;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 如果初始化为new ArrayList()，但是还没有元素添加的时候，就是这个Default，为了和上面的区分开</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = &#123;&#125;;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 实际存储的数组结构</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">transient</span> Object[] elementData;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">int</span> size;</span><br></pre></td></tr></table></figure>
+
+<h4 id="构造方法"><a href="#构造方法" class="headerlink" title="构造方法"></a>构造方法</h4><blockquote>
+<p>当initialCapacity给了是0或者没有提供的时候，不进行实例化，等到有元素进来了在进行扩容</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 有参数的：只要有这个参数就是EMPTY_ELEMENTDATA，跟下面这个区分开</span></span><br><span class="line"><span class="comment"> * 可以按照指定容量初始化</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">ArrayList</span><span class="params">(<span class="type">int</span> initialCapacity)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (initialCapacity &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">this</span>.elementData = <span class="keyword">new</span> <span class="title class_">Object</span>[initialCapacity];</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (initialCapacity == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">this</span>.elementData = EMPTY_ELEMENTDATA;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Illegal Capacity: &quot;</span>+</span><br><span class="line">                                           initialCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 无参数构造方法：DEFAULTCAPACITY_EMPTY_ELEMENTDATA来区分</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">ArrayList</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">this</span>.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="add添加方法流程"><a href="#add添加方法流程" class="headerlink" title="add添加方法流程"></a>add添加方法流程</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">add</span><span class="params">(E e)</span> &#123;</span><br><span class="line">    <span class="comment">//每一次加之前先检查size+1不会大于数组最大值</span></span><br><span class="line">    ensureCapacityInternal(size + <span class="number">1</span>);  <span class="comment">// Increments modCount!!</span></span><br><span class="line">    elementData[size++] = e;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">ensureCapacityInternal</span><span class="params">(<span class="type">int</span> minCapacity)</span> &#123;</span><br><span class="line">    <span class="comment">//calculateCapacity(elementData, minCapacity)如果是无参的返回就是10</span></span><br><span class="line">    <span class="comment">//如果不是返回的就是minCapacity</span></span><br><span class="line">    ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="type">int</span> <span class="title function_">calculateCapacity</span><span class="params">(Object[] elementData, <span class="type">int</span> minCapacity)</span> &#123;</span><br><span class="line">    <span class="comment">//如果是无参的初始化，那么就在当前这个容量和10之间选一个最大的</span></span><br><span class="line">    <span class="comment">//但是一般来说第一个元素size肯定是0吧，这里传来的minCapacity估计是1</span></span><br><span class="line">    <span class="comment">//所以第一次应该是初始化10个，对于无参构造方法而言</span></span><br><span class="line">    <span class="keyword">if</span> (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) &#123;</span><br><span class="line">        <span class="keyword">return</span> Math.max(DEFAULT_CAPACITY, minCapacity);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> minCapacity;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">ensureExplicitCapacity</span><span class="params">(<span class="type">int</span> minCapacity)</span> &#123;</span><br><span class="line">    <span class="comment">//操作次数，一个内部变量</span></span><br><span class="line">    modCount++;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// overflow-conscious code</span></span><br><span class="line">    <span class="comment">//如果有增大的需求，即现在的需求已经比现长度大了</span></span><br><span class="line">    <span class="keyword">if</span> (minCapacity - elementData.length &gt; <span class="number">0</span>)</span><br><span class="line">        grow(minCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">grow</span><span class="params">(<span class="type">int</span> minCapacity)</span> &#123;</span><br><span class="line">    <span class="comment">// overflow-conscious code</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">oldCapacity</span> <span class="operator">=</span> elementData.length;</span><br><span class="line">    <span class="comment">//1.5倍，oldCapacity右移一位代表/2，1+0.5</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">newCapacity</span> <span class="operator">=</span> oldCapacity + (oldCapacity &gt;&gt; <span class="number">1</span>);</span><br><span class="line">    <span class="comment">//只有第一次会这样minCapacity给的是10，这个肯定是&lt;0</span></span><br><span class="line">    <span class="keyword">if</span> (newCapacity - minCapacity &lt; <span class="number">0</span>)</span><br><span class="line">        newCapacity = minCapacity;</span><br><span class="line">    <span class="keyword">if</span> (newCapacity - MAX_ARRAY_SIZE &gt; <span class="number">0</span>)</span><br><span class="line">        newCapacity = hugeCapacity(minCapacity);</span><br><span class="line">    <span class="comment">// minCapacity is usually close to size, so this is a win:</span></span><br><span class="line">    <span class="comment">//然后拷贝一份这个数组</span></span><br><span class="line">    elementData = Arrays.copyOf(elementData, newCapacity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="ArrayList的线程不安全问题"><a href="#ArrayList的线程不安全问题" class="headerlink" title="ArrayList的线程不安全问题"></a>ArrayList的线程不安全问题</h4><blockquote>
+<p>ArrayList不是线程安全的</p>
+<ul>
+<li>非同步操作： ArrayList 的方法并没有进行同步处理，因此在多线程环境下，多个线程可以同时访问和修改 ArrayList 的状态。</li>
+<li>不保证操作的原子性： ArrayList 的操作（例如添加、删除、修改元素等）并不是原子操作，它们可能会分解成多个步骤。在多线程环境下，如果一个线程在执行操作的过程中被另一个线程中断，可能会导致数据不一致的情况发生</li>
+<li>迭代器不支持并发修改： 在使用迭代器遍历 ArrayList 的过程中，如果其他线程对 ArrayList 进行了结构性修改（如添加或删除元素），则会抛出 ConcurrentModificationException 异常</li>
+</ul>
+</blockquote>
+<blockquote>
+<p>举个例子，这里会报错，CopyOnWriteArrayList就不会</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="type">ArrayListTest</span> <span class="variable">arrayListTest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ArrayListTest</span>();</span><br><span class="line">    <span class="type">VectorTest</span> <span class="variable">vectorTest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VectorTest</span>();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">Thread</span>(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; <span class="number">1000</span>; j++) &#123;</span><br><span class="line">                arrayListTest.insert(j);</span><br><span class="line">            &#125;</span><br><span class="line">            System.out.println(arrayListTest.getSize());</span><br><span class="line">        &#125;).start();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 等待所有线程执行完毕</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有几种解决方法</p>
+<ul>
+<li>CopyOnWriteArrayList：使用 java.util.concurrent 包中提供的线程安全的集合类，例如 CopyOnWriteArrayList，它通过在写操作时复制整个数组来实现线程安全，适用于读多写少的场景。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; threadSafeList = <span class="keyword">new</span> <span class="title class_">CopyOnWriteArrayList</span>&lt;&gt;();</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<ul>
+<li>使用同步机制： 使用 Collections 工具类提供的 synchronizedList 方法，将 ArrayList 包装成一个同步的 List，这样可以保证在多线程环境下对 ArrayList 的操作是线程安全的，但性能可能会受到影响。<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">List&lt;String&gt; synchronizedList = Collections.synchronizedList(<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;());</span><br><span class="line"></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="几个面试题"><a href="#几个面试题" class="headerlink" title="几个面试题"></a>几个面试题</h3><h4 id="new-ArrayList-10-grow了几次"><a href="#new-ArrayList-10-grow了几次" class="headerlink" title="new ArrayList(10)grow了几次"></a>new ArrayList(10)grow了几次</h4><p>答：0次，因为这个在有参构造函数里面已经有了</p>
+<h4 id="new-ArrayList-0-和new-ArrayList-在第一次扩容后都是多少"><a href="#new-ArrayList-0-和new-ArrayList-在第一次扩容后都是多少" class="headerlink" title="new ArrayList(0)和new ArrayList()在第一次扩容后都是多少"></a>new ArrayList(0)和new ArrayList()在第一次扩容后都是多少</h4><p>new ArrayList()和new ArrayList(0)执行完之后elementData都是空数组，但是这两个空数组的内存地址是不一样的。if (elementData &#x3D;&#x3D; DEFAULTCAPACITY_EMPTY_ELEMENTDATA) 这一段代码在new(0)的时候是不会走的，因为比的是地址，所以返回值是1，最后结果也是1<br>所以new ArrayList(0)第一次扩容是1，new ArrayList()第一次扩容是10</p>
+<h4 id="数组和list之间的转换？"><a href="#数组和list之间的转换？" class="headerlink" title="数组和list之间的转换？"></a>数组和list之间的转换？</h4><blockquote>
+<p>数组-&gt;list:Arrays.asList()</p>
+<p>list-&gt;数组: list.toArray(n)</p>
+</blockquote>
+<ul>
+<li><p>数组转List ，使用JDK中java.util.Arrays工具类的asList方法</p>
+</li>
+<li><p>List转数组，使用List的toArray方法。无参toArray方法返回 Object数组，传入初始化长度的数组对象，返回该对象数组</p>
+</li>
+</ul>
+<h4 id="用Arrays-asList转List后，如果修改了数组内容，list受影响吗"><a href="#用Arrays-asList转List后，如果修改了数组内容，list受影响吗" class="headerlink" title="用Arrays.asList转List后，如果修改了数组内容，list受影响吗"></a>用Arrays.asList转List后，如果修改了数组内容，list受影响吗</h4><p>Arrays.asList转换list之后，如果修改了数组的内容，list会受影响，<br>因为它的底层使用的Arrays类中的一个内部类ArrayList来构造的集合，<br>在这个集合的构造器中，把我们传入的这个集合进行了包装而已，最终指向的都是同一个内存地址</p>
+<h4 id="List用toArray转数组后，如果修改了List内容，数组受影响吗"><a href="#List用toArray转数组后，如果修改了List内容，数组受影响吗" class="headerlink" title="List用toArray转数组后，如果修改了List内容，数组受影响吗"></a>List用toArray转数组后，如果修改了List内容，数组受影响吗</h4><p>list用了toArray转数组后，如果修改了list内容，数组不会影响，当调用了toArray以后，在底层是它是进行了数组的拷贝，跟原来的元素就没啥关系了，所以即使list修改了以后，数组也不受影响</p>
+<h2 id="LinkedList"><a href="#LinkedList" class="headerlink" title="LinkedList"></a>LinkedList</h2><p>特点：</p>
+<ul>
+<li>基于双向链表实现</li>
+<li>也符合链式存储的一系列优缺点</li>
+<li>线程不安全，因为是链表，如何安全呢，跟上面的ArrayList一样使用Collections.synchronizedList(new ArrayList&lt;&gt;());</li>
+</ul>
+<h2 id="Vector"><a href="#Vector" class="headerlink" title="Vector"></a>Vector</h2><p>特点：</p>
+<ul>
+<li>也是基于顺序存储（数组结构），但是增长的策略与ArrayList不同，而且每次增长2倍</li>
+<li>线程安全，这使其性能略逊于ArrayList</li>
+<li>Stack是基于Vector的</li>
+</ul>
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><table>
+<thead>
+<tr>
+<th>名称</th>
+<th>基于数据结构</th>
+<th>线程是否安全</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ArrayList</td>
+<td>数组</td>
+<td>否</td>
+</tr>
+<tr>
+<td>Vector</td>
+<td>数组</td>
+<td>是</td>
+</tr>
+<tr>
+<td>LinkedList</td>
+<td>双向链表</td>
+<td>否</td>
+</tr>
+</tbody></table>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/26/leetcode-2024-3-26/">leetcode-2024-3-26</a>
       
     </h1>
@@ -877,57 +1029,6 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">longestConsecutive</span><span class="params">(<span class="type">int</span>[] nums)</span> &#123;</span><br><span class="line">    Set&lt;Integer&gt; num_set = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;Integer&gt;();</span><br><span class="line">    <span class="comment">//先去重，用集合</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> num : nums) &#123;</span><br><span class="line">        num_set.add(num);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">longestStreak</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="comment">//有下一个值的时候就跳掉，一定要没有下一个，这样遍历才是o(n)</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> num : num_set) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!num_set.contains(num - <span class="number">1</span>)) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">currentNum</span> <span class="operator">=</span> num;</span><br><span class="line">            <span class="type">int</span> <span class="variable">currentStreak</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">            <span class="comment">//然后比较一下</span></span><br><span class="line">            <span class="keyword">while</span> (num_set.contains(currentNum + <span class="number">1</span>)) &#123;</span><br><span class="line">                currentNum += <span class="number">1</span>;</span><br><span class="line">                currentStreak += <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            longestStreak = Math.max(longestStreak, currentStreak);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> longestStreak;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 <p>非常巧妙的o(n),这里set查询是o(1)，需要好好学习一下，多用用哈希</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/03/19/leetcode-2024-3-19/">leetcode-2024-3-19</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-03-19
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="1793-好子数组的最大分数（Hard）"><a href="#1793-好子数组的最大分数（Hard）" class="headerlink" title="1793.好子数组的最大分数（Hard）"></a>1793.好子数组的最大分数（Hard）</h1><p>给你一个整数数组 nums （下标从 0 开始）和一个整数 k 。</p>
-<p>一个子数组 (i, j) 的 <strong>分数</strong> 定义为 min(nums[i], nums[i+1], …, nums[j]) * (j - i + 1) 。一个 好 子数组的两个端点下标需要满足 i &lt;&#x3D; k &lt;&#x3D; j 。</p>
-<p>请你返回 <strong>好</strong> 子数组的最大可能 <strong>分数</strong> 。</p>
-<h2 id="暴力解：超出内存限制"><a href="#暴力解：超出内存限制" class="headerlink" title="暴力解：超出内存限制"></a>暴力解：超出内存限制</h2><blockquote>
-<p>思路：用一个二维数组，dp[i][j]表示num[i]到num[j]的最小值，起始dp[i][i]都为num[i],状态转移方程为：dp[i][j] &#x3D; min{dp[i][j-1],num[i]},<br>其实是可以做出来的。但是这是hard，空间复杂度要求有点高，就会超内存。我的评价是动态规划很好，下次别用了</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximumScore</span><span class="params">(<span class="type">int</span>[] nums, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">    <span class="comment">//二维动态规划</span></span><br><span class="line">    <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[nums.length][nums.length];</span><br><span class="line">    <span class="comment">//初始对角线都为自身，自己肯定是最小值</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">        dp[i][i] = nums[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length-<span class="number">1</span>; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> i+<span class="number">1</span>; j &lt; nums.length; j++) &#123;</span><br><span class="line">            <span class="comment">//动态转移方程</span></span><br><span class="line">            dp[i][j] = Math.min(nums[j], dp[i][j - <span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//k要在中间，那么就是矩阵的右上角那块，i&lt;=k&lt;=j</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> Integer.MIN_VALUE;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt;= k; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> k; j &lt; nums.length; j++) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> j-i+<span class="number">1</span>;</span><br><span class="line">            max = Math.max(max,length*dp[i][j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//返回在右上角的最大值</span></span><br><span class="line">    <span class="keyword">return</span> max;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="官方解-：双指针"><a href="#官方解-：双指针" class="headerlink" title="官方解 ：双指针"></a>官方解 ：双指针</h2><blockquote>
-<p>以k为原点，head&#x3D;k-1，rear&#x3D;k+1，左开右开区间，数据长度rear-head+1，初始时长度只有1即为nums[k]本身，也为最小值。<br>那么怎么样找包含他的最小值呢，只要找左右两边比他大的，整体的最小值就是不变的，那么长度*最小值就会有效变大，直到双指针遇到比当前最小值还要小的元素<br>那么由于初始最小值就是本身，那么只要循环本身这个值不断递减就可以了。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximumScore</span><span class="params">(<span class="type">int</span>[] nums, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> nums.length;</span><br><span class="line">    <span class="type">int</span> <span class="variable">head</span> <span class="operator">=</span> k-<span class="number">1</span>,rear = k+<span class="number">1</span>;</span><br><span class="line">    <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> Integer.MIN_VALUE;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> nums[k];;i--)&#123;</span><br><span class="line">        <span class="keyword">while</span> (head &gt;=<span class="number">0</span> &amp;&amp; nums[head] &gt;= i)&#123;</span><br><span class="line">            head--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> (rear &lt; nums.length &amp;&amp; nums[rear] &gt;= i)&#123;</span><br><span class="line">            rear++;</span><br><span class="line">        &#125;</span><br><span class="line">        max = Math.max(max,(rear-head-<span class="number">1</span>)*i);</span><br><span class="line">        <span class="keyword">if</span> (head == -<span class="number">1</span> &amp;&amp; rear == length)&#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> max;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>复杂度分析</p>
-<p>时间复杂度：O(n+C)，其中 n 是数组nums 的长度，C 是数组 nums 中元素的范围。</p>
-<p>空间复杂度：O(1)。明显比我自己写的暴力解好</p>
 
     
     

@@ -212,6 +212,105 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/05/30/redis%E9%A1%B9%E7%9B%AE-%E7%99%BB%E5%BD%95%E9%80%BB%E8%BE%91/">redis项目-登录逻辑</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-05-30
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>毕业设计和各种考试耽搁了快两个月了，突然意识到再不继续学跟我的想法就会越走越远了，遂开始黑马点评的学习</p>
+</blockquote>
+<h2 id="基于session实现登录"><a href="#基于session实现登录" class="headerlink" title="基于session实现登录"></a>基于session实现登录</h2><p><strong>发送验证码</strong></p>
+<p>首先校验手机号，通过正则表达式，然后再随机生成一个长度为6的字符串，保存在session中</p>
+<p><strong>登录注册</strong></p>
+<p>如果输入的验证码和存在session中的是一样的，那么就通过校验找对应的user实体类，user为空就直接注册（也就是insert），然后将user放在session中</p>
+<p><strong>检验登录状态</strong></p>
+<p>用户在请求时候，会从cookie中携带者JsessionId到后台，后台通过JsessionId从session中拿到用户信息，如果没有session信息，则进行拦截，如果有session信息，则将用户信息保存到threadLocal中，并且放行</p>
+<p><img src="/../img/hmdp/img.png"></p>
+<h3 id="发送验证码"><a href="#发送验证码" class="headerlink" title="发送验证码"></a>发送验证码</h3><blockquote>
+<p>Todo：后续可以根据Ruoyi那个图片验证码改进，但是逻辑都差不多</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">sendCode</span><span class="params">(String phone, HttpSession session)</span> &#123;</span><br><span class="line">    <span class="comment">// 1.校验手机号</span></span><br><span class="line">    <span class="keyword">if</span> (RegexUtils.isPhoneInvalid(phone)) &#123;</span><br><span class="line">        <span class="comment">// 2.如果不符合，返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;手机号格式错误！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 3.符合，生成验证码</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">code</span> <span class="operator">=</span> RandomUtil.randomNumbers(<span class="number">6</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4.保存验证码到 session</span></span><br><span class="line">    session.setAttribute(<span class="string">&quot;code&quot;</span>,code);</span><br><span class="line">    <span class="comment">// 5.发送验证码</span></span><br><span class="line">    log.debug(<span class="string">&quot;发送短信验证码成功，验证码：&#123;&#125;&quot;</span>, code);</span><br><span class="line">    <span class="comment">// 返回ok</span></span><br><span class="line">    <span class="keyword">return</span> Result.ok();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="登录"><a href="#登录" class="headerlink" title="登录"></a>登录</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">login</span><span class="params">(LoginFormDTO loginForm, HttpSession session)</span> &#123;</span><br><span class="line">    <span class="comment">// 1.校验手机号</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">phone</span> <span class="operator">=</span> loginForm.getPhone();</span><br><span class="line">    <span class="keyword">if</span> (RegexUtils.isPhoneInvalid(phone)) &#123;</span><br><span class="line">        <span class="comment">// 2.如果不符合，返回错误信息</span></span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;手机号格式错误！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 3.校验验证码</span></span><br><span class="line">    <span class="type">Object</span> <span class="variable">cacheCode</span> <span class="operator">=</span> session.getAttribute(<span class="string">&quot;code&quot;</span>);</span><br><span class="line">    <span class="type">String</span> <span class="variable">code</span> <span class="operator">=</span> loginForm.getCode();</span><br><span class="line">    <span class="keyword">if</span>(cacheCode == <span class="literal">null</span> || !cacheCode.toString().equals(code))&#123;</span><br><span class="line">         <span class="comment">//3.不一致，报错</span></span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;验证码错误&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//一致，根据手机号查询用户</span></span><br><span class="line">    <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> query().eq(<span class="string">&quot;phone&quot;</span>, phone).one();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//5.判断用户是否存在</span></span><br><span class="line">    <span class="keyword">if</span>(user == <span class="literal">null</span>)&#123;</span><br><span class="line">        <span class="comment">//不存在，则创建</span></span><br><span class="line">        user =  createUserWithPhone(phone);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//7.保存用户信息到session中</span></span><br><span class="line">    session.setAttribute(<span class="string">&quot;user&quot;</span>,user);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> Result.ok();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="拦截"><a href="#拦截" class="headerlink" title="拦截"></a>拦截</h3><blockquote>
+<p>初始版本看session中是否有user对象，如果有就把他放到ThreadLocal中，方便后续调用，为什么不每次都在session中取呢？我猜是因为http的request不是随时随地哪个方法都要写的，threadlocal可以比较方便</p>
+</blockquote>
+<p>先写登录的拦截器，由于要进行处理，就跟aop一样，有一个pre有一个after，实现的是HandlerInterceptor</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoginInterceptor</span> <span class="keyword">implements</span> <span class="title class_">HandlerInterceptor</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">preHandle</span><span class="params">(HttpServletRequest request, HttpServletResponse response, Object handler)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="comment">//1.获取session</span></span><br><span class="line">        <span class="type">HttpSession</span> <span class="variable">session</span> <span class="operator">=</span> request.getSession();</span><br><span class="line">        <span class="comment">//2.获取session中的用户</span></span><br><span class="line">        <span class="type">Object</span> <span class="variable">user</span> <span class="operator">=</span> session.getAttribute(<span class="string">&quot;user&quot;</span>);</span><br><span class="line">        <span class="comment">//3.判断用户是否存在</span></span><br><span class="line">        <span class="keyword">if</span>(user == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="comment">//4.不存在，拦截，返回401状态码</span></span><br><span class="line">            response.setStatus(<span class="number">401</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//5.存在，保存用户信息到Threadlocal</span></span><br><span class="line">        UserHolder.saveUser((User)user);</span><br><span class="line">        <span class="comment">//6.放行</span></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有了这个拦截器但是还要让他生效，被springmvc管理，需要一个配置文件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.hmdp.config;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.hmdp.interceptor.LoginInterceptor;</span><br><span class="line"><span class="keyword">import</span> com.hmdp.interceptor.RefreshInterceptor;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.context.annotation.Configuration;</span><br><span class="line"><span class="keyword">import</span> org.springframework.data.redis.core.StringRedisTemplate;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.servlet.config.annotation.InterceptorRegistry;</span><br><span class="line"><span class="keyword">import</span> org.springframework.web.servlet.config.annotation.WebMvcConfigurer;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.annotation.Resource;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MvcConfig</span> <span class="keyword">implements</span> <span class="title class_">WebMvcConfigurer</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addInterceptors</span><span class="params">(InterceptorRegistry registry)</span> &#123;</span><br><span class="line">        <span class="comment">// 登录拦截器</span></span><br><span class="line">        registry.addInterceptor(<span class="keyword">new</span> <span class="title class_">LoginInterceptor</span>())</span><br><span class="line">                .excludePathPatterns(</span><br><span class="line">                        <span class="string">&quot;/shop/**&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/voucher/**&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/shop-type/**&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/upload/**&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/blog/hot&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/user/code&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;/user/login&quot;</span></span><br><span class="line">                ).order(<span class="number">1</span>);</span><br><span class="line">        <span class="comment">// token刷新的拦截器</span></span><br><span class="line">        registry.addInterceptor(<span class="keyword">new</span> <span class="title class_">RefreshInterceptor</span>(stringRedisTemplate)).addPathPatterns(<span class="string">&quot;/**&quot;</span>).order(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>WebMvcConfigurer配置类其实是Spring内部的一种配置方式，采用JavaBean的形式来代替传统的xml配置文件形式进行针对框架个性化定制，可以自定义一些Handler，Interceptor，ViewResolver，MessageConverter。基于java-based方式的spring mvc配置，需要创建一个配置类并实现WebMvcConfigurer 接口；</p>
+<p>常用的方法：</p>
+<p><strong>addInterceptors：拦截器</strong></p>
+<ul>
+<li>addInterceptor：需要一个实现HandlerInterceptor接口的拦截器实例</li>
+<li>addPathPatterns：用于设置拦截器的过滤路径规则；addPathPatterns(“&#x2F;**”)对所有请求都拦截</li>
+<li>excludePathPatterns：用于设置不需要拦截的过滤规则</li>
+<li>拦截器主要用途：进行用户登录状态的拦截，日志的拦截等。</li>
+</ul>
+<p><strong>addViewControllers：页面跳转</strong></p>
+<p>拦截到一个路径就跳转到对应的页面</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addViewControllers</span><span class="params">(ViewControllerRegistry registry)</span> &#123;</span><br><span class="line">    registry.addViewController(<span class="string">&quot;/toLogin&quot;</span>).setViewName(<span class="string">&quot;login&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个方法意思估计就是当&#x2F;toLogin”路径的时候跳转到login页面</p>
+<blockquote>
+<p>Todo：以后慢慢补充</p>
+</blockquote>
+<h2 id="Redis代替session的业务"><a href="#Redis代替session的业务" class="headerlink" title="Redis代替session的业务"></a>Redis代替session的业务</h2><blockquote>
+<p>code和user都存在session中，而session是本地的，在集群模式下会失效，所以需要一个全局的解决方案。</p>
+</blockquote>
+<p>基本的解决思路就是把验证码和user都存在redis里面，设定过期时间，拦截器变成续期即可。有一个问题就是以什么数据结构来存。code可以以string类型来存储。<br>user其实也可以，我这里原本想的是用JSON存，但是不够直观，而且存储效率也没有hash好，所以还是跟着他用了hash。</p>
+<p><img src="/../img/hmdp/img_1.png"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserServiceImpl</span> <span class="keyword">extends</span> <span class="title class_">ServiceImpl</span>&lt;UserMapper, User&gt; <span class="keyword">implements</span> <span class="title class_">IUserService</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate redisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Result <span class="title function_">sendCode</span><span class="params">(String phone, HttpSession session)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (RegexUtils.isPhoneInvalid(phone))&#123;</span><br><span class="line">            <span class="keyword">return</span> Result.fail(<span class="string">&quot;手机号格式错误&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">code</span> <span class="operator">=</span> RandomUtil.randomNumbers(<span class="number">6</span>);</span><br><span class="line">        <span class="comment">//这里用Redis完成</span></span><br><span class="line">        <span class="comment">//session.setAttribute(&quot;code&quot;,code);</span></span><br><span class="line">        redisTemplate.opsForValue().set(redisConstants.LOGINREDISCODE + phone,code, <span class="number">60</span>,TimeUnit.SECONDS);</span><br><span class="line">        log.debug(<span class="string">&quot;验证码为：&quot;</span>+code);</span><br><span class="line">        <span class="keyword">return</span> Result.ok();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Result <span class="title function_">login</span><span class="params">(LoginFormDTO loginForm, HttpSession session)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (RegexUtils.isPhoneInvalid(loginForm.getPhone())||RegexUtils.isCodeInvalid(loginForm.getCode()))&#123;</span><br><span class="line">            <span class="keyword">return</span> Result.fail(<span class="string">&quot;手机号格式错误&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//这里改用Redis</span></span><br><span class="line">        <span class="comment">//String sessionCode = session.getAttribute(&quot;code&quot;).toString();</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">code</span> <span class="operator">=</span> redisTemplate.opsForValue().get(redisConstants.LOGINREDISCODE + loginForm.getPhone());</span><br><span class="line">        <span class="keyword">if</span> (code == <span class="literal">null</span> || !loginForm.getCode().equals(code))&#123;</span><br><span class="line">            <span class="keyword">return</span> Result.fail(<span class="string">&quot;验证码有误&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        LambdaQueryWrapper&lt;User&gt; lambdaQueryWrapper = <span class="keyword">new</span> <span class="title class_">LambdaQueryWrapper</span>&lt;&gt;();</span><br><span class="line">        lambdaQueryWrapper.eq(User::getPhone,loginForm.getPhone());</span><br><span class="line">        <span class="type">User</span> <span class="variable">user</span> <span class="operator">=</span> getOne(lambdaQueryWrapper);</span><br><span class="line">        <span class="keyword">if</span> (user == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="type">User</span> <span class="variable">temp</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">User</span>();</span><br><span class="line">            temp.setPhone(loginForm.getPhone());</span><br><span class="line">            save(temp);</span><br><span class="line">            user = temp;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> UUID.randomUUID(<span class="literal">true</span>).toString();</span><br><span class="line">        <span class="comment">//用json存储</span></span><br><span class="line">        <span class="comment">//String jsonStr = JSONUtil.toJsonStr(user);</span></span><br><span class="line">        <span class="comment">//用hash存储</span></span><br><span class="line">        <span class="type">UserDTO</span> <span class="variable">userDTO</span> <span class="operator">=</span> BeanUtil.copyProperties(user, UserDTO.class);</span><br><span class="line">        Map&lt;String, Object&gt; userMap = BeanUtil.beanToMap(userDTO, <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;(),</span><br><span class="line">                CopyOptions.create()</span><br><span class="line">                        .setIgnoreNullValue(<span class="literal">true</span>)</span><br><span class="line">                        .setFieldValueEditor((fieldName, fieldValue) -&gt; fieldValue.toString()));</span><br><span class="line"></span><br><span class="line">        redisTemplate.opsForHash().putAll(redisConstants.LOGINUSER+token,userMap);</span><br><span class="line">        redisTemplate.expire(redisConstants.LOGINUSER,<span class="number">30</span>,TimeUnit.MINUTES);</span><br><span class="line">        <span class="keyword">return</span> Result.ok(token);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>主要就是用了redisTemplate的两种方法，string类型的就用opsForValue，hash用opsForHash，值得注意的是这里putAll是将一个map全部存进去，只有两个参数，而put可能指的是<strong>在这个key下的map中的其中一行</strong>，也就是说有三个参数，key，name和value。</p>
+<p>这里的beanToMap主要记住setFieldValueEditor是编辑域的，那当然有两个参数，修改对应fieldName下的fieldValue</p>
+<p>还有一个是setFieldNameEditor编辑name的，比如你想让name变成大写，就用UpperCase</p>
+</blockquote>
+<h2 id="解决登录刷新问题"><a href="#解决登录刷新问题" class="headerlink" title="解决登录刷新问题"></a>解决登录刷新问题</h2><blockquote>
+<p>我们之前的拦截器会排除一些路径进行刷新，但是我们要这些路径被访问的时候也要刷新，所以选择了连个拦截器的方案，其中第一个完成所有redis的续期，后面一个延续拦截指定路径校验登录状态。</p>
+</blockquote>
+<p><img src="/../img/hmdp/img_2.png"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RefreshInterceptor</span> <span class="keyword">implements</span> <span class="title class_">HandlerInterceptor</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> StringRedisTemplate stringRedisTemplate;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">RefreshInterceptor</span><span class="params">(StringRedisTemplate stringRedisTemplate)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.stringRedisTemplate = stringRedisTemplate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">preHandle</span><span class="params">(HttpServletRequest request, HttpServletResponse response, Object handler)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="comment">//1.检验是否有token</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">token</span> <span class="operator">=</span> request.getHeader(<span class="string">&quot;authorization&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (token == <span class="literal">null</span> || token.isEmpty())&#123;</span><br><span class="line">            <span class="comment">//1.1 如果没有token直接放行给下一个拦截器，这样肯定会被拦截</span></span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//2.检验是否在redis中</span></span><br><span class="line">        <span class="comment">//entries得到的是一个map，get查具体的，所以有两个参数key和fieldName</span></span><br><span class="line">        Map&lt;Object, Object&gt; objectMap = stringRedisTemplate.opsForHash().entries(redisConstants.LOGINUSER + token);</span><br><span class="line">        <span class="keyword">if</span> (objectMap.isEmpty())&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">UserDTO</span> <span class="variable">dto</span> <span class="operator">=</span> BeanUtil.mapToBean(objectMap, UserDTO.class, CopyOptions.create());</span><br><span class="line">        <span class="comment">//3.保存在threadLocal中</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//UserDTO userDTO = BeanUtil.fillBeanWithMap(objectMap, new UserDTO(), false);</span></span><br><span class="line">        log.debug(dto.toString());</span><br><span class="line">        UserHolder.saveUser(dto);</span><br><span class="line">        <span class="comment">//4.刷新时间</span></span><br><span class="line">        stringRedisTemplate.expire(redisConstants.LOGINUSER + token,<span class="number">30</span>, TimeUnit.MINUTES);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">afterCompletion</span><span class="params">(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="comment">// 移除用户</span></span><br><span class="line">        UserHolder.removeUser();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LoginInterceptor</span> <span class="keyword">implements</span> <span class="title class_">HandlerInterceptor</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">preHandle</span><span class="params">(HttpServletRequest request, HttpServletResponse response, Object handler)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">UserDTO</span> <span class="variable">user</span> <span class="operator">=</span> UserHolder.getUser();</span><br><span class="line">        <span class="keyword">if</span> (user == <span class="literal">null</span>)&#123;</span><br><span class="line">            response.setStatus(<span class="number">401</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        log.debug(<span class="string">&quot;当前用户:&quot;</span>+user.getNickName());</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/04/08/java-%E8%99%9A%E6%8B%9F%E6%9C%BA%EF%BC%88%E4%B8%8A%EF%BC%89/">java-虚拟机（上）</a>
       
     </h1>
@@ -1040,231 +1139,6 @@
 </blockquote>
 <h2 id="记忆化搜索"><a href="#记忆化搜索" class="headerlink" title="记忆化搜索"></a>记忆化搜索</h2><p>由分析知道，n不能为偶数，叶子节点为（n+1）&#x2F;2，度为二的节点为(n-1)&#x2F;2，n&#x3D;1的时候就只有一个节点，n可以拆分出[x,1,y]三个，x和y都必须是奇数，x和y都比n小而且一定在之前的遍历中已经计算过，只要深拷贝n&#x3D;x和n&#x3D;y的数组，作为左边右边，就可以得到最终答案</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Definition for a binary tree node.</span></span><br><span class="line"><span class="comment"> * public class TreeNode &#123;</span></span><br><span class="line"><span class="comment"> *     int val;</span></span><br><span class="line"><span class="comment"> *     TreeNode left;</span></span><br><span class="line"><span class="comment"> *     TreeNode right;</span></span><br><span class="line"><span class="comment"> *     TreeNode() &#123;&#125;</span></span><br><span class="line"><span class="comment"> *     TreeNode(int val) &#123; this.val = val; &#125;</span></span><br><span class="line"><span class="comment"> *     TreeNode(int val, TreeNode left, TreeNode right) &#123;</span></span><br><span class="line"><span class="comment"> *         this.val = val;</span></span><br><span class="line"><span class="comment"> *         this.left = left;</span></span><br><span class="line"><span class="comment"> *         this.right = right;</span></span><br><span class="line"><span class="comment"> *     &#125;</span></span><br><span class="line"><span class="comment"> * &#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Solution</span> &#123;</span><br><span class="line">    <span class="comment">//记忆化保存的数组</span></span><br><span class="line">    List&lt;List&lt;TreeNode&gt;&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    List&lt;TreeNode&gt; treeNodeList;</span><br><span class="line">    <span class="keyword">public</span> List&lt;TreeNode&gt; <span class="title function_">allPossibleFBT</span><span class="params">(<span class="type">int</span> n)</span> &#123;</span><br><span class="line">        <span class="comment">//排除偶数</span></span><br><span class="line">        <span class="keyword">if</span> (n%<span class="number">2</span>==<span class="number">0</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        &#125;</span><br><span class="line">        treeNodeList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">        treeNodeList.add(<span class="keyword">new</span> <span class="title class_">TreeNode</span>(<span class="number">0</span>));</span><br><span class="line">        list.add(treeNodeList);</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">3</span>; k &lt;= n; k+=<span class="number">2</span>) &#123;</span><br><span class="line">            treeNodeList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt; k-<span class="number">1</span>; i+=<span class="number">2</span>) &#123;</span><br><span class="line">                <span class="comment">//System.out.println(i);</span></span><br><span class="line">                <span class="comment">//由于i是+=2的，对应的list下标是++，所以要/2</span></span><br><span class="line">                List&lt;TreeNode&gt; left = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;(list.get(i/<span class="number">2</span>));</span><br><span class="line">                List&lt;TreeNode&gt; right = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;(list.get((k-<span class="number">1</span>-i)/<span class="number">2</span>));</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">p</span> <span class="operator">=</span> <span class="number">0</span>; p &lt; left.size(); p++) &#123;</span><br><span class="line">                    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">q</span> <span class="operator">=</span> <span class="number">0</span>; q &lt; right.size(); q++) &#123;</span><br><span class="line">                        <span class="type">TreeNode</span> <span class="variable">root</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TreeNode</span>(<span class="number">0</span>);</span><br><span class="line">                        root.left = left.get(p);</span><br><span class="line">                        root.right = right.get(q);</span><br><span class="line">                        <span class="comment">//先保存到treenodeList里</span></span><br><span class="line">                        treeNodeList.add(root);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//System.out.println(treeNodeList.size());</span></span><br><span class="line">            <span class="comment">//最后加上这个</span></span><br><span class="line">            list.add(treeNodeList);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//System.out.println(list.get(n/2).size());</span></span><br><span class="line">        <span class="comment">//返回记忆化搜索最后一个</span></span><br><span class="line">        <span class="keyword">return</span> list.get(n/<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/04/02/redis-%E9%AB%98%E5%8F%AF%E7%94%A8%E7%AF%87/">redis-高可用篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-04-02
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h1><p>单点Redis的并发能力是由上限的，如果都存储在一台服务器上，出事了就会有很严重的影响。</p>
-<ul>
-<li>如果出现了宕机，那么数据恢复需要时间，而且主进程在此期间不能服务新请求，</li>
-<li>硬盘出了问题那就会造成数据丢失。<br>如何解决这种问题，并且还要进一步提高并发性？可以搭建<strong>主从模式</strong>，实现读写分离。</li>
-</ul>
-<blockquote>
-<p><strong>读写分离</strong>:<br>主服务器可以进行读写操作，当发生写操作时自动将写操作同步给从服务器，而从服务器一般是只读，并接受主服务器同步过来写操作命令，然后执行这条命令。<br><img src="/../img/Redis/img_12.png"></p>
-<p>也就是说，所有的数据修改只在主服务器上进行，然后将最新的数据同步给从服务器，这样就使得主从服务器的数据是一致的。</p>
-</blockquote>
-<h2 id="第一次同步"><a href="#第一次同步" class="headerlink" title="第一次同步"></a>第一次同步</h2><p>多台服务器之间要通过什么方式来确定谁是主服务器，或者谁是从服务器呢？</p>
-<p>我们可以使用 replicaof（Redis 5.0 之前使用 slaveof）命令形成主服务器和从服务器的关系。</p>
-<p>比如，现在有服务器 A 和 服务器 B，我们在服务器 B 上执行下面这条命令：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 服务器 B 执行这条命令</span><br><span class="line">replicaof &lt;服务器 A 的 IP 地址&gt; &lt;服务器 A 的 Redis 端口号&gt;</span><br></pre></td></tr></table></figure>
-
-<p>接着，服务器 B 就会变成服务器 A 的「从服务器」，然后与主服务器进行第一次同步。</p>
-<p>主从服务器间的第一次同步的过程可分为三个阶段：</p>
-<ul>
-<li>第一阶段是建立链接、协商同步；</li>
-<li>第二阶段是主服务器同步数据给从服务器；</li>
-<li>第三阶段是主服务器发送新写操作命令给从服务器。</li>
-</ul>
-<p><img src="/../img/Redis/img_13.png"></p>
-<blockquote>
-<ol>
-<li>一个从服务器要加入主服务器的从节点，首先执行上面这条replicaof，告诉主服务器我是新加入的</li>
-<li>然后建立连接。这里有两个关键参数<strong>replication id</strong>，标识一个数据集，每一个master都会有一个这个id，相当于标记了一块空间，当slave加入时，并不知道master的这个id，就给“？”，还有一个参数<strong>offset</strong>也就是偏移量，表示复制的进度，初始化为-1，（<em><strong>有点类似TCP的序号和确认号</strong></em>）。<br>执行psync命令，告诉主服务器一个从节点要建立连接了</li>
-<li>主服务器判断来的这个replication id是否是自己的，如果不是自己的说明是第一次加入的从服务器，返回前面的这两个值，自己的id和当前的复制进度。</li>
-<li>从服务器收到响应之后会记录这两个值，准备进行<strong>全量复制</strong></li>
-<li>此时主服务器fork一个子进程完成bgsave命令，生成<strong>RDB</strong>文件，然后传输给从服务器。此时不会阻塞主进程，还是能接收新的数据，那么就需要一个数据结构来存这些刚刚加入，但是没有写入RDB文件的数据，这里就有一个<strong>replication buffer</strong>缓冲区用来存这些数据</li>
-<li>从服务器收到了bump.rdb文件，然后进行载入，在此之前清空当前数据</li>
-<li>对于主服务器在<strong>复制传输和子服务器重建</strong>过程中新到的数据，缓冲区内的数据发送新的写命令给从服务器。</li>
-</ol>
-</blockquote>
-<p><strong>第一阶段：建立链接、协商同步</strong></p>
-<p>执行了 replicaof 命令后，从服务器就会给主服务器发送 psync 命令，表示要进行数据同步。</p>
-<p>psync 命令包含两个参数，分别是主服务器的 runID 和复制进度 offset。</p>
-<p>runID，每个 Redis 服务器在启动时都会自动生产一个随机的 ID 来唯一标识自己。当从服务器和主服务器第一次同步时，因为不知道主服务器的 run ID，所以将其设置为 “?”。<br>offset，表示复制的进度，第一次同步时，其值为 -1。<br>主服务器收到 psync 命令后，会用 FULLRESYNC 作为响应命令返回给对方。</p>
-<p>并且这个响应命令会带上两个参数：主服务器的 runID 和主服务器目前的复制进度 offset。从服务器收到响应后，会记录这两个值。</p>
-<p>FULLRESYNC 响应命令的意图是采用全量复制的方式，也就是主服务器会把所有的数据都同步给从服务器。</p>
-<p>所以，第一阶段的工作时为了全量复制做准备。</p>
-<p>那具体怎么全量同步呀呢？我们可以往下看第二阶段。</p>
-<p><strong>第二阶段：主服务器同步数据给从服务器</strong></p>
-<p>接着，主服务器会执行 bgsave 命令来生成 RDB 文件，然后把文件发送给从服务器。</p>
-<p>从服务器收到 RDB 文件后，会先清空当前的数据，然后载入 RDB 文件。</p>
-<p>这里有一点要注意，主服务器生成 RDB 这个过程是不会阻塞主线程的，因为 bgsave 命令是产生了一个子进程来做生成 RDB 文件的工作，是异步工作的，这样 Redis 依然可以正常处理命令。</p>
-<p>但是，这期间的写操作命令并没有记录到刚刚生成的 RDB 文件中，这时主从服务器间的数据就不一致了。</p>
-<p>那么为了保证主从服务器的数据一致性，主服务器在下面这三个时间间隙中将收到的写操作命令，写入到 replication buffer 缓冲区里：</p>
-<ul>
-<li>主服务器生成 RDB 文件期间；</li>
-<li>主服务器发送 RDB 文件给从服务器期间；</li>
-<li>「从服务器」加载 RDB 文件期间；</li>
-</ul>
-<p><strong>第三阶段：主服务器发送新写操作命令给从服务器</strong></p>
-<p>在主服务器生成的 RDB 文件发送完，从服务器收到 RDB 文件后，丢弃所有旧数据，将 RDB 数据载入到内存。完成 RDB 的载入后，会回复一个确认消息给主服务器。</p>
-<p>接着，主服务器将 replication buffer 缓冲区里所记录的写操作命令发送给从服务器，从服务器执行来自主服务器 replication buffer 缓冲区里发来的命令，这时主从服务器的数据就一致了。</p>
-<p>至此，主从服务器的第一次同步的工作就完成了。</p>
-<h2 id="命令传播"><a href="#命令传播" class="headerlink" title="命令传播"></a>命令传播</h2><p>主从服务器在完成第一次同步以后就会维护一个Tcp连接。</p>
-<p><img src="/../img/Redis/img_14.png"></p>
-<p>后续主服务器可以通过这个连接继续将写操作命令传播给从服务器，然后从服务器执行该命令，使得与主服务器的数据库状态相同。</p>
-<p>而且这个连接是长连接的，目的是避免频繁的 TCP 连接和断开带来的性能开销。</p>
-<p>上面的这个过程被称为基于长连接的命令传播，通过这种方式来保证第一次同步后的主从服务器的数据一致性。</p>
-<h2 id="增量复制"><a href="#增量复制" class="headerlink" title="增量复制"></a>增量复制</h2><blockquote>
-<p>主从服务器在第一次同步之后，就会建立一个tcp长连接完成命令传输。但是此时网络产生延迟或者断开。那么就不能进行命令传播了（这里的断开网络指的是主从服务器之间的同步被打断），那么客户端还是可以从从服务器读到旧的数据产生不一致性。</p>
-</blockquote>
-<p><img src="/../img/Redis/img_15.png"></p>
-<p>如果此时网络又恢复正常了，从服务器已经落后主服务器，要进行再次同步，这个时候用<strong>全局复制</strong>造成的开销会很大，可以采用<strong>增量复制</strong>的方法进行同步，只会把网络断开期间主服务器收到的写操作同步给从服务器，利用的就是offset之间的差值。<br><img src="/../img/Redis/img_16.png"></p>
-<blockquote>
-<ol>
-<li>恢复连接后从服务器给主服务器发送id和offset</li>
-<li>主服务器知道id是自己的，但是offest落后的有点多，这个时候就会计算自己的offset和从服务器给的offset之间差了多少，然后发送CONTINUE命令，告诉从服务器要发送增量数据。</li>
-<li>从服务器重新执行这些命令</li>
-</ol>
-</blockquote>
-<p><strong>offset具体怎么计算？</strong></p>
-<ul>
-<li>repl_backlog_buffer，是一个「环形」缓冲区，用于主从服务器断连后，从中找到差异的数据；</li>
-<li>replication offset，标记上面那个缓冲区的同步进度，主从服务器都有各自的偏移量，主服务器使用 master_repl_offset 来记录自己「写」到的位置，从服务器使用 slave_repl_offset 来记录自己「读」到的位置。</li>
-</ul>
-<p><strong>那 repl_backlog_buffer 缓冲区是什么时候写入的呢？</strong></p>
-<p>在主服务器进行命令传播时，不仅会将写命令发送给从服务器，还会将写命令写入到 repl_backlog_buffer 缓冲区里，因此 这个缓冲区里会保存着最近传播的写命令。</p>
-<p>网络断开后，当从服务器重新连上主服务器时，从服务器会通过 psync 命令将自己的复制偏移量 slave_repl_offset 发送给主服务器，主服务器根据自己的 master_repl_offset 和 slave_repl_offset 之间的差距，然后来决定对从服务器执行哪种同步操作：</p>
-<ul>
-<li>如果判断出从服务器要读取的数据还在 repl_backlog_buffer 缓冲区里，那么主服务器将采用增量同步的方式；</li>
-<li>相反，如果判断出从服务器要读取的数据已经不存在 repl_backlog_buffer 缓冲区里，那么主服务器将采用全量同步的方式。（这是由于缓冲区是环形的，时间过长就会导致原来的数据被覆盖）</li>
-</ul>
-<p><strong>环形缓冲区repl_backlog_buffer</strong></p>
-<p>当主服务器在 repl_backlog_buffer 中找到主从服务器差异（增量）的数据后，就会将增量的数据写入到 replication buffer 缓冲区，这个缓冲区我们前面也提到过，它是缓存将要传播给从服务器的命令。</p>
-<p>repl_backlog_buffer 缓行缓冲区的默认大小是 1M，并且由于它是一个环形缓冲区，所以当缓冲区写满后，主服务器继续写入的话，就会覆盖之前的数据。因此，当主服务器的写入速度远超于从服务器的读取速度，缓冲区的数据一下就会被覆盖。</p>
-<p>那么在网络恢复时，如果从服务器想读的数据已经被覆盖了，主服务器就会采用全量同步，这个方式比增量同步的性能损耗要大很多。</p>
-<p>因此，为了避免在网络恢复时，主服务器频繁地使用全量同步的方式，我们应该调整下 repl_backlog_buffer 缓冲区大小，尽可能的大一些，减少出现从服务器要读取的数据被覆盖的概率，从而使得主服务器采用增量同步的方式。</p>
-<p><strong>repl_backlog_buffer 缓冲区具体要调整到多大呢？</strong></p>
-<p>$$<br>second * write_size_per_second<br>$$</p>
-<ul>
-<li>second为从服务器掉线以后重新连上主服务器所需的平均时间（以秒计算）</li>
-<li>write_size_per_second为主服务器平均每秒产生的写命令数据量大小</li>
-</ul>
-<blockquote>
-<p>环形缓冲区的大小不能低于平均掉线时间*主服务器平均每秒产生的数据量，要不然会频繁bgsave影响主进程，开销大</p>
-<p>举个例子，如果主服务器平均每秒产生 1 MB 的写命令，而从服务器断线之后平均要 5 秒才能重新连接主服务器。</p>
-<p>那么 repl_backlog_buffer 大小就不能低于 5 MB，否则新写地命令就会覆盖旧数据了。</p>
-<p>当然，为了应对一些突发的情况，可以将 repl_backlog_buffer 的大小设置为此基础上的 2 倍，也就是 10 MB。</p>
-<p>关于 repl_backlog_buffer 大小修改的方法，只需要修改配置文件里下面这个参数项的值就可以。 repl-backlog-size 1mb</p>
-</blockquote>
-<h1 id="哨兵机制"><a href="#哨兵机制" class="headerlink" title="哨兵机制"></a>哨兵机制</h1><p>在 Redis 的主从架构中，由于主从模式是读写分离的，如果主节点（master）挂了，那么将没有主节点来服务客户端的写操作请求，也没有主节点给从节点（slave）进行数据同步了。<br><img src="/../img/Redis/img_17.png"><br>这时如果要恢复服务的话，需要人工介入，选择一个「从节点」切换为「主节点」，然后让其他从节点指向新的主节点，同时还需要通知上游那些连接 Redis 主节点的客户端，将其配置中的主节点 IP 地址更新为「新主节点」的 IP 地址。</p>
-<p>这样也不太“智能”了，要是有一个节点能监控「主节点」的状态，当发现主节点挂了，它自动将一个「从节点」切换为「主节点」的话，那么可以节省我们很多事情啊！</p>
-<p>Redis 在 2.8 版本以后提供的<strong>哨兵（Sentinel）机制</strong>，它的作用是实现<strong>主从节点故障转移</strong>。它会监测主节点是否存活，如果发现主节点挂了，它就会选举一个从节点切换为主节点，并且把新主节点的相关信息通知给从节点和客户端</p>
-<h2 id="哨兵的功能"><a href="#哨兵的功能" class="headerlink" title="哨兵的功能"></a>哨兵的功能</h2><ul>
-<li>监控：Sentinel会定期检查master和slave是否按照预期工作（通过心跳机制）</li>
-<li>自动故障恢复：如果master故障，就选举出一个slave作为新的master，然后进行主节点故障迁移</li>
-<li>通知：当发生故障转移时，会将最新信息发送给Redis客户端 <img src="/../img/Redis/img_18.png"></li>
-</ul>
-<h2 id="服务状态监控"><a href="#服务状态监控" class="headerlink" title="服务状态监控"></a>服务状态监控</h2><blockquote>
-<p>Sentinel基于心跳机制ping-pong，每隔1秒向每个集群内的实例发送ping。</p>
-<ul>
-<li>主观下线：如果某sentinel节点发现实例没有在规定时间内响应，那就标记成<strong>主观下线</strong>，这个规定的时间是配置项down-after-milliseconds 参数设定的，单位是毫秒。</li>
-<li>客观下线：有的时候主节点其实并没有发生故障，只是因为网络拥塞，导致没有在规定时间响应Ping。为了减少误判的情况，哨兵不会之配置成一个节点（至少有三台机器来部署哨兵集群）如果超过指定数量（quorum）的哨兵认为该实例主观下线，那么该节点就是<strong>客观下线</strong>，那就被认为是故障。</li>
-</ul>
-</blockquote>
-<p>哨兵会每隔 1 秒给所有主从节点发送 PING 命令，当主从节点收到 PING 命令后，会发送一个响应命令给哨兵，这样就可以判断它们是否在正常运行。</p>
-<p>如果主节点或者从节点没有在规定的时间内响应哨兵的 PING 命令，哨兵就会将它们标记为「主观下线」。这个「规定的时间」是配置项 down-after-milliseconds 参数设定的，单位是毫秒。</p>
-<p>之所以针对「主节点」设计「主观下线」和「客观下线」两个状态，是因为有可能「主节点」其实并没有故障，可能只是因为主节点的系统压力比较大或者网络发送了拥塞，导致主节点没有在规定时间内响应哨兵的 PING 命令。</p>
-<p>所以，为了减少误判的情况，哨兵在部署的时候不会只部署一个节点，而是用多个节点部署成哨兵集群（最少需要三台机器来部署哨兵集群），通过多个哨兵节点一起判断，就可以就可以避免单个哨兵因为自身网络状况不好，而误判主节点下线的情况。同时，多个哨兵的网络同时不稳定的概率较小，由它们一起做决策，误判率也能降低。</p>
-<p>具体是怎么判定主节点为「客观下线」的呢？</p>
-<p>当一个哨兵判断主节点为「主观下线」后，就会向其他哨兵发起命令，其他哨兵收到这个命令后，就会根据自身和主节点的网络状况，做出赞成投票或者拒绝投票的响应。</p>
-<p><img src="/../img/Redis/img_19.png"></p>
-<p>当这个哨兵的赞同票数达到哨兵配置文件中的 quorum 配置项设定的值后，这时主节点就会被该哨兵标记为「客观下线」。</p>
-<p>例如，现在有 3 个哨兵，quorum 配置的是 2，那么一个哨兵需要 2 张赞成票，就可以标记主节点为“客观下线”了。这 2 张赞成票包括哨兵自己的一张赞成票和另外两个哨兵的赞成票（<strong>包括自己的一票</strong>）。</p>
-<p>PS：quorum 的值一般设置为哨兵个数的二分之一加 1，例如 3 个哨兵就设置 2。</p>
-<p>哨兵判断完主节点客观下线后，哨兵就要开始在多个「从节点」中，选出一个从节点来做新主节点</p>
-<h2 id="由哪个哨兵进行主从故障转移？"><a href="#由哪个哨兵进行主从故障转移？" class="headerlink" title="由哪个哨兵进行主从故障转移？"></a>由哪个哨兵进行主从故障转移？</h2><blockquote>
-<p>假设刚刚在哨兵的内部已经将主节点标记成了<strong>客观下线</strong>，那么哨兵集群哪个节点来对其进行故障转移呢？</p>
-<p>这个时候需要选举一个哨兵集群的leader来进行故障转移，但是在投票之前肯定需要一个<strong>候选者</strong>，这个候选者一般是首先发现主节点的哨兵。</p>
-<p>那么怎么样成为leader呢，哨兵集群需要进行投票，每个哨兵只有一次投票机会，只有候选者能够投给自己（一般也只有一个候选者，除非出现同一时间点有两个哨兵发现了主节点故障发起主观下线）</p>
-<p>在投票过程中，只要候选者达到以下条件就可以变成leader：</p>
-<ul>
-<li>第一，拿到半数以上的赞成票</li>
-<li>第二，票数还要同时大于等于quorum 值</li>
-</ul>
-</blockquote>
-<p><strong>如果某个时间点，刚好有两个哨兵节点判断到主节点为客观下线，那这时不就有两个候选者了？这时该如何决定谁是 Leader 呢？</strong></p>
-<p>每位候选者都会先给自己投一票，然后向其他哨兵发起投票请求。如果投票者先收到「候选者 A」的投票请求，就会先投票给它，如果投票者用完投票机会后，收到「候选者 B」的投票请求后，就会拒绝投票。这时，候选者 A 先满足了上面的那两个条件，所以「候选者 A」就会被选举为 Leader。</p>
-<p><strong>Redis 1 主 4 从，5 个哨兵，quorum 设置为 3，如果 2 个哨兵故障，当主节点宕机时，哨兵能否判断主节点“客观下线”？主从能否自动切换？</strong></p>
-<ul>
-<li><p>哨兵集群可以判定主节点“客观下线”。哨兵集群还剩下 3 个哨兵，当一个哨兵判断主节点“主观下线”后，询问另外 2 个哨兵后，有可能能拿到 3 张赞同票，这时就达到了 quorum 的值，因此，哨兵集群可以判定主节点为“客观下线”。</p>
-</li>
-<li><p>哨兵集群可以完成主从切换。当有个哨兵标记主节点为「客观下线」后，就会进行选举 Leader 的过程，因为此时哨兵集群还剩下 3 个哨兵，那么还是可以拿到半数以上（5&#x2F;2+1&#x3D;3）的票，而且也达到了 quorum 值，满足了选举 Leader 的两个条件，所以就能选举成功，因此哨兵集群可以完成主从切换。</p>
-</li>
-</ul>
-<p>如果 quorum 设置为 2，并且如果有 3 个哨兵故障的话。此时哨兵集群还是可以判定主节点为“客观下线”，但是哨兵不能完成主从切换了，大家可以自己推演下。</p>
-<p>如果 quorum 设置为 3，并且如果有 3 个哨兵故障的话，哨兵集群即不能判定主节点为“客观下线”，也不能完成主从切换了。</p>
-<p>可以看到，quorum 为 2 的时候，并且如果有 3 个哨兵故障的话，虽然可以判定主节点为“客观下线”，但是不能完成主从切换，这样感觉「判定主节点为客观下线」这件事情白做了一样，既然这样，还不如不要做，quorum 为 3 的时候，就可以避免这种无用功。</p>
-<p><strong>所以，quorum 的值建议设置为哨兵个数的二分之一加 1，例如 3 个哨兵就设置 2，5 个哨兵设置为 3，而且哨兵节点的数量应该是奇数。</strong></p>
-<h2 id="主从故障转移的过程"><a href="#主从故障转移的过程" class="headerlink" title="主从故障转移的过程"></a>主从故障转移的过程</h2><blockquote>
-<p>主从故障转移操作包含以下四个步骤： </p>
-<ul>
-<li>第一步：在已下线主节点（旧主节点）属下的所有「从节点」里面，挑选出一个从节点，并将其转换为主节点。</li>
-<li>第二步：让已下线主节点属下的所有「从节点」修改复制目标，修改为复制「新主节点」；</li>
-<li>第三步：将新主节点的 IP 地址和信息，通过「发布者&#x2F;订阅者机制」通知给客户端； </li>
-<li>第四步：继续监视旧主节点，当这个旧主节点重新上线时，将它设置为新主节点的从节点</li>
-</ul>
-</blockquote>
-<h3 id="步骤一：选出新节点"><a href="#步骤一：选出新节点" class="headerlink" title="步骤一：选出新节点"></a>步骤一：选出新节点</h3><p>故障转移操作第一步要做的就是在已下线主节点属下的所有「从节点」中，挑选出一个状态良好、数据完整的从节点，然后向这个「从节点」发送 SLAVEOF no one 命令，将这个「从节点」转换为「主节点」。</p>
-<p>那么多「从节点」，到底选择哪个从节点作为新主节点的？</p>
-<p>随机的方式好吗？随机的方式，实现起来很简单，但是如果选到一个网络状态不好的从节点作为新主节点，那么可能在将来不久又要做一次主从故障迁移。</p>
-<p>所以，我们首先要把网络状态不好的从节点给过滤掉。首先把已经下线的从节点过滤掉，然后把以往网络连接状态不好的从节点也给过滤掉。</p>
-<p>怎么判断从节点之前的网络连接状态不好呢？</p>
-<p>Redis 有个叫 down-after-milliseconds * 10 配置项，其 down-after-milliseconds 是主从节点断连的最大连接超时时间。如果在 down-after-milliseconds 毫秒内，主从节点都没有通过网络联系上，我们就可以认为主从节点断连了。如果发生断连的次数超过了 10 次，就说明这个从节点的网络状况不好，不适合作为新主节点。</p>
-<p>至此，我们就把网络状态不好的从节点过滤掉了，接下来要对所有从节点进行三轮考察：<strong>优先级、复制进度、ID 号</strong>。在进行每一轮考察的时候，哪个从节点优先胜出，就选择其作为新主节点。</p>
-<ol>
-<li>第一轮考察：哨兵首先会根据从节点的优先级来进行排序，优先级越小排名越靠前， </li>
-<li>第二轮考察：如果优先级相同，则查看复制的下标，哪个从「主节点」接收的复制数据多，哪个就靠前（也就是offset更靠近主节点那个）</li>
-<li>第三轮考察：如果优先级和下标都相同，就选择从节点 ID 较小的那个。</li>
-</ol>
-<p><img src="/../img/Redis/img_20.png"></p>
-<h3 id="步骤二：将从节点指向主节点"><a href="#步骤二：将从节点指向主节点" class="headerlink" title="步骤二：将从节点指向主节点"></a>步骤二：将从节点指向主节点</h3><p>当新主节点出现之后，哨兵 leader 下一步要做的就是，让已下线主节点属下的所有「从节点」指向「新主节点」，这一动作可以通过向「从节点」发送 SLAVEOF 命令来实现。</p>
-<p>如下图，哨兵 leader 向所有从节点（server3 和 server4）发送 SLAVEOF ，让它们成为新主节点的从节点。</p>
-<p><img src="/../img/Redis/img_21.png"></p>
-<p><img src="/../img/Redis/img_22.png"></p>
-<h3 id="步骤三：通知客户的主节点已更换"><a href="#步骤三：通知客户的主节点已更换" class="headerlink" title="步骤三：通知客户的主节点已更换"></a>步骤三：通知客户的主节点已更换</h3><p>经过前面一系列的操作后，哨兵集群终于完成主从切换的工作，那么新主节点的信息要如何通知给客户端呢？</p>
-<p>这主要通过 Redis 的发布者&#x2F;订阅者机制来实现的。每个哨兵节点提供发布者&#x2F;订阅者机制，客户端可以从哨兵订阅消息。</p>
-<blockquote>
-<p>类似kafka那种订阅机制，也可以想象成计网的那种广播信道，每个哨兵进行广播，客户端接受相应表头的时间，完成通知</p>
-</blockquote>
-<p>哨兵提供的消息订阅频道有很多，不同频道包含了主从节点切换过程中的不同关键事件，几个常见的事件如下：<br><img src="/../img/Redis/img_23.png"></p>
-<p>客户端和哨兵建立连接后，客户端会订阅哨兵提供的频道。主从切换完成后，哨兵就会向 +switch-master 频道发布新主节点的 IP 地址和端口的消息，这个时候客户端就可以收到这条信息，然后用这里面的新主节点的 IP 地址和端口进行通信了。</p>
-<p>通过发布者&#x2F;订阅者机制机制，有了这些事件通知，客户端不仅可以在主从切换后得到新主节点的连接信息，还可以监控到主从节点切换过程中发生的各个重要事件。这样，客户端就可以知道主从切换进行到哪一步了，有助于了解切换进度。</p>
-<h3 id="步骤四：将旧主节点变为从节点"><a href="#步骤四：将旧主节点变为从节点" class="headerlink" title="步骤四：将旧主节点变为从节点"></a>步骤四：将旧主节点变为从节点</h3><p>故障转移操作最后要做的是，继续监视旧主节点，当旧主节点重新上线时，哨兵集群就会向它发送 SLAVEOF 命令，让它成为新主节点的从节点</p>
-<p>至此，整个主从节点的故障转移的工作结束</p>
-
     
     
   </div>
