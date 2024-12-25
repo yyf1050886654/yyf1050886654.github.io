@@ -212,6 +212,332 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/28/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">设计模式面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-28
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>设计模式一般可以分为三大类</p>
+<ul>
+<li>创建型：工厂模式，单例模式</li>
+<li>结构型：装饰器模式，适配器模式</li>
+<li>行为型：策略模式，观察者模式<br>设计原则：</li>
+<li>单一职责原则</li>
+<li>开放封闭原则</li>
+<li>里式替换原则</li>
+<li>接口隔离原则</li>
+<li>依赖倒置原则</li>
+<li>迪米特原则</li>
+<li>合成复用原则</li>
+</ul>
+</blockquote>
+<h2 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h2><p>代理模式是在不改变原先对象的前提下，通过生成一个代理对象，扩展原先对象的一些功能。比如aop，不入侵业务代码实现方法前后逻辑。</p>
+<h3 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a>静态代理</h3><p>静态代理是写死的，也就是说需要程序员手动写一个proxy代理类，与原先类共同继承一个接口（个人理解其实从实现层面是可以不共同实现一个接口的，但是这样就会导致管理混乱，代理对象如果能复用这个接口那就会逻辑上通顺很多）</p>
+<p>静态代理实现步骤:</p>
+<ul>
+<li>定义一个接口及其实现类；</li>
+<li>创建一个代理类同样实现这个接口</li>
+<li>将目标对象注入进代理类，然后在代理类的对应方法调用目标类中的对应方法。这样的话，我们就可以通过代理类屏蔽对目标对象的访问，并且可以在目标方法执行前后做一些自己想做的事情。</li>
+</ul>
+<p>一旦要新增方法，代理对象也会改变，不满足设计模式中开放封闭的原则。这些代理类实际都是在编译过程中产生的class文件</p>
+<h3 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h3><p>分为jdk动态代理和gclib。前者必须要求代理类实现了某个接口，后者没有这点限制。但是相对于jkd而言，gclib效率较低速度较慢。gclib的原理是生成一个子类来代理父类，由于不能继承final类，所以gclib不能代理final类</p>
+<p><strong>jdk动态代理</strong></p>
+<ol>
+<li>Proxy.newProxyInstance方法，得到动态代理对象。传入参数是对象的类加载器，类的接口和一个InvocationHandler自定义的处理逻辑</li>
+<li>新建一个类实现InvocationHandler，这里面只有一个方法invoke，包装了反射中的method.invoke，我们需要在这句调用前后加上自己的逻辑就可以简单实现aop。</li>
+<li>新建一个工厂类的静态方法来获取这个动态代理对象</li>
+<li>使用</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.lang.reflect.InvocationHandler;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Proxy;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 定义一个接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">HelloService</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">(String name)</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 接口的实现类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HelloServiceImpl</span> <span class="keyword">implements</span> <span class="title class_">HelloService</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;你好，&quot;</span> + name + <span class="string">&quot;！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// InvocationHandler实现类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HelloInvocationHandler</span> <span class="keyword">implements</span> <span class="title class_">InvocationHandler</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">HelloInvocationHandler</span><span class="params">(Object target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;方法调用前的处理逻辑&quot;</span>);</span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> method.invoke(target, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;方法调用后的处理逻辑&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用动态代理</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ProxyDemo</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 被代理的对象</span></span><br><span class="line">        <span class="type">HelloService</span> <span class="variable">helloService</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloServiceImpl</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建InvocationHandler</span></span><br><span class="line">        <span class="type">InvocationHandler</span> <span class="variable">handler</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HelloInvocationHandler</span>(helloService);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建代理对象</span></span><br><span class="line">        <span class="type">HelloService</span> <span class="variable">proxyInstance</span> <span class="operator">=</span> (HelloService) Proxy.newProxyInstance(</span><br><span class="line">                helloService.getClass().getClassLoader(),</span><br><span class="line">                helloService.getClass().getInterfaces(),</span><br><span class="line">                handler</span><br><span class="line">        );</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 调用代理对象的方法</span></span><br><span class="line">        proxyInstance.sayHello(<span class="string">&quot;张三&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>gclib动态代理</strong></p>
+<ol>
+<li>首先自定义MethodInterceptor，这一点与上面的InvocationHandler是一致的。但是注意这里不是method.invoke来调用实际逻辑了。这里用methodProxy来调用原始方法。</li>
+<li>使用的时候首先创建增强类Enhancer</li>
+<li>设置类加载器和父类（也就是被代理对象）</li>
+<li>设置拦截器，就是第一点创建的对象</li>
+<li>最后获取这个代理类</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> net.sf.cglib.proxy.Enhancer;</span><br><span class="line"><span class="keyword">import</span> net.sf.cglib.proxy.MethodInterceptor;</span><br><span class="line"><span class="keyword">import</span> net.sf.cglib.proxy.MethodProxy;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Method;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 目标类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Person</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sayHello</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;你好，&quot;</span> + name + <span class="string">&quot;！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 自定义的MethodInterceptor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PersonMethodInterceptor</span> <span class="keyword">implements</span> <span class="title class_">MethodInterceptor</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">intercept</span><span class="params">(Object obj, Method method, Object[] args, MethodProxy proxy)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        <span class="comment">// 在方法执行前添加逻辑</span></span><br><span class="line">        System.out.println(<span class="string">&quot;代理类：方法调用前的处理&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 调用目标方法</span></span><br><span class="line">        <span class="type">Object</span> <span class="variable">result</span> <span class="operator">=</span> proxy.invokeSuper(obj, args);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 在方法执行后添加逻辑</span></span><br><span class="line">        System.out.println(<span class="string">&quot;代理类：方法调用后的处理&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 客户端代码</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CglibProxyDemo</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建Enhancer对象</span></span><br><span class="line">        <span class="type">Enhancer</span> <span class="variable">enhancer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Enhancer</span>();</span><br><span class="line">        enhancer.setSuperclass(Person.class); <span class="comment">// 设置被代理类的父类</span></span><br><span class="line">        enhancer.setCallback(<span class="keyword">new</span> <span class="title class_">PersonMethodInterceptor</span>()); <span class="comment">// 设置回调</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建代理对象</span></span><br><span class="line">        <span class="type">Person</span> <span class="variable">proxyPerson</span> <span class="operator">=</span> (Person) enhancer.create();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 调用代理对象的方法</span></span><br><span class="line">        proxyPerson.sayHello(<span class="string">&quot;张三&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>在spring aop中，如果某个类实现了接口，则默认使用jdk动态代理；否则使用cglib</p>
+<h2 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h2><p>保证只有一个全局访问点，无论怎么访问都只有一个对象。</p>
+<p><strong>饿汉式单例</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">singleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">singleton</span> <span class="variable">INSTANCE</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">singleton</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">singleton</span><span class="params">()</span>&#123;&#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> singleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在类加载初始化的时候就直接创建单例对象，适合于程序运行期间始终都需要这个对象的场景。</p>
+<p><strong>懒汉式单例</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">singleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> singleton INSTANCE;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">singleton</span><span class="params">()</span>&#123;&#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> singleton <span class="title function_">getINSTANCE</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (INSTANCE == <span class="literal">null</span>)&#123;</span><br><span class="line">            INSTANCE = <span class="keyword">new</span> <span class="title class_">singleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>但是可能会有并发安全问题，如果两个都没有获取到当前对象就会产生覆盖或者数据不一致，可以使用synchronized来锁住这个方法，但是会影响性能。</p>
+<p><strong>双重校验锁</strong></p>
+<p>上面那种情况下无论是否已经实例化了都需要获取锁，但其实如果其实已经实例化了就不需要上锁。还有一个关键问题是会指令重排。一个对象在创建1过程中会经历三步：</p>
+<ol>
+<li>分配内存空间</li>
+<li>初始化对象</li>
+<li>指针指向该对象<br>如果3重排就会变成132，此时还没有进行初始化。两个线程并发就会导致报空指针异常。为了解决这个问题需要volatile禁止指令重排。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Singleton</span> &#123;</span><br><span class="line">    <span class="comment">// 私有构造函数</span></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">Singleton</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// volatile 关键字确保实例的可见性</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Singleton instance;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 提供全局访问点</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (Singleton.class) &#123;</span><br><span class="line">                <span class="keyword">if</span> (instance == <span class="literal">null</span>) &#123;</span><br><span class="line">                    instance = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>内部静态类</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Singleton</span> &#123;</span><br><span class="line">    <span class="comment">// 私有构造函数</span></span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">Singleton</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 静态内部类</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Holder</span> &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">Singleton</span> <span class="variable">INSTANCE</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 提供全局访问点</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Singleton <span class="title function_">getInstance</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> Holder.INSTANCE;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>内部静态类在被调用的时候才会被加载，而且类加载不会有线程安全问题，天然解决并发问题。</p>
+<blockquote>
+<p>单例模式是可以被破坏的，只要通过反射拿到private的构造器就可以了</p>
+</blockquote>
+<h2 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h2><p>一种方法可以用多种算法实现就可以使用策略模式，根据不同情况下用不同的算法。也可以消除”if-else”这样的控制语句。</p>
+<ul>
+<li>上下文：持有一个策略的引用，并提供一个接口来调用策略</li>
+<li>策略接口：定义了一系列算法的公共接口</li>
+<li>具体实现：策略的具体实现</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 回执处理策略接口</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ReceiptHandleStrategy</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">handleReceipt</span><span class="params">(Receipt receipt)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 策略实现类</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Mt1011ReceiptHandleStrategy</span> <span class="keyword">implements</span> <span class="title class_">ReceiptHandleStrategy</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleReceipt</span><span class="params">(Receipt receipt)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;解析报文MT1011: &quot;</span> + receipt.getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Mt2101ReceiptHandleStrategy</span> <span class="keyword">implements</span> <span class="title class_">ReceiptHandleStrategy</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleReceipt</span><span class="params">(Receipt receipt)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;解析报文MT2101: &quot;</span> + receipt.getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 上下文类,持有策略接口</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ReceiptStrategyContext</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ReceiptHandleStrategy receiptHandleStrategy;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setReceiptHandleStrategy</span><span class="params">(ReceiptHandleStrategy receiptHandleStrategy)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.receiptHandleStrategy = receiptHandleStrategy;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//调用策略类中的方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleReceipt</span><span class="params">(Receipt receipt)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(receipt != <span class="literal">null</span>)&#123;</span><br><span class="line">            receiptHandleStrategy.handleReceipt(receipt);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 策略工厂，用哈希表保存策略，根据参数选择策略</span></span><br><span class="line"><span class="comment"> **/</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ReceiptHandleStrategyFactory</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ReceiptHandleStrategyFactory</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//使用Map集合存储策略信息,彻底消除if...else</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Map&lt;String,ReceiptHandleStrategy&gt; strategyMap;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//初始化具体策略,保存到map集合</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">init</span><span class="params">()</span>&#123;</span><br><span class="line">        strategyMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        strategyMap.put(<span class="string">&quot;MT1011&quot;</span>,<span class="keyword">new</span> <span class="title class_">Mt1011ReceiptHandleStrategy</span>());</span><br><span class="line">        strategyMap.put(<span class="string">&quot;MT2101&quot;</span>,<span class="keyword">new</span> <span class="title class_">Mt2101ReceiptHandleStrategy</span>());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//根据回执类型获取对应策略类对象</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ReceiptHandleStrategy <span class="title function_">getReceiptHandleStrategy</span><span class="params">(String receiptType)</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> strategyMap.get(receiptType);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Client</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//模拟回执</span></span><br><span class="line">        List&lt;Receipt&gt; receiptList = ReceiptBuilder.genReceiptList();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">//策略上下文</span></span><br><span class="line">        <span class="type">ReceiptStrategyContext</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ReceiptStrategyContext</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//策略模式将策略的 定义、创建、使用这三部分进行了解耦</span></span><br><span class="line">        <span class="keyword">for</span> (Receipt receipt : receiptList) &#123;</span><br><span class="line">            <span class="comment">//获取置策略</span></span><br><span class="line">            ReceiptHandleStrategyFactory.init();</span><br><span class="line">            <span class="type">ReceiptHandleStrategy</span> <span class="variable">strategy</span> <span class="operator">=</span> ReceiptHandleStrategyFactory.getReceiptHandleStrategy(receipt.getType());</span><br><span class="line">            <span class="comment">//设置策略</span></span><br><span class="line">            context.setReceiptHandleStrategy(strategy);</span><br><span class="line">            <span class="comment">//执行策略</span></span><br><span class="line">            context.handleReceipt(receipt);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="适配器模式"><a href="#适配器模式" class="headerlink" title="适配器模式"></a>适配器模式</h2><p>让一个实现类满足统一的接口，使不同的实现类可以一起工作。满足开放封闭原则。</p>
+<ol>
+<li>例如在Spring AOP中不同的Advice实现的方式不一样类也不一样，可能实现的时候这个类的某个方法叫run，另一个叫start，为了是这些实现类完成统一，就需要加一层适配器，把名字都叫做advicerun，给客户端呈现的就是这个名字。</li>
+<li>SpringMVC也是，不同的控制器种类有很多，例如有注解的有自己写的，需要用适配器统一起来</li>
+</ol>
+<h2 id="装饰器模式"><a href="#装饰器模式" class="headerlink" title="装饰器模式"></a>装饰器模式</h2><p>扩展类的功能，比起直接继承，装饰器模式可以实现单一责任原则，也便于功能的组合，避免类的层次结构复杂。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 组件接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Notification</span> &#123;</span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">send</span><span class="params">(String message)</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 具体组件</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SimpleNotification</span> <span class="keyword">implements</span> <span class="title class_">Notification</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">send</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Sending notification: &quot;</span> + message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 装饰器抽象类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span> <span class="title class_">NotificationDecorator</span> <span class="keyword">implements</span> <span class="title class_">Notification</span> &#123;</span><br><span class="line">    <span class="keyword">protected</span> Notification decoratedNotification;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">NotificationDecorator</span><span class="params">(Notification notification)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.decoratedNotification = notification;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">send</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        decoratedNotification.send(message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 具体装饰器 - 邮件</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">EmailNotificationDecorator</span> <span class="keyword">extends</span> <span class="title class_">NotificationDecorator</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">EmailNotificationDecorator</span><span class="params">(Notification notification)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(notification);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">send</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>.send(message);</span><br><span class="line">        sendEmail(message);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">sendEmail</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Sending email with message: &quot;</span> + message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 具体装饰器 - 短信</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SMSNotificationDecorator</span> <span class="keyword">extends</span> <span class="title class_">NotificationDecorator</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">SMSNotificationDecorator</span><span class="params">(Notification notification)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(notification);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">send</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>.send(message);</span><br><span class="line">        sendSMS(message);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">sendSMS</span><span class="params">(String message)</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;Sending SMS with message: &quot;</span> + message);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用示例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Notification</span> <span class="variable">notification</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleNotification</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 添加邮件功能</span></span><br><span class="line">        notification = <span class="keyword">new</span> <span class="title class_">EmailNotificationDecorator</span>(notification);</span><br><span class="line">        notification.send(<span class="string">&quot;Hello!&quot;</span>);</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;----&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 添加短信功能</span></span><br><span class="line">        notification = <span class="keyword">new</span> <span class="title class_">SMSNotificationDecorator</span>(notification);</span><br><span class="line">        notification.send(<span class="string">&quot;Hello!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a>观察者模式</h2><p>观察者模式通过定义一对多的依赖关系，使得一个对象状态的改变能够自动通知并更新所有相关对象。它在软件开发中具有广泛的应用，尤其适用于事件驱动系统和需要解耦组件的场景。在Spring框架中，观察者模式通过事件发布和监听机制得到了高效的实现，增强了应用程序的灵活性和可维护性。</p>
+<p>尽管观察者模式带来了许多优点，但在使用时也需注意避免过多的观察者导致系统复杂性增加，以及潜在的性能问题。合理地设计和管理观察者列表，确保事件通知的有效性和高效性，是成功应用观察者模式的关键。</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2024/09/25/kafka%E9%9D%A2%E8%AF%95%E7%AF%87/">消息队列面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-25
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h2><p>rocketMq的架构是类似于kafka的，实现了许多kafka没有的功能，但是依旧没有在市场上打败kafka，kafka的性能这么高的原因得益于零拷贝技术。</p>
+<p>在传统io方式中是需要经过cpu的，用户调用read()方法，数据通过dma传输到内存缓冲区，然后通过cpu拷贝到用户态的用户缓冲区，得到了用户能见的数据。再通过write()将数据拷贝到操作系统内核态的socket写缓冲区，最后通过网卡发送数据。这个过程一共经历了四次用户态和内核态的切换：</p>
+<ol>
+<li>系统调用read，用户态-&gt;内核态</li>
+<li>dma后，cpu将数据从内核态拷贝回用户态</li>
+<li>系统调用write，用户态-&gt;内核态</li>
+<li>write方法返回，重新回到用户态</li>
+</ol>
+<p>以及四次数据的拷贝。</p>
+<p><strong>mmap</strong></p>
+<p>mmap是一种将内存映射到用户态空间的系统调用。简单来说就是用户态和内核态使用同一片空间，不用进行上下文切换。因此整个流程就会变为：</p>
+<ol>
+<li>mmap系统调用，用户态-&gt;内核态</li>
+<li>dma将磁盘数据写到内核态的缓冲区，返回给用户态，同时用户态也能看到这片缓冲区，可以进行操作。需要进行上下文切换但不用拷贝</li>
+<li>操作完了之后系统调用write写到网卡发送，用户态-&gt;内核态</li>
+<li>拷贝两次，从内核态缓冲区拷贝到socket缓冲区，再用dma方式写回磁盘或者网卡，最后回到用户态</li>
+</ol>
+<p>综上所述，总共经历了3次io和四次上下文切换。减少的这一次叫做零拷贝。</p>
+<p><strong>sendfile</strong></p>
+<p>sendfile不会给用户态返回具体的数据，直接从内核态走socket传输走了。</p>
+<ol>
+<li>sendfile系统调用，用户态-&gt;内核态</li>
+<li>dma拷贝到内核态的缓冲区，这里不会返回给用户态具体的信息，也就是说用户态操作不了，直接拷贝给socket</li>
+<li>再从socket拷贝到网卡，返回用户态</li>
+</ol>
+<p>综上所述，一共两次上下文切换和三次io，对比 mmap+write，主要是没有再用户态进行拷贝。</p>
+<p>说了这么多，到底跟kafka和rocketmq有什么关系呢？kafka是基于sendfile的，而rocketmq是基于mmap的，都使用了零拷贝技术，但是由于rocketmq新增了一些高级功能，需要直到具体的数据信息而不是直接发送，就用了能看见数据的mmap方式。kafka为了追求极致性能就没有这些花里胡哨的功能，使用了效率更高的sendfile</p>
+<h2 id="消息队列的作用"><a href="#消息队列的作用" class="headerlink" title="消息队列的作用"></a>消息队列的作用</h2><ul>
+<li>异步：不用等待同步操作，把消息扔给mq然后就直接返回，mq连接的另一端会异步进行操作</li>
+<li>解耦：可以将业务进行拆分，也是上面异步的思想</li>
+<li>削峰：到来的高并发请求先进入mq，类似漏桶限流算法，避免打倒服务器和数据库</li>
+</ul>
+<h2 id="Kafka的架构"><a href="#Kafka的架构" class="headerlink" title="Kafka的架构"></a>Kafka的架构</h2><p>kafka是基于发布者-订阅者模型的，在这个模型中有发布者，订阅者，broker和服务发现中心。具体到kafka就是producer，consumer，broker，topic，partition，配置中心是zookeeper：</p>
+<ul>
+<li>broker：就是一个物理上的kafka服务实体</li>
+<li>topic：消息是按照主题划分的，例如业务消息和日志消息就可以用两个topic划分</li>
+<li>partition：一个topic内也不只有一个队列，这个分区就是队列的意思。需要注意的是kafka在逻辑上是一个整体，但是物理上一个topic内所有分区不一定在同一个broker上。</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/kafka/img.png" alt="" />
+</div>
+
+<ul>
+<li>生产者组：生成消息放入消息队列，是多对多的关系，一个生产者可以生成很多个topic的消息，也可以生成一个topic内多个partition的消息</li>
+<li>消费者组：消费的进度用offset表示，消费者组并不会真的把消息队列的信息删除，而是用一个偏移量来表示消费到了哪里。每一个消费者组的偏移量可以是不同的，一般来说一个partition最好只有一个消费者，如果多了的话并发控制也会成为性能影响因素</li>
+<li>zookeeper：对于如此庞大规模的kafka集群，实体之间是怎么互相发现对方的？这里使用了zookeeper作为服务发现框架。kafka高度依赖zookeeper</li>
+</ul>
+<p>kafka为了保证高可用，还有类似主从架构的副本机制，使得某个broker挂了之后，部署在其他地方的partition能够继续工作。总而言之，一个topic多个partition的机制能够使消息分散在多个broker上，实现负载均衡。partition的副本也会保存在不同的机器上。从逻辑上看是整体的，物理上看都不会集中在一块区域。</p>
+<h2 id="Kafka的存储机制"><a href="#Kafka的存储机制" class="headerlink" title="Kafka的存储机制"></a>Kafka的存储机制</h2><p>前情提要：一个topic可能横跨多个broker，每一个broker的文件系统只会保存自己实际物理存储的日志。只有通过zookeeper才能看到一个topic的全部分区信息。</p>
+<p>在一个broker下，文件信息是这么存储的：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;kafka-log-dir&gt;/</span><br><span class="line">    └── &lt;topic-name&gt;/</span><br><span class="line">        └── &lt;partition-number&gt;/</span><br><span class="line">            ├── 00000000000000000000.log        # 日志文件</span><br><span class="line">            ├── 00000000000000000000.index      # 偏移量索引文件</span><br><span class="line">            ├── 00000000000000000000.timeindex  # 时间索引文件</span><br><span class="line">            ├── 00000000000000000001.log        # 下一日志段</span><br><span class="line">            ├── 00000000000000000001.index      # 下一日志段的偏移量索引文件</span><br><span class="line">            ├── 00000000000000000001.timeindex  # 下一日志段的时间索引文件</span><br></pre></td></tr></table></figure>
+<ul>
+<li>日志段（segment）：一个分区下有多个segment，segment中保存了实际的数据，这些数据的key是offset，每一个segment以当前最小的offset命名。查询的时候通过二分查找找到对应的offset</li>
+<li>索引（index）：同时会生成一个与segment同名的索引。保存当前segment下offset的索引信息（类似二级索引），加快日志内的查找速度</li>
+<li>时间索引文件：存储offset对应的时间戳，便于根据时间查找信息。</li>
+</ul>
+<p><strong>生产者</strong></p>
+<p>当收到生产者数据的时候，用户态内存接收到之后，会给操作系统内核态的page cache，os再择机刷盘。这个写过程是顺序写，也就是说在对应的分区的最后一个log后面写刚刚的消息。</p>
+<p><strong>消费者</strong></p>
+<p>消费者消费数据的时候，根据offset先在文件名中二分查找到segment，再用对应的索引来加速搜索。</p>
+<p><strong>日志滚动</strong></p>
+<p>如果一个segment达到了默认的1GB或者超过了7天没有新增，那就会有一个新的segment</p>
+<p><strong>日志删除</strong></p>
+<p>可以配置kafka的消息删除时间，这个时候上面的日志索引文件就有用了，通过判断时间戳来删除。在删除过程中会使用copyonwrite以避免有消费者这个时候消费消息。</p>
+<h2 id="Kafka如何保证消息不丢失"><a href="#Kafka如何保证消息不丢失" class="headerlink" title="Kafka如何保证消息不丢失"></a>Kafka如何保证消息不丢失</h2><p>消息丢失不是Kafka一个管道能说了算的，可能在生产者传输的过程中丢失，也有可能消费者offset更新完了之后就掉了导致没有真正消费信息。</p>
+<ul>
+<li>生产者的信息丢失：类似tcp的各种握手，可以使用一个回调函数返回kafka是否接收到了信息，这里最好不要用同步操作get，用异步ListenableFuture&lt;SendResult&lt;String, Object&gt;&gt;开一个线程监听；如果失败了就重传，可以设置重传次数。</li>
+<li>消费者的信息丢失：offset默认是消费者接受了这个消息就更新，但是可能会发生拿到消息就掉电导致消息没有实际被消耗。可以采用offset手动更新，在消费者逻辑的最后手动提交offset，这样就能保证消费完了才更新offset</li>
+<li>kafka的信息丢失：架构中都有这么多副本在兜底了，但是副本之间不一定时时刻刻都保持同步。设置几个参数就能保证kafka的高可用</li>
+</ul>
+<blockquote>
+<ul>
+<li>acks&#x3D;all，表示所有副本都更新完写操作才返回，默认值是1，也就是主节点更新了就返回，但是这样依旧可能造成丢数据问题。因此为了绝对安全可以设置acks&#x3D;all，但是会极大的影响性能。</li>
+<li>设置副本数量&gt;&#x3D;3，虽然造成了数据冗余，但是可以保证高可用</li>
+<li>设置更新的副本数量&gt;1，这样配置代表消息至少要被写入到 2 个副本才算是被成功发送。min.insync.replicas 的默认值为 1 ，在实际生产中应尽量避免默认值 1，是acks&#x3D;all的一种折中</li>
+<li>设置 unclean.leader.election.enable &#x3D; false，当发生主从数据不一致的时候，只有完全同步的数据副本才能被选举为leader</li>
+</ul>
+</blockquote>
+<p>kafka是ap架构还cp架构？从上面的各种默认参数来看，比如acks&#x3D;1，默认的时候还是倾向于可用性的，也就是会牺牲一部分一致性。但是经过上面的种种配置之后，就可以使kafka集群是强一致性的，在某些场合下可以灵活改变配置。</p>
+<h2 id="生产者向Kafka发送消息的执行流程"><a href="#生产者向Kafka发送消息的执行流程" class="headerlink" title="生产者向Kafka发送消息的执行流程"></a>生产者向Kafka发送消息的执行流程</h2><ol>
+<li>配置生产者，一般消息有三个值，topic，key和value（保证顺序的话就要指定partition）。还可以配置acks的参数，reties的次数，配置完这些之后产生一个生产者对象。</li>
+<li>序列化消息，将key和value序列化，例如StringSerializer</li>
+<li>消息需要选择进入哪个分区，如果key没有配置的话就轮询（RR），如果有的话就hash然后取模</li>
+<li>如果配置了批处理，先把消息放在缓冲区，等达到了batchsize再传送</li>
+<li>请求压缩：kafka集群主要的瓶颈在网络io而不是cpu，在进入的时候压缩，在出去的时候解压，能够减少网络延迟</li>
+<li>当达到了batchsize，根据选择的分区发往broker。根据acks配置的参数返回消息</li>
+<li>超时重试</li>
+<li>如果有回调函数就会执行</li>
+</ol>
+<blockquote>
+<p>kafka可以在分区内保证顺序，但是消费的整体顺序是无法保证的，如果需要严格的顺序消费，以下有两种方法解决：</p>
+<ul>
+<li>指定key是相同的，在序列化的时候无法保证不同的key散列取余以后是在同一个分区，如果key是相同的就可以保证在一个分区</li>
+<li>key可以不同，指定partition相同就可以了，从根源上解决问题</li>
+</ul>
+</blockquote>
+<h2 id="消费者消费失败会怎样"><a href="#消费者消费失败会怎样" class="headerlink" title="消费者消费失败会怎样"></a>消费者消费失败会怎样</h2><p>消费者会有一个重试次数，如果由于网络导致消费失败，信息不会阻塞，会进入一个死信队列。可以在这个队列里面进一步分析原因，也可以继续消费这个队列的信息。</p>
+<p>重试次数默认是10次，并且间隔是0s，也就是立即重试10次，没有消费成功就进入死信队列，不会阻塞下一条信息。</p>
+<h2 id="Kafka如何保证不重复消费信息"><a href="#Kafka如何保证不重复消费信息" class="headerlink" title="Kafka如何保证不重复消费信息"></a>Kafka如何保证不重复消费信息</h2><p>如上面所述，即便是手动提交offset还是可能出现重复消费，这个时候只能通过消费者的幂等进行校验了</p>
+<p><strong>三种消息投递保证</strong></p>
+<ul>
+<li>At most once：至多一次，对应上面的消费者自动提交offset，这个时候掉电了这条消息就没有了</li>
+<li>At least once：对应手动提交offset，可能会重复多次。需要消费者自己做幂等</li>
+<li>Exactly once：消息精确传输一次。这不仅仅依赖于kafka，同时也要消费者的配合。</li>
+</ul>
+<p>kafka的生产者在发送的时候会用全局唯一id+offset来进行幂等发送，避免因为发送端超时重试而导致重复消费。同时开启事务，确保消息是原子性的。</p>
+<p>消费者只会消费已经提交过事务的消息（类似MVCC，未提交事务的信息是有可能回滚的，消费他们有风险）。同时类似At Least once，消费者也需要配合做幂等。</p>
+<h3 id="Exactly-Once-的实现机制"><a href="#Exactly-Once-的实现机制" class="headerlink" title="Exactly Once 的实现机制"></a>Exactly Once 的实现机制</h3><ol>
+<li><p><strong>生产者的角色</strong>：</p>
+<ul>
+<li><strong>幂等性</strong>：生产者通过启用幂等性功能（<code>enable.idempotence=true</code>）来确保在发送过程中，每条消息只有一个唯一的 ID。即使发生网络错误或重试，生产者也不会重复发送相同的消息。</li>
+<li><strong>事务支持</strong>：生产者使用事务来发送消息。在一个事务中，生产者可以发送多条消息，这些消息在调用 <code>commitTransaction()</code> 之前对消费者是不可见的。如果在发送过程中出现错误，生产者可以调用 <code>abortTransaction()</code>，此时所有消息都将被丢弃，确保没有未提交的消息被消费。</li>
+</ul>
+</li>
+<li><p><strong>消费者的角色</strong>：</p>
+<ul>
+<li>**配置为 <code>read_committed</code>**：消费者配置为 <code>isolation.level=read_committed</code>，确保只读取那些已成功提交的事务消息。这意味着消费者只会处理生产者通过 <code>commitTransaction()</code> 提交的消息。</li>
+<li><strong>手动提交偏移量</strong>：消费者在处理每条消息后手动提交偏移量（<code>commitSync()</code>），以标记这些消息已被成功处理。只有在确认消息处理成功后，才提交偏移量，以避免处理失败导致的重复消费。</li>
+<li><strong>实现幂等性处理</strong>：消费者在业务逻辑中需要实现幂等性，以确保即使同一条消息被多次消费，最终的业务效果也应该一致。例如，使用数据库的唯一约束来避免重复插入。</li>
+</ul>
+</li>
+</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
+<li><strong>唯一性保证</strong>：通过生产者的唯一 ID 和事务管理，确保在 Kafka 中发送的消息是唯一的，并且不会因重试而重复。</li>
+<li><strong>消费的一致性</strong>：消费者通过手动提交偏移量和实现幂等性来确保消息的消费是唯一的，并且只处理那些已经提交的消息，避免了未提交消息可能引起的回滚和不一致。</li>
+<li><strong>消息可见性</strong>：未提交的事务消息对消费者是不可见的，确保了只有经过确认的消息才能被消费。</li>
+</ul>
+<p>这种机制结合起来，使得在 Kafka 中能够实现 <strong>Exactly Once</strong> 的消息处理语义，从而在关键任务和需要高一致性的数据流动场景中得以应用。</p>
+<blockquote>
+<p>乱入一下rocketmq</p>
+</blockquote>
+<h2 id="RocketMQ"><a href="#RocketMQ" class="headerlink" title="RocketMQ"></a>RocketMQ</h2><p>阿里的rocketmq参考了kafka的架构，在架构上做减法，在功能上做加法。主要区别有：</p>
+<ul>
+<li>存储模式：kafka的数据存储是按照segment，一个partition有很多segment，做的是追加写，但是一个broker下面有很多的topic，访问量大起来就不是追加写会退化为随机写。rocketmq发现了这一点，他将所有的queue都放在一个文件上commitlog，而queue只放offset和对应索引。这样就能一直是追加写了</li>
+<li>同步模式：按照上面的逻辑，kafka那种replica就不行了，因为kafka是按照partition进行同步和冗余的，partition可以分布在不同的broker上的一个原因就是segment是分开来的。rocketmq把这一点优化了，所以rocketmq是类似redis和mysql那样，以broker为单位进行主从同步</li>
+<li>简化协调节点：kafka高度依靠zookeeper，太重了。rocketmq直接用nacos就可以了，作为微服务的一个模块</li>
+<li>零拷贝：kafka是sendfile而rocketmq是mmap+write</li>
+<li>功能增强：延迟队列，死信队列，按照tag过滤消息，事务</li>
+</ul>
+<blockquote>
+<p>乱入一下elasticsearch，估计问的也不多，简单了解一下</p>
+</blockquote>
+<h2 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h2><p>微观到宏观，最小单元segment-&gt;shard-&gt;node-&gt;集群。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">服务器实体 (Node 1)                服务器实体 (Node 2)</span><br><span class="line">+---------------------+            +---------------------+</span><br><span class="line">|  Primary Shard 1    |            |  Primary Shard 2    |</span><br><span class="line">|  (Lucene Instance 1)|            |  (Lucene Instance 2)|</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|     | Segment 1   | |            |     | Segment 3   | |</span><br><span class="line">|     | Segment 2   | |            |     | Segment 4   | |</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|                     |            |                     |</span><br><span class="line">|  Replica Shard 2    |            |  Replica Shard 1    |</span><br><span class="line">|  (Lucene Instance 3)|            |  (Lucene Instance 4)|</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">|     | Segment 5   | |            |     | Segment 6   | |</span><br><span class="line">|     | Segment 6   | |            |     | Segment 7   | |</span><br><span class="line">|     +-------------+ |            |     +-------------+ |</span><br><span class="line">+---------------------+            +---------------------+</span><br></pre></td></tr></table></figure>
+<h3 id="segment"><a href="#segment" class="headerlink" title="segment"></a>segment</h3><ol>
+<li>倒排索引：用分词器将每个单词作为键，值为对应的句子id就可以方便关键词查找了</li>
+<li>前缀索引：单靠上面的倒排索引查询起来还是很费劲。可以使用前缀树trie完成。放在内存里方便查询</li>
+<li>句子实际的存储位置：倒排索引只是放了句子的id，真正的句子存储在这里</li>
+<li>一种方便排序和聚合的数据结构：某些时候用户可能想要按照时间排序，但是这些字段放在3中是很不好的，需要回表再去排序。不如直接用空间换时间，将时间信息提取出来单独做一个表</li>
+</ol>
+<p>以上的四个部分共同构成了一个segment，这是搜索引擎的最小单元。但是由于前缀索引不好进行扩容，可以约定新增几条句子就开辟一个新的segment，同时也解决了读写问题。问题是文件会变多，可以采用定时合并的方法。这样多个segment就构成了lucene（shard）。如果有搜索请求就会并发在所有segment里面进行搜索。</p>
+<h3 id="shard"><a href="#shard" class="headerlink" title="shard"></a>shard</h3><p>其实上面的多个segment加起来就是一个lucene，在es中如果只有一个lucene那么读写效率会变得很慢：</p>
+<ul>
+<li>在垂直上可以参考kafka的topic设置多个index_name，例如分体育新闻和娱乐新闻。一个index对应一个lucene。</li>
+<li>在水平上可以将lucene再分小一点，每个段少分一点segment，这就变成了标题所说的shard，本质上shard就是lucene的一个实例。这样读写操作有可能会被分开，提高效率</li>
+</ul>
+<p>同时为了高可用还未每个shard提供了副本机制，分散在不同的node中</p>
+<h3 id="node"><a href="#node" class="headerlink" title="node"></a>node</h3><p>一个node就是一个服务器节点，类似kafka的broker，可以放很多不同topic的不同partition，包括副本啥的。这里就会要一个类似zookeeper的服务发现中心，但在es里是去中心化的，通过raft协议选举。</p>
+<p>node有很多职责，有负责管理集群的（类似哨兵负责故障转移和选主），有存储数据的。有实现restful接口的，在集群环境下可以分开。每一个node负责不同的职责。</p>
+<p><strong>数据如何查找</strong></p>
+<ol>
+<li>客户端发送rest的http请求给集群中负责接收的node</li>
+<li>在指定index_name下hash分片找到对应的shard</li>
+<li>在shard中并行查找segment</li>
+<li>segment根据倒排索引找到对应句子的id返回</li>
+<li>再去根据id进行回表，找到句子返回</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/22/Mysql%E9%9D%A2%E8%AF%95%E7%AF%87/">Mysql面试篇</a>
       
     </h1>
@@ -1359,323 +1685,6 @@
 <p>这种结构的好处是资源状态分布在每个节点上，但同时也增大了cpu的开销，因为每一个节点都需要轮询。</p>
 <p>AQS正式基于这种思想，首先他把CHL的虚拟队列改造成了显式队列，保存了前驱和后继（为了满足一些对于公平锁和非公平锁的要求，使用了双向链表），全局维护一个state，当获取到锁之后state+1，可以实现锁重入。</p>
 <h2 id="reentrantLock"><a href="#reentrantLock" class="headerlink" title="reentrantLock"></a>reentrantLock</h2><p>reentrantLock基于aqs，实现可重入，可中断，可以设置公平锁，可以有多个条件设置，可以设置超时时间。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/10/%E9%9B%86%E5%90%88%E6%80%BB%E7%BB%93/">集合总结</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-10
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="数组与集合区别，用过哪些？"><a href="#数组与集合区别，用过哪些？" class="headerlink" title="数组与集合区别，用过哪些？"></a>数组与集合区别，用过哪些？</h2><ol>
-<li>数组是定长的，集合不是定长的，例如ArrayList是动态数组</li>
-<li>数组存储的是基本数据类型和对象，而集合只能存储对象（这里也可以引申出为什么要有包装类，为了统一集合的操作需要把基本数据类型包装成对象，int变成Integer，但是这样也会有自动拆箱导致的性能问题）</li>
-<li>数组可以随机访问，集合需要通过迭代器或者其他方法访问（其实还是由于包装了）</li>
-</ol>
-<p>用过哪些：ArrayList,LinkedList,Vector,HashSet,TreeSet,BlockingQueue,HashMap.TreeMap,LinkedHashMap</p>
-<h2 id="说说Java中的集合？"><a href="#说说Java中的集合？" class="headerlink" title="说说Java中的集合？"></a>说说Java中的集合？</h2><p>Java的集合类分为两个大类，Collection接口实现的List，Set和Queue，以及Map接口。Collection存储的是<strong>单一元素</strong>，而Map存储的是<strong>键值对</strong>。</p>
-<p>在Collection接口下：</p>
-<ol>
-<li>List是顺序的，主要实现类是ArrayList，底层基于动态数组，LinkedList，底层基于双向链表，Vector，是加了重度锁的有线程安全的顺序数据结构，由于性能一般已经很少用了</li>
-<li>Set是集合，存储的元素不能重复：HashSet基于HashMap（有待考究），TreeSet是基于红黑树，按照某种顺序有序的集合。</li>
-<li>QUeue是队列，了解较少</li>
-</ol>
-<p>在Map接口下：</p>
-<ol>
-<li>HashMap：jkd1.7基于Entry+链表的形式，在1.8之后改成Node+链表+红黑树。线程不安全</li>
-<li>TreeMap：基于红黑树，可以根据key的大小排序</li>
-<li>LinkedHashMap：基于HashMap，但是内部维护了一个双向链表来指定顺序，1.7之前是循环链表，1.8以后是双向链表</li>
-</ol>
-<h2 id="Java中的线程安全的集合是什么？"><a href="#Java中的线程安全的集合是什么？" class="headerlink" title="Java中的线程安全的集合是什么？"></a>Java中的线程安全的集合是什么？</h2><p>在java.util包下的数据结构，也就是本身设计就是为了线程安全的：</p>
-<ol>
-<li>Vector：操作都用了synchronized方法，用copyOnWriteArrayList替代</li>
-<li>HashTable：也是加了重度锁的哈希表，性能不如concurrentHashMap</li>
-</ol>
-<p>在1.8以后有Concurrent的包出现，带来了很多新的线程安全的集合</p>
-<ol>
-<li>ConcurrentHashMap：1.7之前是分段锁，把每个Segment都锁上，默认可以实现16个线程并发（前提是他们访问的这些数据都分布在16个不同的Segment上）。1.8以后是用了Node+链表+红黑树，锁的粒度变小了，只用synchronized锁住头节点，然后如果要添加到话用cas操作，大大减轻了锁的粒度，性能较好</li>
-<li>CopyONWriteArrayList：写时复制COW，指的是在写操作的时候赋值一份副本在副本上进行操作，最后再用新数组替换旧的数组，如果期间原数组有操作，就记录下来最后进行变更</li>
-</ol>
-<h2 id="Collections和Collection的区别"><a href="#Collections和Collection的区别" class="headerlink" title="Collections和Collection的区别"></a>Collections和Collection的区别</h2><p>Collection是一个接口，如上面所述；Collections是一个工具类，提供了一系列静态方法来帮助完成集合的操作，比如sort</p>
-<blockquote>
-<p>Collections还有一个方法可以让HashMap变成线程安全的集合，这个方法是给所有HashMap的方法加上synchronized关键字，这样效率是很低的，所以能用还是用ConcurrentHashMap吧</p>
-</blockquote>
-<h2 id="ArrayList和LinkedList的区别"><a href="#ArrayList和LinkedList的区别" class="headerlink" title="ArrayList和LinkedList的区别"></a>ArrayList和LinkedList的区别</h2><ol>
-<li>底层数据结构不同：ArrayList基于的是动态数组自动扩容，LinkedList基于的是双向链表，都不是线程安全的</li>
-<li>增删改查的时间复杂度不一样，ArrayList可以支持随机查询，但是增删都需要平均一半的时间o(n&#x2F;2)，双向链表在头尾增删有比较高的效率，但是在中间添加也是有查询的时间复杂度（注意，这里ArrayList实现了RandomAccess接口，表示可以支持随机访问，但是这个接口是空的，仅仅作为一个标记）</li>
-<li>空间占用，ArrayList是连续的数据结构，数据密度大，而LinkedList可以是离散的，由于要存储下一个数据的指针，需要额外的空间，数据密度不大</li>
-</ol>
-<h2 id="ArrayList的初始化"><a href="#ArrayList的初始化" class="headerlink" title="ArrayList的初始化"></a>ArrayList的初始化</h2><p>ArrayList有两种初始化方式（还有一种是输入集合的，考察的比较少）：</p>
-<ol>
-<li>无参构造方法，初始化为一个默认的DEFAULTCAPACITY_EMPTY_ELEMENTDATA的空数组，并没有分配具体对象，到后面grow操作才会有对象</li>
-<li>有参构造方法，如果输入的长度不为0，直接就new一个Object数组，如果输入的长度为0，初始化为另外一个EMPTY_ELEMENTDATA的空数组</li>
-</ol>
-<blockquote>
-<p>为什么要有两个这个空数组呢，是因为需要区分是否为有参构造函数，在后续的扩容操作中只有DEFAULTCAPACITY_EMPTY_ELEMENTDATA才会分配默认值。这个在后续扩容操作有用处</p>
-</blockquote>
-<h2 id="ArrayList的扩容机制"><a href="#ArrayList的扩容机制" class="headerlink" title="ArrayList的扩容机制"></a>ArrayList的扩容机制</h2><blockquote>
-<p>注意区分数组长度elementData.length和数据量size</p>
-</blockquote>
-<ol>
-<li>再添加一个元素之前，先检查下一个位置是否存在，进行检查，传入参数是当前数据量+1；检查的目的是为了确定数组长度能否支持下一个数据的添加</li>
-<li>在检查前针对无参构造方法有一个当前需要的最小长度的计算，由于初始化的时候长度没有确定，这个时候需要的最短长度就是默认的10；其余的方法容量计算的结果就是传入参数直接输出（即数据量+1）</li>
-<li>进行检查，如果这个需要的最短长度大于了数组长度，就需要扩容了</li>
-<li>扩容：非0情况下是1.5倍的原长度，如果原长度为0，则新长度为刚刚计算得到的最小长度。</li>
-</ol>
-<blockquote>
-<p>引申问题1:new ArrayList()和new ArrayList(0)第一次扩容的长度是多少，由刚刚的分析可知，有参在最小长度计算得到的长度为0+1&#x3D;1，无参为10，所以说第一次扩容分别为10和1<br>引申问题2:new ArrayList(10)在添加一个元素的时候扩容了几次，没有扩容，因为在构造函数里面已经有分配空间，而且1&lt;10，不会触发grow</p>
-</blockquote>
-<h2 id="ArrayList是线程安全的吗？如果想用线程安全的List怎么操作"><a href="#ArrayList是线程安全的吗？如果想用线程安全的List怎么操作" class="headerlink" title="ArrayList是线程安全的吗？如果想用线程安全的List怎么操作"></a>ArrayList是线程安全的吗？如果想用线程安全的List怎么操作</h2><p>ArrayList不是线程安全的，主要是因为在加入数据的时候++操作不是原子性的，首先先说明加入数据的逻辑，总结为如下：</p>
-<ol>
-<li>先进行上面所述的校验和扩容</li>
-<li>再在当前size的位置添加元素（引发线程安全）</li>
-<li>最后将当前的size+1</li>
-</ol>
-<p>有以下三种情况会引发线程安全问题：</p>
-<ol>
-<li>出现null值，线程a添加2位置的元素，此时线程b也同时进来想要添加2位置的元素，线程a添加完成后没有立刻size++，线程b也存到当前位置，最后两个都size++，此时size为4，2的位置由于重复冲掉了一个数据，3的位置直接就是null。</li>
-<li>出现溢出：当前长度为9，容量是10，两个线程同时在9的时候添加，就会出现溢出</li>
-<li>size和put的次数不一样：这个出现的最多，也是因为size++</li>
-</ol>
-<p>如何使用线程安全的list：</p>
-<ol>
-<li>Collections.synchronizedList(arrayList)，相当于在方法上全部加上synchronized，效率低</li>
-<li>CopyOnWriteArrayList：写操作用reentrantlock来保证不会出现<strong>上述1和3</strong>的线程安全问题，临界区内执行复制，不会影响读操作，存入完成后进行地址替换。虽然这种方法确实是线程安全的，但是每次写操作都要进行上锁和复制数组，在写多读少的情况下肯定是不好的。只适用于读多写少</li>
-<li>Vector：效率更低，已经淘汰</li>
-</ol>
-<h2 id="LinkedList的机制"><a href="#LinkedList的机制" class="headerlink" title="LinkedList的机制"></a>LinkedList的机制</h2><p>双向链表，查询数据的复杂度为o(n)，在首尾添加数据的复杂度为o(1)</p>
-<h2 id="HashMap的数据结构"><a href="#HashMap的数据结构" class="headerlink" title="HashMap的数据结构"></a>HashMap的数据结构</h2><p>HashMap的结构经历了大的改版，在jkd1.7HashMap是基于Entry数组的，哈希冲突用拉链法解决，就形成了Entry数组+链表的结构；在jkd1.8以后，拉链超过一定的数量转化成查询效率更高的红黑树，形成了Entry数组+链表+红黑树的结构</p>
-<p>解决哈希冲突的方法（复习）：</p>
-<ol>
-<li>拉链法：把冲突的都还是放在原来的位置</li>
-<li>开放选址法：线性探测法（顺序往后面找），二次探测（1，4，9这样找）</li>
-<li>再散列法：把冲突的再进行散列</li>
-<li>哈希桶扩容：减小碰撞的可能性</li>
-</ol>
-<h2 id="HashMap的put过程"><a href="#HashMap的put过程" class="headerlink" title="HashMap的put过程"></a>HashMap的put过程</h2><ol>
-<li>首先会判断是否初始化，如果没有初始化（比如空参构造方法）就resize</li>
-<li>按照hash方法计算哈希值，这个哈希值的计算是通过hashcode和高位的异或运算得出，融合了高位和低位信息的hash函数，效果会更好</li>
-<li>与当前Entry数组进行取余操作，这里的取余是位运算，hash&amp;(n-1)，hashmap规定n必须是2的整数倍，也就是说n-1为最高位为0，其余都是1的二进制数，与hash进行与运算就能得到余数，位运算比%的效率高</li>
-<li>得到了应该存储的Entry号，判断这个Entry上有没有别的元素，如果没有就直接写上去（这里还要判断是不是一个key，如果是一个key的话需要替换值）</li>
-<li>如果有别的元素，首先判断是不是红黑树的节点，如果是红黑树的节点就走红黑树的添加逻辑</li>
-<li>如果不是红黑树，是链表，在查找的过程中还需要看key是否重复，如果是重复的还需要覆盖v，如果没有重复的key就添加到表尾（尾插法，这也是1.8与1.7的一个区别，1.7的尾插会出现一些并发安全问题）</li>
-<li>如果加入之后大于红黑树的阈值，还需要转换成红黑树</li>
-<li>最后检查size，如果大了就需要resize</li>
-</ol>
-<p><img src="/../img/Java/img_6.png"></p>
-<h2 id="HashMap如何检查重复"><a href="#HashMap如何检查重复" class="headerlink" title="HashMap如何检查重复"></a>HashMap如何检查重复</h2><p>主要是靠这一段代码：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p.hash == hash &amp;&amp; ((k = p.key) == key || (key != null &amp;&amp; key.equals(k)))</span><br></pre></td></tr></table></figure>
-<ol>
-<li>首先判断两个的hash值，hash值相同说明碰撞了</li>
-<li>再判断key的地址是不是一个，如果是基本数据类型那就是比较本身，如果是字符串或者是对象就比较地址</li>
-<li>再比较内容，如果内容是一个那就是相同的，比如两个不同地址的字符串但是内容都是“abc”，再map这里也是一个</li>
-</ol>
-<h2 id="HashMap的resize机制"><a href="#HashMap的resize机制" class="headerlink" title="HashMap的resize机制"></a>HashMap的resize机制</h2><ol>
-<li>首先进行新数组的长度和阈值的计算，如果当前数组有长度和阈值，那就都乘2，如果有阈值但是没有长度（或长度为0，这种情况可能是有参构造函数造成的，在构造函数中只有这个阈值的初始化）就把要最小数组长度设置为阈值（此阈值不是那个乘负载因子的阈值），最后就是无参构造函数的，直接设置最小数组长度为默认的16</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">HashMap</span><span class="params">(<span class="type">int</span> initialCapacity, <span class="type">float</span> loadFactor)</span> &#123;</span><br><span class="line">     <span class="keyword">if</span> (initialCapacity &lt; <span class="number">0</span>)</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Illegal initial capacity: &quot;</span> + initialCapacity);</span><br><span class="line">     <span class="keyword">if</span> (initialCapacity &gt; MAXIMUM_CAPACITY)</span><br><span class="line">         initialCapacity = MAXIMUM_CAPACITY;</span><br><span class="line">     <span class="keyword">if</span> (loadFactor &lt;= <span class="number">0</span> || Float.isNaN(loadFactor))</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Illegal load factor: &quot;</span> + loadFactor);</span><br><span class="line">     <span class="built_in">this</span>.loadFactor = loadFactor;</span><br><span class="line">     <span class="comment">// 初始容量暂时存放到 threshold ，在resize中再赋值给 newCap 进行table初始化</span></span><br><span class="line">     <span class="built_in">this</span>.threshold = tableSizeFor(initialCapacity);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>根据最小数组长度和阈值进行扩容，进行新的哈希值计算</li>
-<li>链表上的元素根据e.hash&amp;oldCap，得到高位是0或者1，如果是1就放在新加的数组后面：</li>
-</ol>
-<p><img src="/../img/Java/img_7.png"></p>
-<p><img src="/../img/Java/img_8.png"></p>
-<ol start="4">
-<li>红黑树也根据哈希值按照上述方法进行分裂，小于6个点的退化为链表’</li>
-</ol>
-<h2 id="为什么HashMap要用2的整数倍"><a href="#为什么HashMap要用2的整数倍" class="headerlink" title="为什么HashMap要用2的整数倍"></a>为什么HashMap要用2的整数倍</h2><ol>
-<li>位运算的取余操作</li>
-<li>扩容机制巧妙将0，1分开</li>
-</ol>
-<h2 id="HashMap怎么样才能不扩容"><a href="#HashMap怎么样才能不扩容" class="headerlink" title="HashMap怎么样才能不扩容"></a>HashMap怎么样才能不扩容</h2><p>只要满足大于扩容阈值就行了，如果预计有100个数据要进入hashmap，那就做一个（100&#x2F;负载因子）+1这么大的数组，这样可以保证不会触发扩容，当然初始化的resize还是有的</p>
-<h2 id="HashMap的线程安全问题"><a href="#HashMap的线程安全问题" class="headerlink" title="HashMap的线程安全问题"></a>HashMap的线程安全问题</h2><p>并不是安全的，主要会有以下几个问题：</p>
-<ol>
-<li>在jkd1.7，由于是头插法，在数据迁移的过程中可能会出现死循环的问题，有两个数据A-&gt;B，线程1和2同时操作当前快照，线程1已经操作了这两个节点变为B-&gt;A，线程2的当前节点为A，next为B，此时线程2进行操作，插入A节点，把当前节点换为B，B的next也是A，这样就循环了</li>
-<li>此外还是会有跟ArrayList那种出现索引位置重复，比如当前某个Entry上没有元素，两个hash冲突的就可能会覆盖</li>
-<li>还有size与put操作次数不一致的问题</li>
-</ol>
-<p>什么方法解决？</p>
-<ol>
-<li>concurrentHashMap：一种基于多段锁的Map</li>
-<li>HashTable：直接锁整个表</li>
-</ol>
-<h2 id="concurrentHashMap和HashTable的区别"><a href="#concurrentHashMap和HashTable的区别" class="headerlink" title="concurrentHashMap和HashTable的区别"></a>concurrentHashMap和HashTable的区别</h2><p>concurrentHashMap在jdk1.7以前是segment+hashEntry+链表构成，给每个segment上锁，默认支持16的并发（前提是每一个线程访问的数据都不在一个segment上）；在jdk1.8以后通过synchronized+cas+node完成了并发控制，直接在hashmap进行锁操作，用synchronized锁住头节点，cas锁住添加操作。HashTable是方法全加synchronized的哈希表，效果肯定是不如cas的</p>
-<blockquote>
-<p>concurrentHashMap什么时候用synchronized什么时候用cas，当Entry是空节点的时候就用自旋锁，当不为空就不用</p>
-</blockquote>
-<h2 id="HashSet"><a href="#HashSet" class="headerlink" title="HashSet"></a>HashSet</h2><p>HashSet是基于HashMap的，由于HashMap的特性会替换重复的key，HashSet直接把当前元素作为key，这样就可以达到去重的目的</p>
-<h1 id="未完待续。。。。。"><a href="#未完待续。。。。。" class="headerlink" title="未完待续。。。。。"></a>未完待续。。。。。</h1>
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/08/16/jvm-%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%92%8C%E5%8F%8C%E4%BA%B2%E5%A7%94%E6%B4%BE%E6%9C%BA%E5%88%B6/">jvm-类加载器和双亲委派机制</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-08-16
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="类加载器"><a href="#类加载器" class="headerlink" title="类加载器"></a>类加载器</h1><h2 id="类加载过程"><a href="#类加载过程" class="headerlink" title="类加载过程"></a>类加载过程</h2><p>首先回顾一下类加载的过程。类的生命周期分为以下七个阶段：加载-&gt;验证-&gt;准备-&gt;解析-&gt;初始化-&gt;使用-&gt;卸载。其中加载是生命周期的第一个阶段，类加载器用不同的方式加载jar包，可以从classpath，动态代理和网络获取要加载的类。</p>
-<p>类加载主要做了以下三件事：</p>
-<ol>
-<li>用类的全限定名找到类的class文件，也就是字节流</li>
-<li>将字节流文件转化为方法区中运行时数据结构InstanceKlass，保存常量池，字段，方法等内容</li>
-<li>在堆中创建相应Class对象，映射到方法区的数据结构，这部分是允许程序员操纵的</li>
-</ol>
-<blockquote>
-<p>在 Java 的类加载阶段，<code>InstanceKlass</code> 和 <code>Class</code> 对象各自扮演了不同的角色。理解它们的作用有助于更好地理解 Java 类加载和运行时的内部机制。</p>
-</blockquote>
-<h3 id="1-InstanceKlass"><a href="#1-InstanceKlass" class="headerlink" title="1. InstanceKlass"></a>1. <strong><code>InstanceKlass</code></strong></h3><p><code>InstanceKlass</code> 是在某些 Java 虚拟机（JVM）实现中用于表示类的内部数据结构的一个术语（例如在 HotSpot JVM 中）。它是 JVM 内部的一个概念，主要用于存储和管理类的各种元数据。<code>InstanceKlass</code> 包含了类的实例字段、方法、常量池等信息，主要用于：</p>
-<ul>
-<li><strong>表示和管理类的元数据</strong>：包括类的字段、方法、常量池等。</li>
-<li><strong>支持类的实例化和动态操作</strong>：在 JVM 内部用于实现类实例化、反射等操作。</li>
-<li><strong>管理类的加载和初始化</strong>：确保类在加载、链接和初始化过程中能够正确地管理其结构和状态。</li>
-</ul>
-<p><code>InstanceKlass</code> 是 JVM 内部对类的表示，主要用于实现 JVM 的各种内部操作，通常不会被应用程序直接访问或操作。</p>
-<h3 id="2-Class-对象"><a href="#2-Class-对象" class="headerlink" title="2. Class 对象"></a>2. <strong><code>Class</code> 对象</strong></h3><p><code>Class</code> 对象是 Java 语言层面提供的，用于表示和操作 Java 类的一个公共 API。每个 Java 类在运行时都有一个 <code>Class</code> 对象，用于提供对该类的元数据的访问。<code>Class</code> 对象的作用包括：</p>
-<ul>
-<li><strong>反射</strong>：提供了用于访问类的信息和操作类的方法（如获取类的字段、方法、构造函数等）。</li>
-<li><strong>类型检查</strong>：在运行时进行类型检查和类型转换。</li>
-<li><strong>动态实例化</strong>：允许在运行时创建类的实例（如 <code>Class.forName</code> 和 <code>newInstance</code>）。</li>
-</ul>
-<h3 id="类的加载阶段的角色和作用"><a href="#类的加载阶段的角色和作用" class="headerlink" title="类的加载阶段的角色和作用"></a>类的加载阶段的角色和作用</h3><ol>
-<li><p><strong>加载（Loading）</strong>：</p>
-<ul>
-<li>在这个阶段，JVM 会根据类的全限定名找到类文件（<code>.class</code> 文件），并将其字节码读入内存。此时，<code>InstanceKlass</code> 对象可能在内部被创建来管理这个类的字节码和元数据。</li>
-</ul>
-</li>
-<li><p><strong>链接（Linking）</strong>：</p>
-<ul>
-<li><strong>验证（Verification）</strong>：确保类文件的字节码符合 Java 虚拟机规范。</li>
-<li><strong>准备（Preparation）</strong>：为类的静态变量分配内存并初始化。</li>
-<li><strong>解析（Resolution）</strong>：将类中的符号引用解析为直接引用。</li>
-</ul>
-</li>
-<li><p><strong>初始化（Initialization）</strong>：</p>
-<ul>
-<li>执行类的静态初始化代码（如静态块）。</li>
-</ul>
-</li>
-</ol>
-<h3 id="InstanceKlass-和-Class-对象的关系"><a href="#InstanceKlass-和-Class-对象的关系" class="headerlink" title="InstanceKlass 和 Class 对象的关系"></a><code>InstanceKlass</code> 和 <code>Class</code> 对象的关系</h3><ul>
-<li>在内部，<code>InstanceKlass</code> 是 JVM 实现中的一个结构，用于存储和管理类的内部数据和状态。</li>
-<li><code>Class</code> 对象是 Java 语言层面的一个公共 API，提供了对类信息的访问。</li>
-</ul>
-<p><strong>在类加载阶段，<code>InstanceKlass</code> 负责 JVM 内部的类数据结构管理和维护</strong>，而 <code>Class</code> 对象则提供了给应用程序使用的接口来访问和操作这些数据。它们各自作用于不同的层面，但在类加载和运行时的操作中是相辅相成的。</p>
-<h3 id="关系总结"><a href="#关系总结" class="headerlink" title="关系总结"></a>关系总结</h3><ul>
-<li>**<code>InstanceKlass</code>**：JVM 内部用于表示和管理类的元数据，是实现细节。</li>
-<li><strong><code>Class</code> 对象</strong>：Java API 提供的类元数据的公共接口，让应用程序能够通过反射等机制与类进行交互。</li>
-</ul>
-<p><strong><code>InstanceKlass</code> 和 <code>Class</code> 对象</strong> 在类加载过程中相互协作，使得类的内部管理与外部访问得以实现。</p>
-<blockquote>
-<p>补充知识点：反射</p>
-<p>反射是通过操作Class文件，在类的运行过程中动态的获取一些信息，比如当前时刻的字段和方法。首先在某个类的加载阶段，会在jvm的方法区生成一个InstanceKlass文件，这是由c++实现的，同时也会在堆中生成一个Class对象，该对象有反射的功能。<br>在需要使用反射的时候，利用Class.forName(全限定名)，可以在堆中取出该Class对象，完成反射调用。</p>
-</blockquote>
-<h2 id="类加载器分类"><a href="#类加载器分类" class="headerlink" title="类加载器分类"></a>类加载器分类</h2><p>一般来说，自上而下可以分为四个类加载器：</p>
-<h3 id="启动类加载器-BootStrapClassLoader"><a href="#启动类加载器-BootStrapClassLoader" class="headerlink" title="启动类加载器(BootStrapClassLoader)"></a>启动类加载器(BootStrapClassLoader)</h3><p>由jvm提供c++编写，对于java程序员不可见，当打印类加载器名为null的时候即为启动类加载器。一般用于加载java核心类（rt）</p>
-<h3 id="扩展类加载器-ExtensionClassLoader"><a href="#扩展类加载器-ExtensionClassLoader" class="headerlink" title="扩展类加载器(ExtensionClassLoader)"></a>扩展类加载器(ExtensionClassLoader)</h3><p>加载一些拓展jar包，比如applet等一系列非java核心功能，但是有时候有需要用到的官方包</p>
-<h3 id="应用程序类加载器-ApplicationClassLoader"><a href="#应用程序类加载器-ApplicationClassLoader" class="headerlink" title="应用程序类加载器(ApplicationClassLoader)"></a>应用程序类加载器(ApplicationClassLoader)</h3><p>加载在classpath下用户编写的所有java类和jar包</p>
-<h3 id="自定义类加载器"><a href="#自定义类加载器" class="headerlink" title="自定义类加载器"></a>自定义类加载器</h3><p>用户为了实现某些特定功能编写的，首先说明在java中的ClassLoader继承结构，ClassLoader是一个抽象类，URLClassLoader实现了在对应路径下的二进制文件写入内存的操作。其中由几个重要方法：</p>
-<ul>
-<li><code>protected Class&lt;?&gt; findClass(String name)</code>：传入的参数为全限定名。默认实现是空方法，在URLClassLoader中将全限定名转换成了路径（.改成了&#x2F;，后缀添上了.class），自定义类加载器需要重写该方法，自定义逻辑去实际查找并加载类的字节码。例如，从网络、数据库或非标准路径加载类。</li>
-<li><code>public Class&lt;?&gt; loadClass(String name)</code>：入口方法，遵循双亲委派机制。<strong>双亲委派机制</strong>：当要加载一个类的时候，如果当前类加载器发现已经加载过该类（调用findLoadedClass，这个方法会使用native方法完成判断是否加载），就直接返回该Class对象，如果没有加载就委派父加载器进行加载，直到启动类加载器。启动类加载器会自顶向下判断是否能够加载当前类，比如启动类加载器加载不了的就给扩展类加载器，如果全部都加载不了，则报错ClassNotFoundException<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Class&lt;?&gt; loadClass(String name, <span class="type">boolean</span> resolve) <span class="keyword">throws</span> ClassNotFoundException &#123;</span><br><span class="line">    <span class="keyword">synchronized</span> (getClassLoadingLock(name)) &#123;</span><br><span class="line">        <span class="comment">// 检查类是否已经被加载</span></span><br><span class="line">        Class&lt;?&gt; c = findLoadedClass(name);</span><br><span class="line">        <span class="keyword">if</span> (c == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">if</span> (parent != <span class="literal">null</span>) &#123;</span><br><span class="line">                    <span class="comment">// 委派给父类加载器</span></span><br><span class="line">                    c = parent.loadClass(name, <span class="literal">false</span>);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 使用引导类加载器加载</span></span><br><span class="line">                    c = findBootstrapClassOrNull(name);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (ClassNotFoundException e) &#123;</span><br><span class="line">                <span class="comment">// 父加载器找不到类</span></span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (c == <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="comment">// 如果父加载器也找不到类，则调用 findClass 方法加载</span></span><br><span class="line">                c = findClass(name);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (resolve) &#123;</span><br><span class="line">            resolveClass(c);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> c;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><code>protected final Class&lt;?&gt; defineClass()</code>：做一些类名的校验，然后调用虚拟机的native方法将字节码信息加载到虚拟机缓存中</li>
-</ul>
-<blockquote>
-<p>defineClass() 与 loadClass() 和 findClass() 的关系:</p>
-<ul>
-<li>loadClass()：loadClass() 是类加载的入口方法，负责按照双亲委派模型加载类。如果父类加载器无法加载该类，loadClass() 最后会调用当前类加载器的 findClass()。 </li>
-<li>findClass()：findClass() 是自定义类加载器用于查找类字节码的地方。一般自定义类加载器会重写 findClass()，在找到类的字节码后，通过调用 defineClass() 将其定义为 Class 对象。 </li>
-<li>defineClass()：defineClass() 是类加载过程中的核心步骤，负责将字节码转化为 JVM 识别的 Class 对象。通常是 findClass() 方法中的最后一步。</li>
-<li>调用关系：loadClass双亲委派机制，用findClass实现文件到字节数组的转换，defineCLass完成字节数组到内存的转化</li>
-</ul>
-</blockquote>
-<p><strong>还有一个要注意的点：</strong></p>
-<p>loadClass()有一个resolve参数，这个参数默认为false，代表只进行加载阶段，不进行连接阶段。比如要加载的类中有静态代码块，只调用loadclass是不会初始化这个代码块的，原因是只有加载阶段，不会进行连接更不会初始化了。</p>
-<h1 id="双亲委派机制"><a href="#双亲委派机制" class="headerlink" title="双亲委派机制"></a>双亲委派机制</h1><ol>
-<li>自底向上委托父类加载器完成加载</li>
-<li>自顶向下加载类</li>
-<li>好处：可以避免重复加载类；保证安全性</li>
-</ol>
-<h2 id="打破双亲委派机制——Tomcat"><a href="#打破双亲委派机制——Tomcat" class="headerlink" title="打破双亲委派机制——Tomcat"></a>打破双亲委派机制——Tomcat</h2><p>在Tomcat中，往往包含了很多的web应用，这些应用的全限定名很可能相同（例如启动了两个相同的服务）。对于双亲委派机制而言，每一个web应用都会委派父类加载器进行加载来保证当前classpath下的全限定名唯一性，比如demo1加载了com&#x2F;yyf&#x2F;service.class而demo2也有这个类，此时根据机制由于存在一个全限定名相同的类，demo2下的新类不会被加载，这样就会出现问题，因此我们要打破双亲委派机制。</p>
-<h3 id="Tomcat的类加载器"><a href="#Tomcat的类加载器" class="headerlink" title="Tomcat的类加载器"></a>Tomcat的类加载器</h3><p>Tomcat定义了一系列类加载器：<br><img src="/../img/jvm/img_2.png"></p>
-<ul>
-<li>common：通用类，Tomcat和web应用都要使用的类</li>
-<li>catalina:Tomcat要使用的类（注意：在tomcat中默认没有配置这个的路径，此时catalina类加载器即为common加载器，如果需要使用catalina加载器，需要在catalina.properties中进行路径的配置）</li>
-<li>shared：web应用要使用的可以共享的类，比如spring和mybatis（注意：与上面的类似，tomcat默认没有配置，此时也为common类加载器）</li>
-<li>并行web应用类加载器：每个应用一个</li>
-</ul>
-<blockquote>
-<p>注：共享类加载器<br>如果所有的web应用都是基于SSM的，可以配置共享类加载器实现只加载一次Spring容器，但是可能由于版本不同可能导致兼容问题，以及由于存在的大量反射会导致类污染，所以需要谨慎选择shared加载的类</p>
-</blockquote>
-<h3 id="如何打破双亲委派机制"><a href="#如何打破双亲委派机制" class="headerlink" title="如何打破双亲委派机制"></a>如何打破双亲委派机制</h3><p>有了前面web应用隔离的需求，tomcat通过为每一个web应用创建一个并行web类加载器，只有当全限定名和加载器都是同一个时，才会被认为是重复加载，<br><img src="/../img/jvm/img_3.png"></p>
-<ul>
-<li>左边是双亲委派机制：当需要加载一些内部类的时候还是要走双亲委派机制到启动类加载器</li>
-<li>右边是打破双亲委派机制：比如com&#x2F;yyf&#x2F;myclass.class这个类，并行web应用类加载器就会直接自己加载，但是如果没有加载成功还是会委派父类加载器进行加载</li>
-</ul>
-<h2 id="打破双亲委派机制？——spi机制"><a href="#打破双亲委派机制？——spi机制" class="headerlink" title="打破双亲委派机制？——spi机制"></a>打破双亲委派机制？——spi机制</h2><p>spi机制是一种服务发现机制，分为服务提供者和调用者，spi机制规定了需要在classpath下的META-INF&#x2F;service下以服务调用者的全限定名为文件名创建一个文件，内容为服务提供者的全限定名。再使用ServiceLoader加载服务调用者，就可以调用多个服务提供者。</p>
-<p>在jdbc中，可能有多个数据库源。java.sql.Driver需要能够调用多个数据库的驱动比如mysql和Oracle，Driver位于rt中需要用启动类加载器进行加载，而mysql驱动是第三方jar包，需要用应用程序类加载器。<strong>但是在默认情况下，一个类及其依赖类由同一个类加载器加载。</strong>由于spi的存在，mysql的实现类也会在Driver加载的时候通过启动类加载器进行加载，这显然是错误的。</p>
-<h3 id="线程上下文类加载器"><a href="#线程上下文类加载器" class="headerlink" title="线程上下文类加载器"></a>线程上下文类加载器</h3><p>问题重述，对于Driver这个类，是需要用启动类加载器进行加载，但由于spi让其发现了mysql的实现类，需要对其进行加载，此时需要打破双亲委派机制，<strong>启动类加载器委派应用程序加载器加载mysql驱动</strong>。</p>
-<p>其实在每个线程都会默认保存一个应用程序类加载器，一般来说子线程会继承父线程的应用程序类加载器。在spi问题中，我们只需要取出线程保存的应用程序类加载器实现mysql驱动的加载即可。</p>
-<p>同样的，在前文所述的tomcat的spring加载中，我们的代码会使用到spring的一系列注解，在spring容器初始化的过程中也会产生依赖。也就是说，本来是shared（也有可能是common）类加载器加载的spring类，但需要用到classpath下的自己写的应该由并行web应用处理的类。这与spi机制所产生的问题是一致的。</p>
-<p>此时也是通过线程上下文类加载器进行解决，只不过这里在开辟一个线程的时候重新set这个变量为当前的并行web应用类加载器，原理与上面的类似。<br><img src="/../img/jvm/img_4.png"></p>
-<h3 id="真的打破了双亲委派机制吗？"><a href="#真的打破了双亲委派机制吗？" class="headerlink" title="真的打破了双亲委派机制吗？"></a>真的打破了双亲委派机制吗？</h3><p>其实没有，从宏观上看，这里的Driver还是启动类加载器进行加载，mysql还是应用程序类加载器进行加载，也没有重新写loadclass方法。但也确实是由启动类加载器委派应用程序类加载器进行了加载。只不过是角度不同的问题，从宏观上没有打破，微观上打破了。</p>
 
     
     
