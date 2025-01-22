@@ -212,6 +212,76 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/30/JVM%E9%9D%A2%E8%AF%95%E7%AF%87/">JVM面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-30
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="JVM如何解决跨代问题"><a href="#JVM如何解决跨代问题" class="headerlink" title="JVM如何解决跨代问题"></a>JVM如何解决跨代问题</h2><p>如果在年轻代的某个对象引用了老年代的对象，在触发Young GC的时候只会检查年轻代而不会检查老年代，此时如果老年代引用了一个年轻代的对象就不会被YGC发现而回收了此对象。但是这种情况出现的比较少，除非是老年代动态的引用了一个刚产生的对象。</p>
+<p><strong>记忆集和卡表</strong><br>如果为了小概率事件每次YGC都去扫描一遍永久代，开销会很大。此时我们只需要保存从非扫描区域到扫描区域的指针就可以了。这个保存的扫描指针逻辑上叫做记忆集，放在新生代中。</p>
+<p>卡表是hotspot虚拟机对于记忆集的具体实现，类似位图，把非扫描区域分块，然后用一个卡表数组来记录对应块是否变脏，如果记录的为1说明变脏，在YGC的时候把对应块加入扫描。本质上是用空间换时间。</p>
+<p><strong>写屏障</strong><br>这里的写屏障跟volatile的不一样，这里仅仅是对引用操作做了一层aop，在写后屏障加入添加卡表的操作，在写前屏障添加该页是否脏的判断，可以解决伪共享问题。</p>
+<h2 id="三色标记算法"><a href="#三色标记算法" class="headerlink" title="三色标记算法"></a>三色标记算法</h2><p>三色标记算法是可达性分析的一个扫描过程，例如CMS，先做初始标记标记出GCroot，然后再并发标记，这个过程是通过三色标记算法实现的。最后扫描到的白色节点就被视为没有引用，在下一轮GC会被回收。</p>
+<ul>
+<li>黑色，直接或者间接连接到GCroot并且自身所有引用都被扫描过了</li>
+<li>灰色：从黑色节点扩散，但是自己的子节点还没有被完全扫描</li>
+<li>白色：没有被染指的节点，也就是不可达区域</li>
+</ul>
+<p><strong>三色标记的缺点</strong></p>
+<ol>
+<li>多标问题：在一个节点被标记成灰色之后，上一个节点断开联系，最终这个节点还是会被染黑，但实际上是垃圾。这个现象称为浮动垃圾，在下一轮会被回收。</li>
+<li>漏标问题：多标至少可以通过下一轮垃圾回收清除，漏标就严重多了。当一个灰色节点与一个白色节点断掉之后立刻有黑色节点相连。这个时候三色标记算法还是会认为这个节点是白色的，就会被垃圾回收，而此时确实有黑色节点的引用，会报空指针异常。</li>
+</ol>
+<div style="text-align: center;">
+  <img src="../img/jvm/img_5.png" alt="" />
+</div>
+
+<p><strong>如何解决</strong><br>两个条件同时发生才会有漏标现象：首先是有灰色节点与白色节点断开联系，又有黑色节点与白色节点产生联系。</p>
+<p>破坏一个就不会产生漏标：</p>
+<ul>
+<li>增量更新：增量更新破坏了第一个条件：「至少有一个黑色对象新增了对白色对象的引用」，在并发标记阶段，黑色对象D指向了白色对象G，这时会把黑色对象D记录下来，在重新标记阶段，会把黑色对象D标记为灰色对象D，然后以灰色对象D为根节点，扫描整个引用链，白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。 缺点是会重新扫描以黑色对象为根节点的子树，时间长（CMS解决方案）</li>
+<li>原始快照：原始快照破坏了第二个条件：「所有灰色对象指向该白色对象的引用都断开了」，在并发标记阶段，灰色对象E断开了对白色对象G的引用，这是会把白色对象G记录下来，在最终标记阶段，会把白色对象G标记为灰色，然后以灰色对象G为根节点，扫描整个引用链，如此以来原来的白色对象G就会被依次标记为灰色、黑色，白色对象G漏标的问题就解决了。缺点是如果没有黑色对象来引用就会变成浮动垃圾（G1解决方案）</li>
+</ul>
+<h2 id="类的回收"><a href="#类的回收" class="headerlink" title="类的回收"></a>类的回收</h2><p>类的元数据在方法区也就是元空间中，在fullGC是有可能会被垃圾回收的。一个类能被垃圾回收需要满足三个要求：</p>
+<ol>
+<li>没有实例对象</li>
+<li>没有静态方法的引用</li>
+<li>类加载器已经被GC</li>
+</ol>
+<p><strong>private static final int I &#x3D; 0，这个i会回收吗</strong></p>
+<p>看情况，跟着类走，本身这就是一个GCroot，一共有四种GCroot（类的常量引用类似这种，静态引用，虚拟机栈的引用，本地方法栈的引用）。如果不是类被卸载的话是不能被GC的。</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/28/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E9%9D%A2%E8%AF%95%E7%AF%87/">设计模式面试篇</a>
       
     </h1>
@@ -1543,159 +1613,6 @@
 
 </article>
   
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/10/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%80%BB%E7%BB%93/">多线程总结</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-10
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="进程和线程的区别"><a href="#进程和线程的区别" class="headerlink" title="进程和线程的区别"></a>进程和线程的区别</h2><ol>
-<li>资源分配的角度来看：进程是资源分配的最小单位，线程的切换仅仅保存了较少的寄存器，线程不是资源分配的最小单位</li>
-<li>调度的角度：没有引入线程的时候，进程是调度的最小单位，有了线程之后操作系统调度的就是线程了。</li>
-<li>切换开销来看：线程的切换开销较小，只用保存较少的寄存器，进程切换的开销较大</li>
-<li>并发的角度来看：同一个进程的线程可以并发，不同进程的线程之间也可以并发</li>
-</ol>
-<h2 id="Java的线程和操作系统的线程有什么区别"><a href="#Java的线程和操作系统的线程有什么区别" class="headerlink" title="Java的线程和操作系统的线程有什么区别"></a>Java的线程和操作系统的线程有什么区别</h2><p>在jdk1.2以前，java的线程是用户级线程，也就是一对多模型，向下操作系统申请一个线程，这个线程来轮询java的操作，在用户层面看上去是有多线程，但这样效率并没有提升</p>
-<p>在此之后java的线程可以直接用内核级线程，也就是java创建的线程就是操作系统认可的一个线程。</p>
-<h2 id="创建线程的方法"><a href="#创建线程的方法" class="headerlink" title="创建线程的方法"></a>创建线程的方法</h2><p>网上都说有四五种方法，但是其实只用一种就是thread.start()方法，但是为了完整性还是说一下这四种方法：</p>
-<ol>
-<li>继承Thread</li>
-<li>实现Runnable接口:run方法不允许有返回值，也不能抛出异常</li>
-<li>实现Callable接口：call可以有返回值，可以抛出异常</li>
-<li>线程池</li>
-</ol>
-<blockquote>
-<p>什么时候实现runnable接口什么时候继承thread：由于java是单继承的，如果有继承别的类就不能继承Thread了，此时就要使用Runnable接口<br>runnable和callable只是两个接口而已，直接运行对应的run和call是不能成为一个线程的，start是Thread类才有的方法，所以要真正运行起来线程需要new Thread(),这里面传入的是一个Runnable参数，Callable不行，需要用futureTask包装</p>
-</blockquote>
-<blockquote>
-<p>callable怎么用？</p>
-<ol>
-<li>callable和futureTask:由于new Thread要传一个Runnable参数，Callable不是；所以要用futureTask包装</li>
-<li>callable和线程池：submit给线程池返回一个future对象</li>
-</ol>
-</blockquote>
-<h2 id="Future和FutureTask"><a href="#Future和FutureTask" class="headerlink" title="Future和FutureTask"></a>Future和FutureTask</h2><p>future是异步编程的一个体现，当前线程正在执行，我需要取到程序运行结束的结果，也就是未来的结果。具有取消任务，查看任务执行情况，获取任务执行结果等功能。而futureTask是其的一个实现类，同时实现了future和runnable接口，由于new Thread只能传Runnable接口，futureTask正式为了搭配Callable接口，使用的时候new Thread(new FutureTask(new Callable))</p>
-<h2 id="线程池的submit和execute什么区别"><a href="#线程池的submit和execute什么区别" class="headerlink" title="线程池的submit和execute什么区别"></a>线程池的submit和execute什么区别</h2><ol>
-<li>submit返回值为Future，可以执行Callable和Runnable任务，但是如果是runnable那future.get返回就是null，也可以抛出异常</li>
-<li>execute返回值为空，只能执行Runnable任务</li>
-</ol>
-<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><p>类似原来408学的线程状态，但是在java中这些状态略有不同，相比于底层操作系统，这些状态更加高层次，因为不涉及到io操作阻塞进程：</p>
-<ul>
-<li>NEW:初始状态，一般是new Thread()，创建出来但是还没有执行start方法</li>
-<li>RUNNABLE:运行状态，执行了start方法</li>
-<li>BLOCKED:被synchronized方法阻塞了，没有抢到锁就进入这个状态，等到锁释放就变为RUNNABLE</li>
-<li>WAITING:一般是线程之间通讯，调用了wait方法变成waiting状态，而等到notify或者notifyAll变为运行态</li>
-<li>TIME_WAITING:具有具体时间的等待状态</li>
-<li>TERMINATED:线程终止</li>
-</ul>
-<p><strong>BLOCKED和WAITING的区别</strong></p>
-<ul>
-<li>触发条件：线程没有获取到监视器锁（synchronized）就BLOCKING，WAITING是获取到了synchronized锁但是锁对象wait了，也就是释放了锁，主要用于线程通讯</li>
-<li>唤醒条件：获取到锁了之后会解除BLOCKING，而别的线程对锁对象.notify或者notifyAll之后会唤醒waiting线程，但是要继续执行还是要获取锁</li>
-</ul>
-<p><strong>notify和notifyAll的区别</strong></p>
-<ul>
-<li>notify随机唤醒一个（这个是hotspot的机制，可能别的虚拟机是指定的）</li>
-<li>notifyAll，当前锁对象下所有的WAITING线程，共同争抢。唤醒的线程在被 notify() 或 notifyAll() 唤醒后，仍然需要重新争抢对象的锁。它会从 WAITING 状态转换到 BLOCKED 状态，等待对象的锁释放。</li>
-</ul>
-<p><strong>wait和sleep方法的区别</strong></p>
-<ul>
-<li>wait是Object的方法，sleep是Thread的方法</li>
-<li>wait释放锁，sleep不释放锁</li>
-<li>wait需要notify唤醒而sleep到时间就唤醒了</li>
-<li>wait主要用于进程同步，sleep延时</li>
-</ul>
-<blockquote>
-<p>为什么wait定义在object里面而sleep定义在Thread里面：<br>与他们使用的场合有关，wait需要在synchronized方法中运用，而代码块的锁正是object，操作的并不是线程<br>而sleep的作用是让线程睡眠一段时间，这显然跟锁没什么关系，就定义在线程中</p>
-</blockquote>
-<h2 id="死锁的四个条件，通过什么方法解决"><a href="#死锁的四个条件，通过什么方法解决" class="headerlink" title="死锁的四个条件，通过什么方法解决"></a>死锁的四个条件，通过什么方法解决</h2><ul>
-<li>互斥条件：一个资源同时刻只能有一个线程访问</li>
-<li>不剥夺条件：一个线程的资源不可以被别的线程剥夺</li>
-<li>占有且等待条件：一个线程获取不到更多的资源，原来持有的资源也不会释放</li>
-<li>循环等待条件：资源的请求变成了一个环，大家都拿不到对应的资源</li>
-</ul>
-<blockquote>
-<p>破坏这四个条件是<strong>死锁预防</strong>要做的事情。此外还有死锁避免（银行家算法），死锁检测和恢复（有向图检测方法）。这三个大的方法性能由低到高，对死锁的控制由严格到松。</p>
-</blockquote>
-<ul>
-<li>破坏互斥条件：多增加临界资源的数量（虚拟化）</li>
-<li>破坏不剥夺条件：抢占式调度（还有一种是协同式调度，是等到当前线程结束才进行线程调度），得不到资源就释放</li>
-<li>破坏占有等待条件：可以先申请，检查当前系统剩余资源是否能够让线程运行，一次性全拿而不是一次拿一点</li>
-<li>循环等待条件：编号，类似TCP的同步号</li>
-</ul>
-<h2 id="volatile关键字"><a href="#volatile关键字" class="headerlink" title="volatile关键字"></a>volatile关键字</h2><ol>
-<li>在多线程环境中，每个线程都有自己的 CPU 缓存，线程在读写变量时可能会先将变量的值缓存在自己的工作内存中，而不是直接从主内存中读取或写入。使用volatile关键字就告诉程序这个变量是不稳定的，禁用cpu缓存，每次找这个变量都需要去主存取，</li>
-<li>在jvm的执行优化中可能出现指令重排序，也就是123条指令，可能实际变成132，volatile关键字能够在其中加上内存屏障，禁止指令重排序（主要用在双校验单例模式）<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Singleton</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> Singleton singleton;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Singleton</span><span class="params">()</span>&#123;&#125;</span><br><span class="line">    <span class="keyword">public</span> Singleton <span class="title function_">getSingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="built_in">this</span>)&#123;</span><br><span class="line">                <span class="keyword">if</span> (singleton == <span class="literal">null</span>)&#123;</span><br><span class="line">                    singleton = <span class="keyword">new</span> <span class="title class_">Singleton</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> singleton;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li>能保证可见性，但不能保证原子性，例如再出现i++这种操作的时候，即使volatile i，还是会有线程安全问题。因为i++其实是三个操作，从内存取出i，对这个副本+1，再把其写回内存。此时两个线程来操作就会少一次+1。（可以加锁synchronized,reentrantlock或者用AtomicInteger的cas操作）</li>
-</ol>
-<blockquote>
-<p>内存屏障：</p>
-<ul>
-<li>写 volatile 变量时： 当一个线程写入 volatile 变量时，JVM 会在写操作后插入一个写内存屏障（Store Memory Barrier），确保所有在 volatile 变量写操作之前的内存操作都已经完成，并且这些操作的结果对其他线程可见。 在 Java 内存模型中，写 volatile 变量时会确保该写入操作之前的所有变量修改都被刷新到主内存中，然后将 volatile 变量的值写入主内存。 </li>
-<li>读 volatile 变量时：当一个线程读取 volatile 变量时，JVM 会在读操作前插入一个读内存屏障（Load Memory Barrier），确保所有在 volatile 变量读操作之后的内存操作都不会被重排序到它之前。 在 Java 内存模型中，读 volatile 变量时，会确保在读取这个 volatile 变量之后，线程能够看到所有其他线程在写入该 volatile 变量之前对其他变量的修改。</li>
-</ul>
-</blockquote>
-<h2 id="synchronized"><a href="#synchronized" class="headerlink" title="synchronized"></a>synchronized</h2><ol>
-<li>可以修饰实例方法，锁住当前对象</li>
-<li>修饰静态方法，锁住当前类。这里就会有个有意思的事情，修饰在静态方法上的synchronized和实例方法上的<strong>不互斥</strong>，因为静态方法锁住的是当前类，实例方法锁住的是对象</li>
-<li>修饰代码块，这个比较灵活<blockquote>
-<p>注意这里不能修饰构造函数，构造函数本身就是线程安全的</p>
-</blockquote>
-</li>
-</ol>
-<p><strong>原理</strong><br>基于jvm的monitor，在代码块进入前加上monitorenter，退出的时候加上monitorexit，也是可重入的，底层是监视器维护了一个state字段，有锁进来就+1，重入多次就+n，退出-1，同时也会有维护一个队列存放未获取锁的对象，等到释放了就会唤醒（BLOCKED）</p>
-<p>两个队列entryList和waitList:</p>
-<ul>
-<li>entryList是进入锁代码块的所有线程，当锁释放了之后其中的一个线程会给monitor上锁，同时+1（队列里的状态为BLOCKED），注意这里是队列里所有线程都进行竞争，所以synchronized是非公平锁</li>
-<li>waitList是调用了wait方法的线程，等待notify或者notifyAll进行唤醒，唤醒之后还需要重新获得锁，也就是要进入entryList里（状态为WAITING）</li>
-</ul>
-<p><img src="/../img/Java/img_9.png"></p>
-<p><strong>锁升级</strong></p>
-<ul>
-<li>不加锁：</li>
-<li>偏向锁：当第一个线程进入之后会给其加上偏向锁，使得这个资源偏向。</li>
-<li>轻度锁：使用cas操作</li>
-<li>重度锁：</li>
-</ul>
-<blockquote>
-<p>为什么会有偏向锁这个过程：<br>对于竞争不激烈但是还有加了synchronized关键字的，如果是单线程就没有必要进行锁和上下文切换，偏向锁的初衷正是为了减小上下文切换的开销。如果一个线程反复进入和退出同步块，而没有其他线程争用这把锁，那么这些加锁解锁的开销是完全多余的。</p>
-</blockquote>
-<h2 id="AQS"><a href="#AQS" class="headerlink" title="AQS"></a>AQS</h2><p>抽象队列同步器（AbstractQueuedSynchronizer）提供了一种同步机制，被应用于Reentrantlock，semaphore，cyclicBarrier等排他和共享锁结构中。</p>
-<p>在说AQS之前先要讨论一下CHL锁，因为AQS是基于CHL的。CHL锁是一个队列结构，头节点是一个空节点，当线程进入后会对前驱节点的资源释放状态做cas，例如第一个线程进入之后就对表头节点的锁资源cas，获取到了就改变自己的值为false，后续另外一个线程进入之后就会轮询上一个节点的状态，拉成一个队列。</p>
-<p>这种结构的好处是资源状态分布在每个节点上，但同时也增大了cpu的开销，因为每一个节点都需要轮询。</p>
-<p>AQS正式基于这种思想，首先他把CHL的虚拟队列改造成了显式队列，保存了前驱和后继（为了满足一些对于公平锁和非公平锁的要求，使用了双向链表），全局维护一个state，当获取到锁之后state+1，可以实现锁重入。</p>
-<h2 id="reentrantLock"><a href="#reentrantLock" class="headerlink" title="reentrantLock"></a>reentrantLock</h2><p>reentrantLock基于aqs，实现可重入，可中断，可以设置公平锁，可以有多个条件设置，可以设置超时时间。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
     
   <nav class="pagination">  
       
@@ -1800,7 +1717,7 @@
       
       &copy;
       
-      2024      
+      2024 - 2025      
     </span>
 
     <span class="heart">
