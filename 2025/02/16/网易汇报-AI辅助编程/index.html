@@ -253,7 +253,7 @@
 <h1 id="场景化技巧：编码、调试、测试与排查"><a href="#场景化技巧：编码、调试、测试与排查" class="headerlink" title="场景化技巧：编码、调试、测试与排查"></a>场景化技巧：编码、调试、测试与排查</h1><ol>
 <li><p>编码场景：生成可落地的代码</p>
 <ul>
-<li>需求拆解：将复杂需求分解为子任务，分步生成。<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">步骤1：用Python生成一个读取CSV文件的函数，跳过空行；  </span><br><span class="line">步骤2：在上述函数中添加异常处理（文件不存在、格式错误）；  </span><br><span class="line">步骤3：将函数封装为类，支持指定分隔符。</span><br></pre></td></tr></table></figure></li>
+<li>需求拆解：将复杂需求分解为子任务，分步生成。<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Role：  </span><br><span class="line">&quot;你是资深Java架构师，精通Spring Boot 3.1和OpenAPI规范&quot;  </span><br><span class="line"></span><br><span class="line">Task：  </span><br><span class="line">&quot;为电商系统编写商品查询API，需满足以下条件：XXXX&quot;  </span><br><span class="line"></span><br><span class="line">Goal：  </span><br><span class="line">1. 支持分页查询（page/size参数）  </span><br><span class="line">2. 按价格区间过滤（minPrice/maxPrice）  </span><br><span class="line">3. 返回结构符合Google JSON风格指南  </span><br><span class="line">4. 集成Swagger文档注解  </span><br><span class="line"></span><br><span class="line">Objective：   </span><br><span class="line">// 使用Java 17记录类（Record）定义DTO  </span><br><span class="line">// 添加JPA Specification实现动态查询  </span><br><span class="line">// 包含全局异常处理示例（如参数校验失败）  </span><br></pre></td></tr></table></figure></li>
 </ul>
 </li>
 <li><p>调试场景：精准定位问题</p>
@@ -268,12 +268,7 @@
 </ul>
 </li>
 </ol>
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>持续迭代提示词：将常用提示词保存为模板，根据反馈优化。</p>
-<p>团队协作：建立共享提示词库，标注适用场景和效果。</p>
-<p>结合AI特性：</p>
-<p>对生成代码添加“请解释关键逻辑”以增强可读性；</p>
-<p>对复杂问题要求“分步实现，每步确认后再继续”。</p>
-<p>最终目标：通过精准的提示词设计，将AI转化为团队的“超级助手”，减少低效试错，聚焦核心逻辑创新。<br>各种Ai编程工具的出现能给广大码友释放双手，留有更多的时间学习技术，关注技术本身。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>各种Ai编程工具的出现能给广大码友释放双手，留有更多的时间学习技术，关注技术本身。编写高质量的提示词是有效利用AI辅助编程工具的关键。通过明确角色、清晰描述任务、提供上下文信息等方式，程序员可以引导AI生成更准确和高效的代码，从而提升整体开发效率。在实际工作中，建议大家多加练习和总结，不断优化提示词的编写技巧，以适应不断变化的技术环境。</p>
 
     
   </div>
