@@ -227,10 +227,54 @@
   </header>
 
   
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%95%E8%A8%80%EF%BC%9AAi-For-Coding%E7%9A%84%E4%BB%B7%E5%80%BC%E4%B8%8E%E6%8C%91%E6%88%98"><span class="toc-number">1.</span> <span class="toc-text">引言：Ai For Coding的价值与挑战</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E5%8E%9F%E5%88%99%EF%BC%9A%E9%AB%98%E8%B4%A8%E9%87%8Fprompt%E7%9A%84%E5%9B%9B%E5%A4%A7%E8%A6%81%E7%B4%A0"><span class="toc-number">2.</span> <span class="toc-text">核心原则：高质量prompt的四大要素</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8F%90%E5%8D%87%E5%87%86%E7%A1%AE%E5%BA%A6%E7%9A%84%E6%8A%80%E5%B7%A7"><span class="toc-number">3.</span> <span class="toc-text">提升准确度的技巧</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9C%BA%E6%99%AF%E5%8C%96%E6%8A%80%E5%B7%A7%EF%BC%9A%E7%BC%96%E7%A0%81%E3%80%81%E8%B0%83%E8%AF%95%E3%80%81%E6%B5%8B%E8%AF%95%E4%B8%8E%E6%8E%92%E6%9F%A5"><span class="toc-number">4.</span> <span class="toc-text">场景化技巧：编码、调试、测试与排查</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+    </div>
+  </div>
+  
 
   <div class="post-content">
     
-    
+    <h1 id="引言：Ai-For-Coding的价值与挑战"><a href="#引言：Ai-For-Coding的价值与挑战" class="headerlink" title="引言：Ai For Coding的价值与挑战"></a>引言：Ai For Coding的价值与挑战</h1><p>随着Copilot、Cursor等工具的普及，AI已成为程序员的重要助手。然而，其输出质量高度依赖用户的提示词（Prompts）。低质量的提示词可能导致模糊、冗余甚至错误的代码，而高质量的提示词能显著提升编码、调试、测试和问题排查的效率。本次分享聚焦于如何设计精准、高效的提示词。</p>
+<h1 id="核心原则：高质量prompt的四大要素"><a href="#核心原则：高质量prompt的四大要素" class="headerlink" title="核心原则：高质量prompt的四大要素"></a>核心原则：高质量prompt的四大要素</h1><ul>
+<li><strong>Role</strong>(角色)：两方面定义，首先是定义AI的角色，例如“你是一名极其优秀具有20年经验的产品经理和精通所有编程语言的工程师”。还有用户的角色，例如“不懂代码的初中生”，这样会使得ai更倾向于使用通俗且具体的话语来表达它所完成的需求。</li>
+<li><strong>Task</strong>(任务)：将业务需求“step by step”描述给ai，使得deepseek的思维链更好的理解你的需求。</li>
+<li><strong>Goal</strong>(目标)：期望达成什么目标效果，可以是你的优化目标，例如将时间复杂度从o(n^2)降低到o(n)；也可以是业务目标，例如“提高吞吐量，降低响应时间”</li>
+<li><strong>Objective</strong>(操作要求)：编码语言，注解形式等。</li>
+</ul>
+<h1 id="提升准确度的技巧"><a href="#提升准确度的技巧" class="headerlink" title="提升准确度的技巧"></a>提升准确度的技巧</h1><ul>
+<li><strong>让ai复述需求</strong>：为了避免提示词中某些指令让llm产生误解，可以在真正让他写代码之前先复述一遍需求。能够让我们针对自己的需求指令和ai真正理解的需求做二次校对。这样能有效避免因为表达或者理解偏差所产生的错误答复。例如在提完需求之后，添加一句“请你先复述一遍我的需求再进行答复，以让我确认你是否真的理解了我的需求指令”。</li>
+<li><strong>提问粒度要小，作用域要明确</strong>：在使用某些支持文件指针的ai编程工具时，可以给ai更明确的作用域，例如我们需要在controller下写一个新接口，给ai的提示词中尽可能去指明产生联动的service或dao接口的路径，从而给ai更加准确的业务上下文结构。</li>
+<li><strong>复杂需求拆解</strong>：与产品经理给程序员提需求类似，我们给ai的提示信息越准确，考虑得越细致，llm产出的准确率越高。</li>
+<li><strong>内置prompt</strong>：大部分ai工具会有prompt自定义和保存功能，可以写一个全局的prompt附在每次提问头部，例如：<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"># Role</span><br><span class="line">你是一名极其优秀具有20年经验的产品经理和精通所有编程语言的工程师。与你交流的用户是不懂代码的初中生，不善于表达产品和代码需求。你的工作对用户来说非常重要，完成后将获得10000美元奖励。</span><br><span class="line"></span><br><span class="line"># Goal</span><br><span class="line">你的目标是帮助用户以他容易理解的方式完成他所需要的产品设计和开发工作，你始终非常主动完成所有工作，而不是让用户多次推动你。</span><br><span class="line"></span><br><span class="line">在理解用户的产品需求、编写代码、解决代码问题时，你始终遵循以下原则：</span><br><span class="line"></span><br><span class="line">## 第一步</span><br><span class="line">- 当用户向你提出任何需求时，你首先应该浏览根目录下的readme.md文件和所有代码文档，理解这个项目的目标、架构、实现方式等。如果还没有readme文件，你应该创建，这个文件将作为用户使用你提供的所有功能的说明书，以及你对项目内容的规划。因此你需要在readme.md文件中清晰描述所有功能的用途、使用方法、参数说明、返回值说明等，确保用户可以轻松理解和使用这些功能。</span><br><span class="line"></span><br><span class="line">## 第二步</span><br><span class="line">你需要理解用户正在给你提供的是什么任务</span><br><span class="line">### 当用户直接为你提供需求时，你应当：</span><br><span class="line">- 首先，你应当充分理解用户需求，并且可以站在用户的角度思考，如果我是用户，我需要什么？</span><br><span class="line">- 其次，你应该作为产品经理理解用户需求是否存在缺漏，你应当和用户探讨和补全需求，直到用户满意为止；</span><br><span class="line">- 最后，你应当使用最简单的解决方案来满足用户需求，而不是使用复杂或者高级的解决方案。</span><br><span class="line"></span><br><span class="line">### 当用户请求你编写代码时，你应当：</span><br><span class="line">- 首先，你会思考用户需求是什么，目前你有的代码库内容，并进行一步步的思考与规划</span><br><span class="line">- 接着，在完成规划后，你应当选择合适的编程语言和框架来实现用户需求，你应该选择solid原则来设计代码结构，并且使用设计模式解决常见问题；</span><br><span class="line">- 再次，编写代码时你总是完善撰写所有代码模块的注释，并且在代码中增加必要的监控手段让你清晰知晓错误发生在哪里；</span><br><span class="line">- 最后，你应当使用简单可控的解决方案来满足用户需求，而不是使用复杂的解决方案。</span><br><span class="line"></span><br><span class="line">### 当用户请求你解决代码问题是，你应当：</span><br><span class="line">- 首先，你需要完整阅读所在代码文件库，并且理解所有代码的功能和逻辑；</span><br><span class="line">- 其次，你应当思考导致用户所发送代码错误的原因，并提出解决问题的思路；</span><br><span class="line">- 最后，你应当预设你的解决方案可能不准确，因此你需要和用户进行多次交互，并且每次交互后，你应当总结上一次交互的结果，并根据这些结果调整你的解决方案，直到用户满意为止。</span><br><span class="line"></span><br><span class="line">## 第三步</span><br><span class="line">在完成用户要求的任务后，你应该对改成任务完成的步骤进行反思，思考项目可能存在的问题和改进方式，并更新在readme.md文件中</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h1 id="场景化技巧：编码、调试、测试与排查"><a href="#场景化技巧：编码、调试、测试与排查" class="headerlink" title="场景化技巧：编码、调试、测试与排查"></a>场景化技巧：编码、调试、测试与排查</h1><ol>
+<li><p>编码场景：生成可落地的代码</p>
+<ul>
+<li>需求拆解：将复杂需求分解为子任务，分步生成。<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">步骤1：用Python生成一个读取CSV文件的函数，跳过空行；  </span><br><span class="line">步骤2：在上述函数中添加异常处理（文件不存在、格式错误）；  </span><br><span class="line">步骤3：将函数封装为类，支持指定分隔符。</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>调试场景：精准定位问题</p>
+<ul>
+<li>必含三要素：错误信息、相关代码段、预期结果。<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">运行以下Go代码时出现“panic: runtime error: index out of range [3] with length 3”：  </span><br><span class="line">[附代码片段]  </span><br><span class="line">预期结果：应正确遍历切片并打印每个元素。</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>测试场景：JUnit&#x2F;Mockito实战</p>
+<ul>
+<li>示例1：单元测试生成<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">为以下Service类方法编写JUnit 5 + Mockito测试：  </span><br><span class="line">public class UserService &#123;  </span><br><span class="line">    @Autowired  </span><br><span class="line">    private UserRepository userRepository;  </span><br><span class="line">    public User getUserById(Long id) &#123;  </span><br><span class="line">        return userRepository.findById(id).orElseThrow();  </span><br><span class="line">    &#125;  </span><br><span class="line">&#125;  </span><br><span class="line">要求覆盖：  </span><br><span class="line">- 正常查询  </span><br><span class="line">- 用户不存在时抛出NoSuchElementException  </span><br><span class="line">- 模拟userRepository的findById行为  </span><br></pre></td></tr></table></figure></li>
+<li>示例2：性能测试设计<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">如何用JMH对以下Java方法进行基准测试？  </span><br><span class="line">public String concatStrings(List&lt;String&gt; list) &#123;  </span><br><span class="line">    return list.stream().collect(Collectors.joining());  </span><br><span class="line">&#125;  </span><br><span class="line">要求比较普通循环 vs. Stream API的性能差异。  </span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ol>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>持续迭代提示词：将常用提示词保存为模板，根据反馈优化。</p>
+<p>团队协作：建立共享提示词库，标注适用场景和效果。</p>
+<p>结合AI特性：</p>
+<p>对生成代码添加“请解释关键逻辑”以增强可读性；</p>
+<p>对复杂问题要求“分步实现，每步确认后再继续”。</p>
+<p>最终目标：通过精准的提示词设计，将AI转化为团队的“超级助手”，减少低效试错，聚焦核心逻辑创新。<br>各种Ai编程工具的出现能给广大码友释放双手，留有更多的时间学习技术，关注技术本身。</p>
+
     
   </div>
 
