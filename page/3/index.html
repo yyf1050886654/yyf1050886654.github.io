@@ -212,6 +212,108 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/14/Spring%E9%9D%A2%E8%AF%95%E7%AF%87/">Spring面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-14
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2><p>循环依赖问题指的是在依赖注入过程中两个类互相依赖，这会导致实例化的过程混乱，因为一个类实例化需要另一个类已经实例化了，一般有三种循环依赖问题：</p>
+<ol>
+<li>构造函数依赖循环，这个解决不了</li>
+<li>setter的依赖循环，其中bean是多例（prototype）</li>
+<li>setter的依赖循环，其中bean是单例。</li>
+</ol>
+<p>Spring仅仅对第三种进行了解决。第一种在new的时候就进行不下去了，无法生成对象；第二种由于无穷无尽的循环会生成很多的bean，最后导致oom。</p>
+<p><strong>如何解决</strong></p>
+<p>spring用一个三级缓存解决了，总的来说就是在一个类没有初始化的时候提前暴露bean存到三级缓存中，然后进行这个类初始化完成之后就放回第一层缓存中。</p>
+<p>创建 BeanA： Spring 首先将 BeanA 的实例存储在三级缓存中。 在创建 BeanA 的过程中，发现需要注入 BeanB。</p>
+<p>创建 BeanB： Spring 将 BeanB 的实例存储在三级缓存中（因为 BeanB 也需要 BeanA）。 在创建 BeanB 的过程中，Spring 发现 BeanA 还未完全初始化，所以从三级缓存中获取 BeanA 的代理对象。</p>
+<p>注入依赖： 当 BeanA 创建完成后，Spring 会将 BeanB 注入到 BeanA 的字段中。 同样地，BeanA 会注入到 BeanB 的字段中，完成依赖注入。</p>
+<blockquote>
+<p>在三级缓存这一块，主要记一下 Spring 是如何支持循环依赖的即可，也就是如果发生循环依赖的话，就去 三级缓存 singletonFactories 中拿到三级缓存中存储的 ObjectFactory 并调用它的 getObject() 方法来获取这个循环依赖对象的前期暴露对象（虽然还没初始化完成，但是可以拿到该对象在堆中的存储地址了），并且将这个前期暴露对象放到二级缓存中，这样在循环依赖时，就不会重复初始化了！</p>
+</blockquote>
+<h2 id="Bean的生命周期"><a href="#Bean的生命周期" class="headerlink" title="Bean的生命周期"></a>Bean的生命周期</h2><p>大的可以分为四个部分：</p>
+<ol>
+<li>bean创建阶段：通过调用反射api完成bean的实例化</li>
+<li>依赖注入：为bean设置相关属性和依赖</li>
+<li>初始化bean：首先检查是否实现了Aware包下面的各种aware接口，例如beanname，beanclassloader，beanfactory，其次再检查是否实现了Postbeanprocess接口，执行postbeanbeforeinitialization，再看有没有实现bean初始化方法InitializationBean和xml的init-method，最后再用postBeanAfterInitialization</li>
+<li>销毁，disposableBean和destory-bean</li>
+</ol>
+<div style="text-align: center;">
+  <img src="../img/Spring/img.png" alt="" />
+</div>
+
+<h2 id="依赖注入的三种方式"><a href="#依赖注入的三种方式" class="headerlink" title="依赖注入的三种方式"></a>依赖注入的三种方式</h2><ul>
+<li>字段注入：上面加@Autowired</li>
+<li>构造器注入：官方推荐</li>
+<li>setter注入：通过setter方法注入</li>
+</ul>
+<h2 id="Bean会有线程安全问题吗"><a href="#Bean会有线程安全问题吗" class="headerlink" title="Bean会有线程安全问题吗"></a>Bean会有线程安全问题吗</h2><p>首先来看看bean的作用域，常见的有：</p>
+<ul>
+<li>singleton：默认的bean是单例的</li>
+<li>prototype：每次获取都是不一样的bean</li>
+<li>request：一次http请求就一个bean</li>
+</ul>
+<p>如果作用范围是prototype，那不会有线程安全问题，一次获取就有一个bean。但是如果是单例的bean会有线程安全问题，可以通过以下几个方式解决：</p>
+<ul>
+<li>尽量使用无状态bean</li>
+<li>使用ThreadLocal</li>
+<li>加锁synchronized</li>
+</ul>
+<h2 id="SpringMVC执行流程"><a href="#SpringMVC执行流程" class="headerlink" title="SpringMVC执行流程"></a>SpringMVC执行流程</h2><ol>
+<li>客户端发送http请求，首先由DispatcherServlet接收</li>
+<li>DispatcherServlet去HandlerMapping里面找（这是一个哈希表，存储了请求路径和controller的映射关系）</li>
+<li>找到了对应的Controller，先去通过适配器HandlerAdapter，再去请求Controller</li>
+<li>调用完成后返回一个视图和模型ModelAndView。</li>
+<li>DispatcherServlet找视图解析器ViewResolver进行解析。</li>
+<li>解析得到的Model结合View进行渲染返回请求者</li>
+</ol>
+<div style="text-align: center;">
+  <img src="../img/Spring/img_1.png" alt="" />
+</div>
+
+<h2 id="spring的事务传播逻辑"><a href="#spring的事务传播逻辑" class="headerlink" title="spring的事务传播逻辑"></a>spring的事务传播逻辑</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247486668&idx=2&sn=0381e8c836442f46bdc5367170234abb&chksm=cea24307f9d5ca11c96943b3ccfa1fc70dc97dd87d9c540388581f8fe6d805ff548dff5f6b5b&token=1776990505&lang=zh_CN#rd">详情看这篇文章</a></p>
+</blockquote>
+<ol>
+<li>TransactionDefinition.PROPAGATION_REQUIRED：外部方法没有开启事务，那就自己开启事务，且开启的事务之间相互独立不打扰；如果外部方法有事务，那就与外部同生共死，如果外部事务回滚自己也回滚。外部事务中的一个子事务回滚那所有都回滚。且如果内部事务异常被捕获，外部事物还是会回滚</li>
+<li>TransactionDefinition.PROPAGATION_REQUIRES_NEW：外部事务回滚，内部的new不回滚。内部事务回滚，如果被catch了就不会造成外部事务回滚，如果没有catch就会回滚。（上一个是有无catch都会造成外部事物回滚）</li>
+<li>TransactionDefinition.PROPAGATION_NESTED：与上一个是反的，外部事务回滚会造成内部回滚，自身回滚也是看catch，如果catch了外部事物就不会滚</li>
+</ol>
+<h2 id="Transactional注解使用"><a href="#Transactional注解使用" class="headerlink" title="@Transactional注解使用"></a>@Transactional注解使用</h2><p>可以使用在方法和类上，使用在类上就是给所有方法都加上事务。常用参数有5个，事务隔离级别（读未提交，读提交，可重复读，串行化），传播行为，超时时间（在指定的时间内未完成回滚），是否只读，触发回滚的异常类型</p>
+<h2 id="spring自调用导致失效问题"><a href="#spring自调用导致失效问题" class="headerlink" title="spring自调用导致失效问题"></a>spring自调用导致失效问题</h2><p>由于Transaction这个注释用到了aop，进行事务的对象都是代理对象。如果是自己调用就无法拦截到这个内部调用，所以事务会失效。这个时候可以获取其代理对象。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyService</span> &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">method1</span><span class="params">()</span> &#123;</span><br><span class="line">     ((MyService)AopContext.currentProxy()).method2(); <span class="comment">// 先获取该类的代理对象，然后通过代理对象调用method2。</span></span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">method2</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/14/Java%E5%9F%BA%E7%A1%80%E7%AF%87/">Java基础篇</a>
       
     </h1>
@@ -1381,62 +1483,6 @@
 <li>优点：结构新颖，基于图卷积神经网络，特征提取考虑了结构和点属性两方面特征，更能检测出异常，对稀疏图数据的处理有优势。</li>
 <li>缺点：重构本身具有一定的局限性，只适用于异常数据占比比较小的数据集进行训练，否则通过重构方法后的误差较大，还有前文所说的解码器构造有一点暴力了，因为Z不止有结构还有属性，直接内积会有干扰，改进措施应该可以剔除这部分因素进行单纯的结构重构。</li>
 </ul>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/06/11/redis%E9%A1%B9%E7%9B%AE-elasticsearch%E4%B8%8Emongodb/">redis项目-elasticsearch与mongodb</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-06-11
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>其实这个搜索的功能反倒跟redis没啥关系了，所以我也没归类在redis里。基于es的搜索也不无非是增删改查，先简单说一下项目里用到的这两个功能和api。后续我会详细学习</p>
-</blockquote>
-<h2 id="elasticsearch"><a href="#elasticsearch" class="headerlink" title="elasticsearch"></a>elasticsearch</h2><p>es是一个搜索器，具体怎么搜的我不知道（笑）。目前的理解是在新增blog的时候同时把这个对象给es服务器，它通过索引的方式进行缓存。后续查找的时候就可以根据field，也就是字段名来指定匹配位置。</p>
-<p>比如这里要搜索文章标题的关键字，就用title；如果是内容的，就用content。经过我的实验发现黑马给的分词器只能检索中文，我想要搜素字母“s”，都搜不到。</p>
-<p>项目里的应用也比较简单，就是上述的关键字搜索，然后返回前端的时候要标红，这个步骤是通过在前后加font标签完成的。</p>
-<p>首先是配置：</p>
-<p>这里用到的对象是RestHighLevelClient，我们只需要配置端口号和ip就可以了，这个客户端会使用es的restful端口进行增删改查。</p>
-<p>我们对其的增删改查操作就跟redistemplate一样的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ElasticSearchConfig</span> &#123;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.host&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String host;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;elasticsearch.port&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> Integer port;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     * 将该对象交给Spring容器去管理</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> RestHighLevelClient对象</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> RestHighLevelClient <span class="title function_">restHighLevelClient</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">RestHighLevelClient</span>(</span><br><span class="line">                RestClient.builder(</span><br><span class="line">                        <span class="comment">//若有多个，可以传一个数组</span></span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">HttpHost</span>(host, port, <span class="string">&quot;http&quot;</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>用这个RestHighLevelClient，传输的是一个httprequest，返回的是response。思路是创建一个request，查询标题和内容两个方面的关键词。<br>返回以后进行一个转换，返回的加上颜色标签的hits是一个数组，需要转换成字符串。最后向前端返回这个字符串。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Result <span class="title function_">searchBlog</span><span class="params">(QueryBlogDto dto)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">    <span class="comment">//1.输入校验</span></span><br><span class="line">    <span class="keyword">if</span> (dto == <span class="literal">null</span>)&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (dto.getKeyWord() == <span class="literal">null</span> || dto.getKeyWord().isEmpty())&#123;</span><br><span class="line">        <span class="keyword">return</span> Result.fail(<span class="string">&quot;输入关键词为空&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//异步给mongo</span></span><br><span class="line">    insertSearchHistory(dto.getKeyWord());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.查询条件</span></span><br><span class="line">    <span class="type">SearchRequest</span> <span class="variable">searchRequest</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchRequest</span>(<span class="string">&quot;hmdp_blogs&quot;</span>);</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">searchSourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.1布尔类型的查询</span></span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">builder</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.2 查询标题和内容两方面的关键词</span></span><br><span class="line">    <span class="type">QueryStringQueryBuilder</span> <span class="variable">queryStringQueryBuilder</span> <span class="operator">=</span> QueryBuilders.queryStringQuery(dto.getKeyWord()).field(<span class="string">&quot;content&quot;</span>).field(<span class="string">&quot;title&quot;</span>).defaultOperator(Operator.OR);</span><br><span class="line">    builder.must(queryStringQueryBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.3 文本高亮这个查找到的关键字</span></span><br><span class="line">    <span class="type">HighlightBuilder</span> <span class="variable">highlightBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HighlightBuilder</span>();</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">    highlightBuilder.field(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">    <span class="comment">//2.3.1 标红</span></span><br><span class="line">    highlightBuilder.preTags(<span class="string">&quot;&lt;font style=&#x27;color: red; font-size: inherit;&#x27;&gt;&quot;</span>);</span><br><span class="line">    highlightBuilder.postTags(<span class="string">&quot;&lt;/font&gt;&quot;</span>);</span><br><span class="line">    searchSourceBuilder.highlighter(highlightBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.4 传给searchRequest</span></span><br><span class="line">    searchSourceBuilder.query(builder);</span><br><span class="line">    searchRequest.source(searchSourceBuilder);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.5 包装好了的request给客户端返回</span></span><br><span class="line">    <span class="type">SearchResponse</span> <span class="variable">response</span> <span class="operator">=</span> restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3 处理消息回应，一个gethits是一个类，要获取这个数组需要在这个包装类里面再获取。</span></span><br><span class="line">    SearchHit[] hits = response.getHits().getHits();</span><br><span class="line">    List&lt;Map&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (SearchHit hit : hits)&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">json</span> <span class="operator">=</span> hit.getSourceAsString();</span><br><span class="line">        <span class="type">Map</span> <span class="variable">map</span> <span class="operator">=</span> JSONUtil.toBean(json, Map.class);</span><br><span class="line">        Map&lt;String, HighlightField&gt; highlightFields = hit.getHighlightFields();</span><br><span class="line">        <span class="keyword">if</span> (highlightFields != <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">title</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;title&quot;</span>);</span><br><span class="line">            <span class="type">HighlightField</span> <span class="variable">content</span> <span class="operator">=</span> highlightFields.get(<span class="string">&quot;content&quot;</span>);</span><br><span class="line">            <span class="keyword">if</span> (title != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//title高亮</span></span><br><span class="line">                Text[] titleFragments = title.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(titleFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;title&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (content != <span class="literal">null</span>)&#123;</span><br><span class="line">                <span class="comment">//content高亮</span></span><br><span class="line">                Text[] contentFragments = content.getFragments();</span><br><span class="line">                <span class="type">String</span> <span class="variable">collect</span> <span class="operator">=</span> Arrays.stream(contentFragments).map((value) -&gt; value.toString()).collect(Collectors.joining());</span><br><span class="line">                map.put(<span class="string">&quot;content&quot;</span>,collect);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        list.add(map);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> Result.ok(list);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="mongodb"><a href="#mongodb" class="headerlink" title="mongodb"></a>mongodb</h2><p>登录用户的查询记录很多而且变化频繁。需要用非关系型数据库来存储。（其实我个人觉得没必要存在服务器上，这些缓存应该都是在客户端上保留的）</p>
-<p>mongodb的配置比较简单，甚至不用写配置类。直接看使用</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 保存搜索记录</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> keyWord</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Async</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">insertSearchHistory</span><span class="params">(String keyWord)</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="type">Long</span> <span class="variable">userID</span> <span class="operator">=</span> UserHolder.getUser().getId();</span><br><span class="line">    <span class="comment">//1 先从db找这个数据</span></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID).and(<span class="string">&quot;keyWord&quot;</span>).is(keyWord));</span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">searchHistory</span> <span class="operator">=</span> mongoTemplate.findOne(query, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//2 如果又就更新创建时间</span></span><br><span class="line">    <span class="keyword">if</span> (searchHistory != <span class="literal">null</span>)&#123;</span><br><span class="line">        searchHistory.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3 没有就存进db</span></span><br><span class="line">    <span class="type">QueryBlogDto</span> <span class="variable">dto</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">QueryBlogDto</span>();</span><br><span class="line">    dto.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">    dto.setUserId(userID);</span><br><span class="line">    dto.setKeyWord(keyWord);</span><br><span class="line"></span><br><span class="line">    <span class="type">Query</span> <span class="variable">query1</span> <span class="operator">=</span> Query.query(Criteria.where(<span class="string">&quot;userId&quot;</span>).is(userID))</span><br><span class="line">            .with(Sort.by(Sort.Direction.DESC,<span class="string">&quot;createTime&quot;</span>));</span><br><span class="line">    List&lt;QueryBlogDto&gt; dtos = mongoTemplate.find(query1, QueryBlogDto.class);</span><br><span class="line">    <span class="comment">//3.1 如果数量少于10条就直接存</span></span><br><span class="line">    <span class="keyword">if</span> (dtos.size() &lt; <span class="number">10</span>)&#123;</span><br><span class="line">        mongoTemplate.save(dto);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//3.2 如果多余10就要替换了</span></span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="type">QueryBlogDto</span> <span class="variable">last</span> <span class="operator">=</span> dtos.get(dtos.size() - <span class="number">1</span>);</span><br><span class="line">        mongoTemplate.findAndReplace(Query.query(Criteria.where(<span class="string">&quot;keyWord&quot;</span>).is(last.getKeyWord())),dto);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>值得注意的是这里使用了@Async，gpt给我的答案是这个跟你新开一个线程没有区别，但是注意要在启动类上enable。这里query更像lambdaQueryWrapper那种。具体的增删改查语法以后再学。</p>
 
     
     

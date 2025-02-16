@@ -212,6 +212,86 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/10/05/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1-seata/">分布式事务-seata</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-10-05
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="TCC模式"><a href="#TCC模式" class="headerlink" title="TCC模式"></a>TCC模式</h2><p>TCC模式是try，confirm，cancel。不依赖本地事务，通过业务代码解决。try先预留事务所需的资源，confirm确保任务的执行并且消耗第一阶段预留的资源，如果在这个阶段出现差错就进入cancel。</p>
+<p>优点：</p>
+<ul>
+<li>不依赖数据库的事务，可以用在非事务型数据库</li>
+<li>不用全局锁，无需生成快照，效率较高。</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>代码侵入：需要程序员手动设计事务逻辑，增加了开发的复杂度</li>
+<li>中间有软状态，是最终一致性，confirm和cancel出现问题会有一致性问题。</li>
+<li>幂等问题：如果由于在confirm和cancel阶段出现网络波动，可能多次释放资源，出现严重后果。所以为了保证信息只被回滚一次需要保证幂等性。可以用状态表来实现（但是我觉得还是会有并发问题）</li>
+<li>空回滚：try的期间阻塞一条，回滚的时候也会回滚这个空的。可能造成资源无故释放。解决方法也是状态表，如果第一阶段有记录成功过了就执行回滚。如果没有就不用</li>
+<li>资源倒挂：也是网络环境变化，try阶段某个分支事务阻塞了直到最后回滚了才执行，是空回滚的另一个结果。解决方案是空回滚的时候加一条状态记录。在try阶段如果没有这个就执行，如果有分支事务的id。说明已经被空回滚发现，不再执行。</li>
+</ul>
+<h2 id="saga模式"><a href="#saga模式" class="headerlink" title="saga模式"></a>saga模式</h2><p>Saga模式是一种用于处理分布式事务的模式，它通过将长时间的、复杂的事务分解为多个小的、可逆的事务片段，以实现事务的一致性和可靠性。</p>
+<p>在Saga模式中，每个事务片段称为一个补偿操作。每个补偿操作都与一个正向操作相对应，正向操作是事务的一部分，而补偿操作是用于撤销或修复正向操作的。Saga模式通过按照事务执行的顺序，依次执行正向操作和补偿操作，来确保事务在发生失败或异常时能够进行回滚或恢复。</p>
+<p>Saga模式的执行过程如下：</p>
+<p>执行正向操作：按照事务的逻辑顺序，依次执行正向操作。每个正向操作都会记录事务的执行状态。<br>如果所有的正向操作都成功执行，则事务提交完成。<br>如果某个正向操作失败，将会触发相应的补偿操作。补偿操作会撤销或修复正向操作的影响。<br>执行补偿操作：按照逆序依次执行已经触发的补偿操作。补偿操作应该具备幂等性，以便可以多次执行而不会造成副作用。<br>如果所有的补偿操作都成功执行，则事务回滚完成。<br>如果补偿操作也失败，需要人工介入或其他手段来解决事务的一致性问题。</p>
+<p>Seata的Saga模式：</p>
+<p>Seata的Saga模式通过Seata框架来管理和协调分布式事务，提供了对事务的编排和状态管理的支持。它与Seata的其他特性（如AT模式、TCC模式）结合在一起，构成了Seata全面的分布式事务解决方案。</p>
+<p>Seata的Saga模式相对于传统的Saga模式，具有以下特点：</p>
+<ul>
+<li>集成性：Seata的Saga模式与Seata框架紧密集成，可以与Seata的其他特性一起使用，如分布式事务日志和分布式锁等。</li>
+<li>强一致性：Seata的Saga模式提供了强一致性的事务支持，确保事务的执行顺序和一致性。</li>
+<li>可靠性：Seata的Saga模式在补偿操作的执行过程中，支持重试和恢复机制，提高了事务的可靠性和恢复能力。</li>
+</ul>
+<p><strong>适用场景：</strong></p>
+<ul>
+<li>业务流程长、业务流程多</li>
+<li>参与者包含其它公司或遗留系统服务，无法提供 TCC 模式要求的三个接口</li>
+</ul>
+<p><strong>优点：</strong></p>
+<ul>
+<li>一阶段提交本地事务，无锁，高性能</li>
+<li>事件驱动架构，参与者可异步执行，高吞吐</li>
+<li>补偿服务易于实现，不用编写TCC中的三个阶段，实现简单</li>
+</ul>
+<p><strong>缺点：</strong></p>
+<ul>
+<li>没有锁，不保证隔离性，会有脏写；</li>
+<li>软状态持续时间不确定，时效性差；</li>
+</ul>
+<h2 id="XA模式"><a href="#XA模式" class="headerlink" title="XA模式"></a>XA模式</h2><p>就是二阶段提交2pc模式。保证强一致性，只能一起提交或者失效。效率最低。</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/10/04/%E5%9C%BA%E6%99%AF%E9%A2%98/">场景题</a>
       
     </h1>
@@ -1401,108 +1481,6 @@
 <li>saga：将事务变成线性链表，然后一个一个做，中间某个事务出现了问题就会给前面已经提交的事务一个补偿措施。</li>
 </ul>
 
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/14/Spring%E9%9D%A2%E8%AF%95%E7%AF%87/">Spring面试篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-14
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="Spring的循环依赖问题怎么解决"><a href="#Spring的循环依赖问题怎么解决" class="headerlink" title="Spring的循环依赖问题怎么解决"></a>Spring的循环依赖问题怎么解决</h2><p>循环依赖问题指的是在依赖注入过程中两个类互相依赖，这会导致实例化的过程混乱，因为一个类实例化需要另一个类已经实例化了，一般有三种循环依赖问题：</p>
-<ol>
-<li>构造函数依赖循环，这个解决不了</li>
-<li>setter的依赖循环，其中bean是多例（prototype）</li>
-<li>setter的依赖循环，其中bean是单例。</li>
-</ol>
-<p>Spring仅仅对第三种进行了解决。第一种在new的时候就进行不下去了，无法生成对象；第二种由于无穷无尽的循环会生成很多的bean，最后导致oom。</p>
-<p><strong>如何解决</strong></p>
-<p>spring用一个三级缓存解决了，总的来说就是在一个类没有初始化的时候提前暴露bean存到三级缓存中，然后进行这个类初始化完成之后就放回第一层缓存中。</p>
-<p>创建 BeanA： Spring 首先将 BeanA 的实例存储在三级缓存中。 在创建 BeanA 的过程中，发现需要注入 BeanB。</p>
-<p>创建 BeanB： Spring 将 BeanB 的实例存储在三级缓存中（因为 BeanB 也需要 BeanA）。 在创建 BeanB 的过程中，Spring 发现 BeanA 还未完全初始化，所以从三级缓存中获取 BeanA 的代理对象。</p>
-<p>注入依赖： 当 BeanA 创建完成后，Spring 会将 BeanB 注入到 BeanA 的字段中。 同样地，BeanA 会注入到 BeanB 的字段中，完成依赖注入。</p>
-<blockquote>
-<p>在三级缓存这一块，主要记一下 Spring 是如何支持循环依赖的即可，也就是如果发生循环依赖的话，就去 三级缓存 singletonFactories 中拿到三级缓存中存储的 ObjectFactory 并调用它的 getObject() 方法来获取这个循环依赖对象的前期暴露对象（虽然还没初始化完成，但是可以拿到该对象在堆中的存储地址了），并且将这个前期暴露对象放到二级缓存中，这样在循环依赖时，就不会重复初始化了！</p>
-</blockquote>
-<h2 id="Bean的生命周期"><a href="#Bean的生命周期" class="headerlink" title="Bean的生命周期"></a>Bean的生命周期</h2><p>大的可以分为四个部分：</p>
-<ol>
-<li>bean创建阶段：通过调用反射api完成bean的实例化</li>
-<li>依赖注入：为bean设置相关属性和依赖</li>
-<li>初始化bean：首先检查是否实现了Aware包下面的各种aware接口，例如beanname，beanclassloader，beanfactory，其次再检查是否实现了Postbeanprocess接口，执行postbeanbeforeinitialization，再看有没有实现bean初始化方法InitializationBean和xml的init-method，最后再用postBeanAfterInitialization</li>
-<li>销毁，disposableBean和destory-bean</li>
-</ol>
-<div style="text-align: center;">
-  <img src="../img/Spring/img.png" alt="" />
-</div>
-
-<h2 id="依赖注入的三种方式"><a href="#依赖注入的三种方式" class="headerlink" title="依赖注入的三种方式"></a>依赖注入的三种方式</h2><ul>
-<li>字段注入：上面加@Autowired</li>
-<li>构造器注入：官方推荐</li>
-<li>setter注入：通过setter方法注入</li>
-</ul>
-<h2 id="Bean会有线程安全问题吗"><a href="#Bean会有线程安全问题吗" class="headerlink" title="Bean会有线程安全问题吗"></a>Bean会有线程安全问题吗</h2><p>首先来看看bean的作用域，常见的有：</p>
-<ul>
-<li>singleton：默认的bean是单例的</li>
-<li>prototype：每次获取都是不一样的bean</li>
-<li>request：一次http请求就一个bean</li>
-</ul>
-<p>如果作用范围是prototype，那不会有线程安全问题，一次获取就有一个bean。但是如果是单例的bean会有线程安全问题，可以通过以下几个方式解决：</p>
-<ul>
-<li>尽量使用无状态bean</li>
-<li>使用ThreadLocal</li>
-<li>加锁synchronized</li>
-</ul>
-<h2 id="SpringMVC执行流程"><a href="#SpringMVC执行流程" class="headerlink" title="SpringMVC执行流程"></a>SpringMVC执行流程</h2><ol>
-<li>客户端发送http请求，首先由DispatcherServlet接收</li>
-<li>DispatcherServlet去HandlerMapping里面找（这是一个哈希表，存储了请求路径和controller的映射关系）</li>
-<li>找到了对应的Controller，先去通过适配器HandlerAdapter，再去请求Controller</li>
-<li>调用完成后返回一个视图和模型ModelAndView。</li>
-<li>DispatcherServlet找视图解析器ViewResolver进行解析。</li>
-<li>解析得到的Model结合View进行渲染返回请求者</li>
-</ol>
-<div style="text-align: center;">
-  <img src="../img/Spring/img_1.png" alt="" />
-</div>
-
-<h2 id="spring的事务传播逻辑"><a href="#spring的事务传播逻辑" class="headerlink" title="spring的事务传播逻辑"></a>spring的事务传播逻辑</h2><blockquote>
-<p><a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247486668&idx=2&sn=0381e8c836442f46bdc5367170234abb&chksm=cea24307f9d5ca11c96943b3ccfa1fc70dc97dd87d9c540388581f8fe6d805ff548dff5f6b5b&token=1776990505&lang=zh_CN#rd">详情看这篇文章</a></p>
-</blockquote>
-<ol>
-<li>TransactionDefinition.PROPAGATION_REQUIRED：外部方法没有开启事务，那就自己开启事务，且开启的事务之间相互独立不打扰；如果外部方法有事务，那就与外部同生共死，如果外部事务回滚自己也回滚。外部事务中的一个子事务回滚那所有都回滚。且如果内部事务异常被捕获，外部事物还是会回滚</li>
-<li>TransactionDefinition.PROPAGATION_REQUIRES_NEW：外部事务回滚，内部的new不回滚。内部事务回滚，如果被catch了就不会造成外部事务回滚，如果没有catch就会回滚。（上一个是有无catch都会造成外部事物回滚）</li>
-<li>TransactionDefinition.PROPAGATION_NESTED：与上一个是反的，外部事务回滚会造成内部回滚，自身回滚也是看catch，如果catch了外部事物就不会滚</li>
-</ol>
-<h2 id="Transactional注解使用"><a href="#Transactional注解使用" class="headerlink" title="@Transactional注解使用"></a>@Transactional注解使用</h2><p>可以使用在方法和类上，使用在类上就是给所有方法都加上事务。常用参数有5个，事务隔离级别（读未提交，读提交，可重复读，串行化），传播行为，超时时间（在指定的时间内未完成回滚），是否只读，触发回滚的异常类型</p>
-<h2 id="spring自调用导致失效问题"><a href="#spring自调用导致失效问题" class="headerlink" title="spring自调用导致失效问题"></a>spring自调用导致失效问题</h2><p>由于Transaction这个注释用到了aop，进行事务的对象都是代理对象。如果是自己调用就无法拦截到这个内部调用，所以事务会失效。这个时候可以获取其代理对象。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyService</span> &#123;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">method1</span><span class="params">()</span> &#123;</span><br><span class="line">     ((MyService)AopContext.currentProxy()).method2(); <span class="comment">// 先获取该类的代理对象，然后通过代理对象调用method2。</span></span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Transactional</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">method2</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="comment">//......</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
     
     
   </div>

@@ -212,6 +212,43 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2025/02/16/%E7%BD%91%E6%98%93%E6%B1%87%E6%8A%A5-AI%E8%BE%85%E5%8A%A9%E7%BC%96%E7%A8%8B/">网易汇报-AI辅助编程</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-02-16
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2025/02/15/%E7%BD%91%E6%98%93KM%E7%A4%BE%E5%8C%BA%E5%88%86%E4%BA%AB-i%E8%8C%85%E5%8F%B0%E7%9A%84%E6%9E%B6%E6%9E%84%E4%BB%8B%E7%BB%8D/">网易KM社区分享-i茅台的架构介绍</a>
       
     </h1>
@@ -801,6 +838,7 @@
 <li>如果没有登录，domain隐蔽，这里看threadlocal有没有东西就好了。</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">base</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!siteMapCompanyService.isOpeningCompany(companyId)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.NON_OPENING_COMPANY.getName(), BizError.NON_OPENING_COMPANY.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">url</span> <span class="operator">=</span> host+<span class="string">&quot;/api/auth/global/overseas/base&quot;</span>;</span><br><span class="line">        Map&lt;String, String&gt; map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">&quot;companyId&quot;</span>, companyId);</span><br><span class="line">        map.put(<span class="string">&quot;appKey&quot;</span>, appKey);</span><br><span class="line">        map.put(<span class="string">&quot;appSecret&quot;</span>, appSecret);</span><br><span class="line">        map.put(<span class="string">&quot;timestamp&quot;</span>, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">        map = OpenApiUtil.packageSign(map, appKey, appSecret);</span><br><span class="line">        <span class="type">String</span> <span class="variable">resut</span> <span class="operator">=</span> OkHttpUtil.get(url, map);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isNotBlank(resut)) &#123;</span><br><span class="line">            <span class="comment">// 图片链接转换</span></span><br><span class="line">            resut = ImagePathConvert.convert(resut);</span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">jsonObject</span> <span class="operator">=</span> JSON.parseObject(resut);</span><br><span class="line">            <span class="type">String</span> <span class="variable">dataResult</span> <span class="operator">=</span> jsonObject.getString(<span class="string">&quot;data&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> loginAuth(JSON.parseObject(dataResult, CompanyBaseVO.class));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">        log.info(<span class="string">&quot;demo error&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">loginAuth</span><span class="params">(CompanyBaseVO companyBaseVO)</span>&#123;</span><br><span class="line">    <span class="type">UserInfoToken</span> <span class="variable">userInfoToken</span> <span class="operator">=</span> UserContext.getContent().getUserInfoToken();</span><br><span class="line">    <span class="comment">//未登录</span></span><br><span class="line">    <span class="keyword">if</span> (userInfoToken == <span class="literal">null</span>) &#123;</span><br><span class="line">        companyBaseVO.setDomain(<span class="string">&quot;*****&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> companyBaseVO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
     
     
   </div>
@@ -1256,86 +1294,6 @@
 <li>可能服务器还会有要发送的，发送完了发送fin，变为last-ack</li>
 <li>客户端接收到了变为time-wait，等到2ttl时间，如果没有等到服务器的消息就自己关闭。</li>
 </ul>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/10/05/%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1-seata/">分布式事务-seata</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-10-05
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="TCC模式"><a href="#TCC模式" class="headerlink" title="TCC模式"></a>TCC模式</h2><p>TCC模式是try，confirm，cancel。不依赖本地事务，通过业务代码解决。try先预留事务所需的资源，confirm确保任务的执行并且消耗第一阶段预留的资源，如果在这个阶段出现差错就进入cancel。</p>
-<p>优点：</p>
-<ul>
-<li>不依赖数据库的事务，可以用在非事务型数据库</li>
-<li>不用全局锁，无需生成快照，效率较高。</li>
-</ul>
-<p>缺点：</p>
-<ul>
-<li>代码侵入：需要程序员手动设计事务逻辑，增加了开发的复杂度</li>
-<li>中间有软状态，是最终一致性，confirm和cancel出现问题会有一致性问题。</li>
-<li>幂等问题：如果由于在confirm和cancel阶段出现网络波动，可能多次释放资源，出现严重后果。所以为了保证信息只被回滚一次需要保证幂等性。可以用状态表来实现（但是我觉得还是会有并发问题）</li>
-<li>空回滚：try的期间阻塞一条，回滚的时候也会回滚这个空的。可能造成资源无故释放。解决方法也是状态表，如果第一阶段有记录成功过了就执行回滚。如果没有就不用</li>
-<li>资源倒挂：也是网络环境变化，try阶段某个分支事务阻塞了直到最后回滚了才执行，是空回滚的另一个结果。解决方案是空回滚的时候加一条状态记录。在try阶段如果没有这个就执行，如果有分支事务的id。说明已经被空回滚发现，不再执行。</li>
-</ul>
-<h2 id="saga模式"><a href="#saga模式" class="headerlink" title="saga模式"></a>saga模式</h2><p>Saga模式是一种用于处理分布式事务的模式，它通过将长时间的、复杂的事务分解为多个小的、可逆的事务片段，以实现事务的一致性和可靠性。</p>
-<p>在Saga模式中，每个事务片段称为一个补偿操作。每个补偿操作都与一个正向操作相对应，正向操作是事务的一部分，而补偿操作是用于撤销或修复正向操作的。Saga模式通过按照事务执行的顺序，依次执行正向操作和补偿操作，来确保事务在发生失败或异常时能够进行回滚或恢复。</p>
-<p>Saga模式的执行过程如下：</p>
-<p>执行正向操作：按照事务的逻辑顺序，依次执行正向操作。每个正向操作都会记录事务的执行状态。<br>如果所有的正向操作都成功执行，则事务提交完成。<br>如果某个正向操作失败，将会触发相应的补偿操作。补偿操作会撤销或修复正向操作的影响。<br>执行补偿操作：按照逆序依次执行已经触发的补偿操作。补偿操作应该具备幂等性，以便可以多次执行而不会造成副作用。<br>如果所有的补偿操作都成功执行，则事务回滚完成。<br>如果补偿操作也失败，需要人工介入或其他手段来解决事务的一致性问题。</p>
-<p>Seata的Saga模式：</p>
-<p>Seata的Saga模式通过Seata框架来管理和协调分布式事务，提供了对事务的编排和状态管理的支持。它与Seata的其他特性（如AT模式、TCC模式）结合在一起，构成了Seata全面的分布式事务解决方案。</p>
-<p>Seata的Saga模式相对于传统的Saga模式，具有以下特点：</p>
-<ul>
-<li>集成性：Seata的Saga模式与Seata框架紧密集成，可以与Seata的其他特性一起使用，如分布式事务日志和分布式锁等。</li>
-<li>强一致性：Seata的Saga模式提供了强一致性的事务支持，确保事务的执行顺序和一致性。</li>
-<li>可靠性：Seata的Saga模式在补偿操作的执行过程中，支持重试和恢复机制，提高了事务的可靠性和恢复能力。</li>
-</ul>
-<p><strong>适用场景：</strong></p>
-<ul>
-<li>业务流程长、业务流程多</li>
-<li>参与者包含其它公司或遗留系统服务，无法提供 TCC 模式要求的三个接口</li>
-</ul>
-<p><strong>优点：</strong></p>
-<ul>
-<li>一阶段提交本地事务，无锁，高性能</li>
-<li>事件驱动架构，参与者可异步执行，高吞吐</li>
-<li>补偿服务易于实现，不用编写TCC中的三个阶段，实现简单</li>
-</ul>
-<p><strong>缺点：</strong></p>
-<ul>
-<li>没有锁，不保证隔离性，会有脏写；</li>
-<li>软状态持续时间不确定，时效性差；</li>
-</ul>
-<h2 id="XA模式"><a href="#XA模式" class="headerlink" title="XA模式"></a>XA模式</h2><p>就是二阶段提交2pc模式。保证强一致性，只能一起提交或者失效。效率最低。</p>
 
     
     

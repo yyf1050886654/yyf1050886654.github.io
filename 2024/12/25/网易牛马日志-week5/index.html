@@ -23,6 +23,8 @@
 
 <!-- Website keywords -->
 
+<meta name="keywords" content="网易, YYF&#39;s Blog" />
+
 
 
 
@@ -304,6 +306,7 @@
 <li>如果没有登录，domain隐蔽，这里看threadlocal有没有东西就好了。</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">base</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!siteMapCompanyService.isOpeningCompany(companyId)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.NON_OPENING_COMPANY.getName(), BizError.NON_OPENING_COMPANY.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">url</span> <span class="operator">=</span> host+<span class="string">&quot;/api/auth/global/overseas/base&quot;</span>;</span><br><span class="line">        Map&lt;String, String&gt; map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">&quot;companyId&quot;</span>, companyId);</span><br><span class="line">        map.put(<span class="string">&quot;appKey&quot;</span>, appKey);</span><br><span class="line">        map.put(<span class="string">&quot;appSecret&quot;</span>, appSecret);</span><br><span class="line">        map.put(<span class="string">&quot;timestamp&quot;</span>, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">        map = OpenApiUtil.packageSign(map, appKey, appSecret);</span><br><span class="line">        <span class="type">String</span> <span class="variable">resut</span> <span class="operator">=</span> OkHttpUtil.get(url, map);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isNotBlank(resut)) &#123;</span><br><span class="line">            <span class="comment">// 图片链接转换</span></span><br><span class="line">            resut = ImagePathConvert.convert(resut);</span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">jsonObject</span> <span class="operator">=</span> JSON.parseObject(resut);</span><br><span class="line">            <span class="type">String</span> <span class="variable">dataResult</span> <span class="operator">=</span> jsonObject.getString(<span class="string">&quot;data&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> loginAuth(JSON.parseObject(dataResult, CompanyBaseVO.class));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">        log.info(<span class="string">&quot;demo error&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">loginAuth</span><span class="params">(CompanyBaseVO companyBaseVO)</span>&#123;</span><br><span class="line">    <span class="type">UserInfoToken</span> <span class="variable">userInfoToken</span> <span class="operator">=</span> UserContext.getContent().getUserInfoToken();</span><br><span class="line">    <span class="comment">//未登录</span></span><br><span class="line">    <span class="keyword">if</span> (userInfoToken == <span class="literal">null</span>) &#123;</span><br><span class="line">        companyBaseVO.setDomain(<span class="string">&quot;*****&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> companyBaseVO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
     
   </div>
 
@@ -332,6 +335,12 @@
 
   
   <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/%E7%BD%91%E6%98%93/">网易</a>
+      
+    </div>
     
       
   <nav class="post-nav">  
