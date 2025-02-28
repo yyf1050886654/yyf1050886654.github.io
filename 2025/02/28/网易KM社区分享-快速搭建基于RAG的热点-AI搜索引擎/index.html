@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="网易KM社区分享-快速搭建基于RAG的热点 AI搜索引擎" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="大模型, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2025/02/28/网易KM社区分享-快速搭建基于RAG的热点-AI搜索引擎/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>网易KM社区分享-快速搭建基于RAG的热点 AI搜索引擎 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      网易KM社区分享-快速搭建基于RAG的热点 AI搜索引擎
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-02-28
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E8%83%8C%E6%99%AF"><span class="toc-number">1.</span> <span class="toc-text">1.背景</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%A1%86%E6%9E%B6"><span class="toc-number">2.</span> <span class="toc-text">2.框架</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E5%AE%9E%E7%8E%B0"><span class="toc-number">3.</span> <span class="toc-text">3. 实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E6%A3%80%E7%B4%A2%E7%88%AC%E5%8F%96%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 检索爬取服务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-1-searxng%E6%A3%80%E7%B4%A2%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.1.1.</span> <span class="toc-text">3.1.1 searxng检索服务</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-2-%E7%88%AC%E8%99%AB%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.1.2.</span> <span class="toc-text">3.1.2 爬虫服务</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%88%87%E5%9D%97%E5%8F%AC%E5%9B%9E%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 切块召回服务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-1-%E5%88%87%E5%9D%97"><span class="toc-number">3.2.1.</span> <span class="toc-text">3.2.1 切块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-2-%E5%90%91%E9%87%8F%E5%8C%96"><span class="toc-number">3.2.2.</span> <span class="toc-text">3.2.2 向量化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-3-%E6%8E%92%E5%BA%8F"><span class="toc-number">3.2.3.</span> <span class="toc-text">3.2.3 排序</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-%E5%A4%A7%E6%A8%A1%E5%9E%8B%E7%94%9F%E6%88%90%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.3.</span> <span class="toc-text">3.3 大模型生成服务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-1-%E5%A4%A7%E6%A8%A1%E5%9E%8B%E9%80%89%E6%8B%A9"><span class="toc-number">3.3.1.</span> <span class="toc-text">3.3.1 大模型选择</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-2-prompt%E8%B0%83%E4%BC%98"><span class="toc-number">3.3.2.</span> <span class="toc-text">3.3.2 prompt调优</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-3-%E6%9C%8D%E5%8A%A1%E9%83%A8%E7%BD%B2%E4%BB%A5%E5%8F%8A%E5%89%8D%E7%AB%AF%E5%B1%95%E7%A4%BA"><span class="toc-number">3.3.3.</span> <span class="toc-text">3.3.3 服务部署以及前端展示</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-4-inference%E5%8A%A0%E9%80%9F"><span class="toc-number">3.3.4.</span> <span class="toc-text">3.3.4 inference加速</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-%E6%80%BB%E7%BB%93"><span class="toc-number">4.</span> <span class="toc-text">4. 总结</span></a></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <blockquote>
+<p>大模型的出现带来了新的技术革新，它强大的对话，分析，生成能力可以应用在音乐的很多方面。我们希望借助大模型的能力， 实现对站内外音乐热点词条内容进行抽取，分析，总结，推荐。 本文将系统的介绍我们如何基于RAG 搭建一个带前端页面的 热点AI检索功能agent<br>体验地址：<a target="_blank" rel="noopener" href="http://llm-zq.jupyter.panshi-gy.netease.com/">http://llm-zq.jupyter.panshi-gy.netease.com/</a></p>
+</blockquote>
+<h1 id="1-背景"><a href="#1-背景" class="headerlink" title="1.背景"></a>1.背景</h1><p>大模型的出现带来了新的技术革新，它强大的对话，分析，生成能力可以应用在音乐的很多方面。我们希望借助大模型的能力， 实现对站内外音乐热点词条内容进行抽取，分析，总结，推荐。 但是:</p>
+<ul>
+<li>大模型对于时事热点等，幻觉能力严重，而RAG(检索增强生成)可以解决这个问题。</li>
+<li>很多都离不开外部的依赖接口，无法做到完全的offline, 且当token量大之后，费用也很大， 但其实开源的很多模型如LLAMA, QWEN等都已经有非常不错的能力。而且近期流行的ollama框架， 也让个人PC也都能支持大模型生成。</li>
+<li>我们希望借助开源的能力，来快速搭建一个不依赖外部接口的AI检索引擎来为我们服务， 也避免了隐私泄露的风险。</li>
+</ul>
+<p>它的主要特点：</p>
+<ul>
+<li>不依赖外部接口， 离线实现LLM生成, 检索，embedding等能力。</li>
+<li>基于互联网结果进行RAG，解决模型生成幻觉的问题，尤其可以支持对于近期热点知识的总结。<br>本文主要介绍开发这个agent的框架，一些技术细节和思路，希望给大家带来一点LLM 开发的收获。效果图如下，左边是我们的agent, 输入问题描述，系统即可自动调用搜索引擎并爬取互联网的内容，并通过大模型分析总结返回给我们问题的结果。在某些情况下，甚至比KIMI的效果还要好。</li>
+</ul>
+<p><img src="/../img/netease/img.png" alt="img.png"></p>
+<h1 id="2-框架"><a href="#2-框架" class="headerlink" title="2.框架"></a>2.框架</h1><p>总体框架如下图所示，主要包括3个子模块：</p>
+<ul>
+<li>(1) 检索爬取服务：根据用户搜索的热点关键词，调用自建的searxng 匿名检索服务系统, 获取top的互联网搜索引擎结果，并爬取相关网址全文内容。</li>
+<li>(2) 文档召回服务：对爬取的全文内容切块，进行向量化，同时对query也进行向量化，计算query和文档的相关性，并进行排序选取top的文档切块</li>
+<li>(3) 大模型生成服务。离线部署好大模型，输入相关文档和配置的prompt, 生成相关的检索答案汇总，并通过部署的streamlit前端服务返回给用户。</li>
+</ul>
+<p><img src="/../img/netease/img_1.png" alt="img_1.png"></p>
+<p>3个模块通过langchain框架进行串联起来工作，api接口都采用fastapi进行封装， 前端展示用streamlit进行交互开发。</p>
+<h1 id="3-实现"><a href="#3-实现" class="headerlink" title="3. 实现"></a>3. 实现</h1><p>基于基本的框架思路，我们前期调研了发现github已有类似的相关项目，在这些项目的基础上，我们做了一些优化。</p>
+<p>LLocalSarch:<a target="_blank" rel="noopener" href="https://github.com/nilsherzig/LLocalSearch">https://github.com/nilsherzig/LLocalSearch</a></p>
+<p>LangChain-SearXNG: <a target="_blank" rel="noopener" href="https://github.com/ptonlix/LangChain-SearXNG">https://github.com/ptonlix/LangChain-SearXNG</a></p>
+<h2 id="3-1-检索爬取服务"><a href="#3-1-检索爬取服务" class="headerlink" title="3.1 检索爬取服务"></a>3.1 检索爬取服务</h2><p>检索爬取服务主要有两个模块。searxng检索服务 和爬虫服务</p>
+<h3 id="3-1-1-searxng检索服务"><a href="#3-1-1-searxng检索服务" class="headerlink" title="3.1.1 searxng检索服务"></a>3.1.1 searxng检索服务</h3><p>SearXNG 是一个免费的互联网元搜索引擎，它聚合了来自各种搜索服务(如 google, duckduckgo等)和数据库（如wiki）的结果，但摆脱了隐私追踪。</p>
+<p>当然，你也可以采用商业的搜索api 接口，比如google的Serper API ， bing的Bing Web Search API，但这不是我们的目的，我们是希望搭建一个完全没有外部依赖的检索服务。</p>
+<p>请注意，搭建searxng检索需要一台非大陆的VPS，并配有ipv4地址，如果嫌麻烦，可以用公共的searxng, 但是会有限制，地址：<a target="_blank" rel="noopener" href="https://searx.space(需要fq)/">https://searx.space(需要FQ)</a></p>
+<p><img src="/../img/netease/img_2.png" alt="img_2.png"></p>
+<p>以下是搭建教程：</p>
+<ol>
+<li>第一步：安装docker, docker-copose</li>
+</ol>
+<p>docker安装：<a target="_blank" rel="noopener" href="https://yeasy.gitbook.io/docker_practice/install/debian">https://yeasy.gitbook.io/docker_practice/install/debian</a></p>
+<p>docker-copose安装：<a target="_blank" rel="noopener" href="https://yeasy.gitbook.io/docker_practice/compose/install">https://yeasy.gitbook.io/docker_practice/compose/install</a></p>
+<ol start="2">
+<li>第二步：拉取searxng 镜像, 修改配置</li>
+</ol>
+<p>修改项目docker配置</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 拉取代码</span><br><span class="line">git clone https://github.com/searxng/searxng-docker.git</span><br><span class="line"># docker配置里包括3个服务，caddy 做反向代理，redis存储数据，searxng主服务</span><br><span class="line">#不做反向代理可以注释掉caddy部分， 只需要修改 searxng里的port，如： 0.0.0.0:8180:8080， 右边是设置好的容器内的端口，左边是本地端口可以改</span><br><span class="line">vim searxng-docker/docker-compose.yaml</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../img/netease/img_3.png" alt="img_3.png"></p>
+<p><img src="/../img/netease/img_4.png" alt="img_4.png"></p>
+<p>修改searxng主服务配置</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sed -i &quot;s|ultrasecretkey|$(openssl rand -hex 32)|g&quot; searxng-docker/searxng/settings.yml # 生成一个密钥</span><br><span class="line"># limiter: 改为false, 为true会限制你的请求频率，公开服务会开启，但是私人搭建的可以关闭</span><br><span class="line">vim searxng-docker/searxng/setting.yml</span><br></pre></td></tr></table></figure>
+<p><img src="/../img/netease/img_5.png" alt="img_5.png"><br>3.第三步：启动compose 服务组</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd searxng-docker</span><br><span class="line">docker-compose up -d</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>第四步：关闭端口防火墙并验证，如果没有防火墙则不需要这一步</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ufw allow 8180</span><br></pre></td></tr></table></figure>
+
+<p>最后浏览器打开ip:8180,即可看到自己搭建的searxng页面并进行检索了，是不是很酷😎，没有任何广告，页面非常干净。</p>
+<p><img src="/../img/netease/img_6.png" alt="img_6.png"></p>
+<h3 id="3-1-2-爬虫服务"><a href="#3-1-2-爬虫服务" class="headerlink" title="3.1.2 爬虫服务"></a>3.1.2 爬虫服务</h3><p>单独searxng的结果信息量比较小，而对于LLM来说，丰富的信息意味着更准确的结果。 所以针对搜索引擎给出的相关网页，我们可以采用爬虫爬取top网页结果。 所幸，langchain（一个帮助在应用程序中使用大型语言模型的编程框架） 里就包含了相应的网页爬取模块，和文本解析模块。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># langchain 调用searxng示例, 获取top结果</span><br><span class="line">from langchain_community.utilities import SearxSearchWrapper</span><br><span class="line">s = SearxSearchWrapper(searx_host=&quot;http://localhost:8180&quot;)</span><br><span class="line">s.run(&quot;what is a large language model?&quot;)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"># langchain 爬取示例</span><br><span class="line">from langchain_community.document_loaders import AsyncChromiumLoader</span><br><span class="line">from langchain_community.document_transformers import Html2TextTransformer</span><br><span class="line">urls = [&quot;https://www.baidu.com&quot;]</span><br><span class="line">loader = AsyncChromiumLoader(urls, user_agent=&quot;MyAppUserAgent&quot;)</span><br><span class="line">docs = loader.load() # 爬取</span><br><span class="line">html2text = Html2TextTransformer()  </span><br><span class="line">docs_transformed = html2text.transform_documents(docs) # 解析抽取网页里文本</span><br><span class="line">docs_transformed[0].page_content[0:500]</span><br></pre></td></tr></table></figure>
+
+<p>这里面在实践中存在几个主要问题：</p>
+<ol>
+<li>searxng的top结果中可能存在无法访问的(大陆)，比如wiki 等，需要额外处理过滤。 这里我采用的是pac方式。过滤不能访问的网址</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># wget https://raw.githubusercontent.com/petronny/gfwlist2pac/master/gfwlist.pac</span><br><span class="line">import pacparser</span><br><span class="line">pacparser.init()</span><br><span class="line">pacparser.parse_pac(&#x27;gfwlist.pac&#x27;)</span><br><span class="line"></span><br><span class="line">def is_direct(url):</span><br><span class="line">ret =  pacparser.find_proxy(url)</span><br><span class="line">return &quot;DIRECT&quot; == ret</span><br><span class="line"></span><br><span class="line">if __name__ == &quot;__main__&quot;:</span><br><span class="line">print(is_direct(&quot;www.baidu.com&quot;))</span><br><span class="line">print(is_direct(&quot;www.google.com&quot;))</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>可能存在超时的问题，有些网站链接速度非常慢，原本的langchain 爬取模块不支持超时，需要自己在外面额外封装一层超时控制。或者采用httpx的包进行批量爬取。</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">import httpx</span><br><span class="line">from typing import List, Optional,Tuple</span><br><span class="line">import asyncio</span><br><span class="line">headers = &#123;&#x27;user-agent&#x27;: &#x27;Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36&#x27;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">async def get_result(url: str):</span><br><span class="line">if not is_direct(url): # 非直连</span><br><span class="line">async with httpx.AsyncClient(proxy=&#x27;socks5://127.0.0.1:1080&#x27;) as client:</span><br><span class="line">try:</span><br><span class="line">response = await client.get(url,headers=headers,timeout=10.0)  # 设置超时</span><br><span class="line">return url, response</span><br><span class="line">except httpx.RequestError:</span><br><span class="line">return url, None</span><br><span class="line">else:</span><br><span class="line">async with httpx.AsyncClient() as client:</span><br><span class="line">try:</span><br><span class="line">response = await client.get(url,headers=headers,timeout=10.0)</span><br><span class="line">return url, response</span><br><span class="line">except httpx.RequestError:</span><br><span class="line">return url, None</span><br><span class="line"></span><br><span class="line">async def get_results( urls: List[str]):</span><br><span class="line">tasks = [get_result(url) for url in urls]</span><br><span class="line">results = await asyncio.gather(*tasks)</span><br><span class="line">for url, response in results:</span><br><span class="line">if response is None:</span><br><span class="line">print(f&quot;URL: &#123;url&#125; - Failed to connect&quot;)</span><br><span class="line"># else:</span><br><span class="line">#     print(url, response.text[:100])</span><br><span class="line">return results</span><br><span class="line"></span><br><span class="line">def get_results_access( urls: List[str]) -&gt; List[Tuple[str,str]]:</span><br><span class="line">try:</span><br><span class="line">asyncio.get_running_loop()</span><br><span class="line">with ThreadPoolExecutor(max_workers=1) as executor:</span><br><span class="line">future = executor.submit(asyncio.run, check_urls(urls))</span><br><span class="line">results = future.result()</span><br><span class="line">except RuntimeError:</span><br><span class="line">results = asyncio.run(check_urls(urls))</span><br><span class="line"></span><br><span class="line">    return [(url,response.text) for url, response in results if response is not None]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>爬取的结果如果是动态加载的内容，目前无法爬取。 比如 B站视频下的评论， 知乎的答案等。这种需要针对特定网站， 用自动化测试工具，比如Selenium 或者playwright. 这个待后续优化。</li>
+</ol>
+<h2 id="3-2-切块召回服务"><a href="#3-2-切块召回服务" class="headerlink" title="3.2 切块召回服务"></a>3.2 切块召回服务</h2><p>这一步，其实主要对应RAG里R即retrieval, 召回。因为获取的top网址文本内容量比较大，一般单个网页的文本都接近5k token, 像百度知道这种以文本内容为主的基本都超过8k长度，多个网页内容直接丢给大模型解析，是个不太现实的任务，虽然现在有学者提出超长上下文的大模型（Long Context LLM）正在慢慢取代RAG, 但目前来说rag还是最优解。</p>
+<p>召回过程是分为 切块，向量化，排序</p>
+<h3 id="3-2-1-切块"><a href="#3-2-1-切块" class="headerlink" title="3.2.1 切块"></a>3.2.1 切块</h3><p>所有的文档进行chunk, 即切块， 比如以512个 token 作为一个chunk。这里面有几个问题：</p>
+<ol>
+<li>如何确定最佳块大小？</li>
+</ol>
+<p>这个目前没有定论，主要还是取决于应用场景，具体可以参考微软[1]的建议并自行进行测试：</p>
+<p><img src="/../img/netease/img_7.png" alt="img_7.png"></p>
+<ol start="2">
+<li>分割策略？</li>
+</ol>
+<p>为了得到更好的结果，我们可以重叠相邻的块。来自微软分析的分块策略比较，显示512 tokens分块和25%的重叠是比较好的分块策略。 当然也要考虑embedding的模型</p>
+<p><img src="/../img/netease/img_8.png" alt="img_8.png"></p>
+<p>实际使用下来，应用于网页文本分块召回的比较好的参数， chunk&#x3D;500，overlap&#x3D;100, 向量模型采用BCE。</p>
+<h3 id="3-2-2-向量化"><a href="#3-2-2-向量化" class="headerlink" title="3.2.2 向量化"></a>3.2.2 向量化</h3><p>切块之后第二步就是对文档和query都进行向量化，并计算 query和 文档之间的相似度，再设定过滤的阈值，得到最终我们需要的文档片段。那么，向量模型该如何选取？</p>
+<p>一般的商业大模型服务都自带embedding接口，比如openai的 v1&#x2F;embedding, 这种需要api_key, 显然不是我们的目标。开源模型效果对比，可以参考，huggingface 的embedding竞技场：<a target="_blank" rel="noopener" href="https://huggingface.co/spaces/mteb/leaderboard">https://huggingface.co/spaces/mteb/leaderboard</a> ,但是里面不是所有模型都有打分，下面是一些主流的embedding模型:</p>
+<p><img src="/../img/netease/img_9.png" alt="img_9.png"></p>
+<p>开源模型挑选可以从几个方面入手：</p>
+<p>① 硬件性能。 因为单次用户请求，涉及很多切块文档，所以需要考虑机器性能和模型速度，其实很多常见的大模型做embedding效果也很好，但它不是主流因为效率很低，我们在mteb 评测榜单上可以看到 qwen2的检索效果非常好，但是模型太大很难应用。 尤其我们的任务都是实时算，并不存储向量，所以需要模型不太大。</p>
+<p><img src="/../img/netease/img_10.png" alt="img_10.png"></p>
+<p>② 向量维度。向量维度会影响到 存储以及检索耗时，对于常见的检索任务，是对知识库的内容预先算好相应的向量，并存储进向量数据库。 用户检索时，对检索词向量化，再通过近邻检索算法检索最相关的top结果。当数据量显著大时，向量维度越大，检索耗时越明显。我们的任务里不存储向量，所以这块也不需要考虑。</p>
+<p>③ 最大输入长度。 指模型处理输入的最大token长度，这个和我们前面提到的分块大小息息相关，因为如果分块大小超过最大长度，则超过的部分会被向量模型丢弃，导致信息损失。</p>
+<p>④ 支持语言。大部分开源向量模型只支持单一或者有限的文本语言，在需要多语言需求的场景可能不合适。需要注意的是，不支持多语言，不代表其他语言就不能向量化，而是缺乏跨语言匹配的能力。 比如[ ‘How is the weather today?’, ‘今天天气怎么样?’] 在单一语言里相似度可能很低，而对于多语言，则匹配度较高。一般来说，如果只是针对特定语言，选择单一语言模型即可，评分高的混合语言模型不一定比单一语言模型效果好。 由于网页内容繁杂，我们倾向于选择多语言模型</p>
+<p>⑤ 领域表现。通用 Embedding 模型在特定垂直领域（如医学、法律和金融等）可能不如专用模型有效。这些领域通常需要专门训练 Embedding 模型来捕捉特定的专业术语和语境。为特定业务需求优化的 Embedding 模型能够显著提升检索和生成的质量。 网页内容匹配通常不需要考虑领域表现。</p>
+<p>基于上面的维度，我们选择了中英双语的 bce-embedding-base_v1模型。</p>
+<h3 id="3-2-3-排序"><a href="#3-2-3-排序" class="headerlink" title="3.2.3 排序"></a>3.2.3 排序</h3><p>顺便再聊一下，关于RAG中的召回，目前主流的做法是两个阶段。第一阶段query和文档向量化，检索框架采用faiss, 或者milvus 这种向量查询数据库。 第一阶段存在两个问题：</p>
+<p>1、当doc数据量大的时候，检索算法都是近似的， 不是挨个遍历计算，会有损。除非用暴力挨个计算cos, 但这个不现实。（在本任务里是可以的，因为文档量很小）</p>
+<p>2、embedding本来就是对于信息的压缩，对原始文本信息是有丢失的。</p>
+<p>那么对于这些缺点，有办法优化吗？ 答案是有的，即第二阶段rerank模型精排。 rerank模型输入query和doc对文本，而不是emebdding, 信息无损。 2阶段检索详情可以参考QAnything给出的示意图， 很清楚。</p>
+<p><img src="/../img/netease/img_11.png" alt="img_11.png"></p>
+<p>在加入二阶段rerank之后，BCE的效果， top10命中率由85.91%提升到93.46%，非常明显。同时可以看到，采用hybird， 即bm25和embedding召回，再经过rerank可以达到最好的效果96.36%。</p>
+<p><img src="/../img/netease/img_13.png" alt="img_13.png"><br>以下是有道 给出的BCE最佳实践</p>
+<blockquote>
+<p>最佳实践（Best practice） ：embedding召回top50-100片段，reranker对这50-100片段精排，最后取top5-10片段。</p>
+</blockquote>
+<p>BAAI(北京智源人工智能研究院)也给出了BGE的最佳实践：</p>
+<blockquote>
+<p>For multilingual, utilize BAAI&#x2F;bge-reranker-v2-m3 and BAAI&#x2F;bge-reranker-v2-gemma<br>For Chinese or English, utilize BAAI&#x2F;bge-reranker-v2-m3 and BAAI&#x2F;bge-reranker-v2-minicpm-layerwise.<br>For efficiency, utilize BAAI&#x2F;bge-reranker-v2-m3 and the low layer of BAAI&#x2F;ge-reranker-v2-minicpm-layerwise.<br>For better performance, recommand BAAI&#x2F;bge-reranker-v2-minicpm-layerwise and BAAI&#x2F;bge-reranker-v2-gemma</p>
+</blockquote>
+<p>其实我们很容易联想两阶段召回， 其实就是早期的类 DSSM 双塔召回的不同思路。</p>
+<ul>
+<li><p>第一阶段，就是取双塔的最后一层向量做 近邻检索</p>
+</li>
+<li><p>第二阶段，就是双塔放入query和doc计算的最后的打分</p>
+</li>
+</ul>
+<p>如果想要在自己领域内有更好的效果，也可以选择在领域数据集上微调模型。微调数据如下所示，正样本和负样本，并通过一些hard negative 的方式做样本增强。 现在也有一些思路是用LLM 来对原样本进行一些改写增强，比如给问题换个说法，比如“什么是深度学习？” -&gt; “怎么理解深度学习？”， 这样都能提高原模型在特定领域的效果。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;query&quot;: &quot;如何提高机器学习模型的准确性？&quot;, &quot;pos&quot;: [&quot;通过交叉验证和调参可以提高模型准确性。&quot;], &quot;neg&quot;: [&quot;机器学习是人工智能的一个分支。&quot;]&#125;</span><br><span class="line">&#123;&quot;query&quot;: &quot;什么是深度学习？&quot;, &quot;pos&quot;: [&quot;深度学习是机器学习的一个子领域，涉及多层神经网络。&quot;], &quot;neg&quot;: [&quot;数据科学是一门交叉学科。&quot;]&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-3-大模型生成服务"><a href="#3-3-大模型生成服务" class="headerlink" title="3.3 大模型生成服务"></a>3.3 大模型生成服务</h2><p>这一步，主要是利用大模型的分析和总结能力，对检索到的相关文档和用户query进行分析，给出用户想要的结果。这里的核心问题也包括几块，1、大模型的选择。 2、prompt调优 3、服务部署以及前端展示 4. inference加速</p>
+<h3 id="3-3-1-大模型选择"><a href="#3-3-1-大模型选择" class="headerlink" title="3.3.1 大模型选择"></a>3.3.1 大模型选择</h3><p>市面上的开源大模型非常多，其中比较流行的有meta的 llama系列，最新是llama3, 以及Mistral(large不开源) ，google的Gemma(large不开源)， 国内的 智普的chatglm,最新是chatglm4, 阿里的qwen,最新是qwen2, 以及baichuan等等非常多。那么这么多开源大模型，如何挑选适合我们的大模型：</p>
+<ul>
+<li>模型参数量，适配显存。第一维度需要考虑的就是机器的GPU显存，以下表格,以llama为列子一些常见的模型显存占用,显存占用主要分为2块，</li>
+<li>一块是加载模型参数占用的显存，在fp16精度下，1B约等于2G显存，可以按这个换算；</li>
+<li>另一块是生成时，计算的临时变量，以及kvcache占用的显存。在fp16精度下， 1K长度约等于1G， 两者加起来才是跑大模型时的最大显存占用。</li>
+</ul>
+<p><img src="/../img/netease/img_14.png" alt="img_14.png"></p>
+<ul>
+<li>模型效果。可以参考一些大模型评测网站，比如：<a target="_blank" rel="noopener" href="https://www.datalearner.com/ai-models/leaderboard/datalearner-llm-leaderboard%EF%BC%8C">https://www.datalearner.com/ai-models/leaderboard/datalearner-llm-leaderboard，</a> 选排在前面的基本没错。不过也需要针对自己的任务多试一些对比。</li>
+<li>任务适配度。不同的模型训练的领域是不太一样的，比如说，有的在数学相关数据集上训练的多，那么它可能在数学，推理方面效果很好，有些模型是为了做coding的， 有些是做图文的，选择的模型需要适配你自己的任务。如果只是想要简单聊天，那综合性能好的即可。对于这个专门的阅读文档总结用户问题，并需要遵循一定指令的任务，最好选用指令微调的模型</li>
+</ul>
+<p><img src="/../img/netease/img_15.png" alt="img_15.png"></p>
+<ul>
+<li>社区成熟度。开源模型的一个重要力量，成熟社区模型能让各个框架迅速支持，可用的轮子很多，这也是我们选用的一个重要参考。</li>
+</ul>
+<p>基于以上选择思路，我们选择了LLAMA3-8B-instruct 作为大模型来应用，LLAMA3主要是在英文语料上训练的，要想在中文上有比较好的效果，可以继续预训练，网上也已经有很多预训练好的中文LLAMA3, 我们选取的是hfl&#x2F;llama-3-chinese-8b-instruct-v3</p>
+<h3 id="3-3-2-prompt调优"><a href="#3-3-2-prompt调优" class="headerlink" title="3.3.2 prompt调优"></a>3.3.2 prompt调优</h3><p>选定大模型之后，就是如何使用的问题了，大模型的角色，包含[‘system’, ‘user’, ‘assistant’]</p>
+<blockquote>
+<p>system 一般代表整个大模型服务。指导模型如何输出，prompt一般放在这里<br>user 指代的是用户的输入，包括文本，语音，视频等等的输入数据<br>assistant 代表大模型的相应输出</p>
+</blockquote>
+<p>在我们这个任务中，我们希望大模型根据 我们提供的数据，来对网页内容进行分析，所以我们的prompt</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">您是一位专业的研究员和作家，负责回答任何问题。</span><br><span class="line">基于提供的搜索结果，为给定的问题生成一个全面而且信息丰富、但简洁的答案，长度不超过 500 字。您必须只使用来自提供的搜索结果的信息。使用公正和新闻性的语气。将搜索结果合并成一个连贯的答案。不要重复文本。</span><br><span class="line">如果上下文中没有与当前问题相关的信息，只需说“嗯，我不确定。”不要试图编造答案。</span><br><span class="line">位于以下context HTML 块之间的任何内容都是从知识库中检索到的，而不是与用户的对话的一部分。</span><br><span class="line">&lt;context&gt;</span><br><span class="line">&#123;context&#125;</span><br><span class="line">&lt;context/&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>设定角色： 开始给模型设定好角色， 研究员和作家</li>
+<li>指示： 无二义性的任务描述，基于搜索结果总结一个用户问题答案，非口语化，500字，不重复，没结果时也不能乱说</li>
+<li>上下文：使用明确的xml格式定义好输入的搜索结果</li>
+</ul>
+<p>可以多给LLM一些例子看返回结果，根据返回结果对prompt做一定调整。</p>
+<h3 id="3-3-3-服务部署以及前端展示"><a href="#3-3-3-服务部署以及前端展示" class="headerlink" title="3.3.3 服务部署以及前端展示"></a>3.3.3 服务部署以及前端展示</h3><p>选定模型之后要部署相应的后端模型服务和前端用户交互服务。</p>
+<p>后端：</p>
+<ul>
+<li><p>提供模型对话服务给前端进行交互，这里最经典就是openai的 api接口sdk, 为了整个系统的兼容性，我们可以将我们的服务端部署成OPENAI API接口的形式</p>
+</li>
+<li><p>我们选取的是python目前比较流行的FastAPI， FastAPI 是一个用于构建 API 的现代、快速(高性能)的 web 框架</p>
+</li>
+<li><p>实现接口主要包括两个，1个是LLM对话服务（v1&#x2F;chat&#x2F;completions）， 1个是query的embedding服务(v1&#x2F;embeddings)</p>
+</li>
+</ul>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">@app.post(&quot;/v1/chat/completions&quot;, response_model=ChatCompletionResponse)</span><br><span class="line">async def create_chat_completion(request: ChatCompletionRequest):</span><br><span class="line">global model, tokenizer</span><br><span class="line"></span><br><span class="line">    if len(request.messages) &lt; 1 or request.messages[-1].role == &quot;assistant&quot;:</span><br><span class="line">        raise HTTPException(status_code=400, detail=&quot;Invalid request&quot;)</span><br><span class="line"></span><br><span class="line">    gen_params = dict(</span><br><span class="line">        messages=request.messages,</span><br><span class="line">        temperature=request.temperature,</span><br><span class="line">        top_p=request.top_p,</span><br><span class="line">        max_tokens=request.max_tokens or 1024,</span><br><span class="line">        echo=False,</span><br><span class="line">        stream=request.stream,</span><br><span class="line">        repetition_penalty=request.repetition_penalty,</span><br><span class="line">        tools=request.tools,</span><br><span class="line">    )</span><br><span class="line">    logger.debug(f&quot;==== request ====\n&#123;gen_params&#125;&quot;)</span><br><span class="line">    for each_message in request.messages:</span><br><span class="line">        info = str(each_message.role) +&quot;\:&quot; +str(len(each_message.content))</span><br><span class="line">        logger.debug(f&quot;==== ===== ===&quot;)</span><br><span class="line">        logger.debug(f&quot;==== message len ====\n&#123;info&#125;&quot;)</span><br><span class="line">        logger.debug(f&quot;==== ===== ===&quot;)</span><br><span class="line">        </span><br><span class="line">    # Here is the handling of stream = False</span><br><span class="line">    response = generate_llama3(model, tokenizer, gen_params)</span><br><span class="line"></span><br><span class="line">    # Remove the first newline character</span><br><span class="line">    if response[&quot;text&quot;].startswith(&quot;\n&quot;):</span><br><span class="line">        response[&quot;text&quot;] = response[&quot;text&quot;][1:]</span><br><span class="line">    response[&quot;text&quot;] = response[&quot;text&quot;].strip()</span><br><span class="line"></span><br><span class="line">    usage = UsageInfo()</span><br><span class="line">    message = ChatMessage(</span><br><span class="line">        role=&quot;assistant&quot;,</span><br><span class="line">        content=response[&quot;text&quot;],</span><br><span class="line">        function_call= None,</span><br><span class="line">    )</span><br><span class="line"></span><br><span class="line">    logger.debug(f&quot;==== message ====\n&#123;message&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    choice_data = ChatCompletionResponseChoice(</span><br><span class="line">        index=0,</span><br><span class="line">        message=message,</span><br><span class="line">        finish_reason=&quot;stop&quot;</span><br><span class="line">    )</span><br><span class="line">    task_usage = UsageInfo.model_validate(response[&quot;usage&quot;])</span><br><span class="line">    for usage_key, usage_value in task_usage.model_dump().items():</span><br><span class="line">        setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)</span><br><span class="line"></span><br><span class="line">    return ChatCompletionResponse(</span><br><span class="line">        model=request.model,</span><br><span class="line">        id=&quot;&quot;,  # for open_source model, id is empty</span><br><span class="line">        choices=[choice_data],</span><br><span class="line">        object=&quot;chat.completion&quot;,</span><br><span class="line">        usage=usage</span><br><span class="line">    )</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">@app.post(&quot;/v1/embeddings&quot;, response_model=EmbeddingResponse)</span><br><span class="line">async def get_embeddings(request: EmbeddingRequest):</span><br><span class="line"></span><br><span class="line">    embeddings = [embedding_model.encode(text) for text in request.input]</span><br><span class="line">    embeddings = [embedding.tolist() for embedding in embeddings]</span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    # logger.info(f&quot;encode result: \n&#123;request.input&#125;&quot;)</span><br><span class="line"></span><br><span class="line">    # 计算token 数</span><br><span class="line">    def num_tokens_from_string(string: str) -&gt; int:</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        Returns the number of tokens in a text string.</span><br><span class="line">        use cl100k_base tokenizer</span><br><span class="line">        &quot;&quot;&quot;</span><br><span class="line">        encoding = tiktoken.get_encoding(&#x27;cl100k_base&#x27;)</span><br><span class="line">        num_tokens = len(encoding.encode(string))</span><br><span class="line">        return num_tokens</span><br><span class="line"></span><br><span class="line">    # embedding 接口返回数据格式</span><br><span class="line">    response = &#123;</span><br><span class="line">        &quot;data&quot;: [</span><br><span class="line">            &#123;</span><br><span class="line">                &quot;object&quot;: &quot;embedding&quot;,</span><br><span class="line">                &quot;embedding&quot;: embedding,</span><br><span class="line">                &quot;index&quot;: index</span><br><span class="line">            &#125;</span><br><span class="line">            for index, embedding in enumerate(embeddings)</span><br><span class="line">        ],</span><br><span class="line">        &quot;model&quot;: request.model,</span><br><span class="line">        &quot;object&quot;: &quot;list&quot;,</span><br><span class="line">        &quot;usage&quot;: CompletionUsage(</span><br><span class="line">            prompt_tokens=sum(len(text.split()) for text in request.input),</span><br><span class="line">            completion_tokens=0,</span><br><span class="line">            total_tokens=sum(num_tokens_from_string(text) for text in request.input),</span><br><span class="line">        )</span><br><span class="line">    &#125;</span><br><span class="line">    return response</span><br></pre></td></tr></table></figure>
+
+
+<p>如果你的机器性能有限，可以选用ollama这个框架来很快速的部署大模型api服务， 官网：<a target="_blank" rel="noopener" href="https://ollama.com/%EF%BC%8C">https://ollama.com/，</a> 这个平台提供了很多量化的模型和 一行命令部署API服务</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># 安装</span><br><span class="line">curl -fsSL https://ollama.com/install.sh | sh</span><br><span class="line"># 拉取模型并部署， 这里拉取qwen2-7b instruct Q4量化，显存只需要4.4G</span><br><span class="line">ollama run qwen2:7b-instruct  # 启动服务并在11434端口开启api接口</span><br></pre></td></tr></table></figure>
+
+<p>api 客户端调用:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">from openai import OpenAI</span><br><span class="line"></span><br><span class="line">client = OpenAI(</span><br><span class="line">base_url = &#x27;http://localhost:11434/v1&#x27;,</span><br><span class="line">api_key=&#x27;ollama&#x27;, # required, but unused</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = client.chat.completions.create(</span><br><span class="line">model=&quot;qwen2:7b-instruct&quot;,</span><br><span class="line">messages=[</span><br><span class="line">&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;你好&quot;&#125;</span><br><span class="line">]</span><br><span class="line">)</span><br><span class="line">print(response.choices[0].message.content)</span><br><span class="line"># 输出： 你好！有什么问题我可以帮助你解答吗？</span><br></pre></td></tr></table></figure>
+
+
+
+<p>前端：</p>
+<p>前端采用streamlit前端框架，也是一款易上手的大模型服务前端搭建框架。 以下是个简易的调用大模型聊天的demo服务。非常简单，也就几行代码。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pip installl streamlit # 1.安装包</span><br><span class="line">streamlit run demo.py # 2. 运行前端</span><br><span class="line">http://localhost:8501/ # 3. 打开浏览器</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">#  demo.py</span><br><span class="line">from openai import OpenAI</span><br><span class="line">import streamlit as st</span><br><span class="line"></span><br><span class="line">st.title(&quot;LLM 聊天&quot;)</span><br><span class="line"></span><br><span class="line">client = OpenAI(api_key=&#x27;xxx&#x27;, base_url=&quot;http://localhost:11434/v1&quot;)</span><br><span class="line"></span><br><span class="line">if &quot;openai_model&quot; not in st.session_state:</span><br><span class="line">st.session_state[&quot;openai_model&quot;] = &quot;ollama&quot;</span><br><span class="line"></span><br><span class="line">if &quot;messages&quot; not in st.session_state:</span><br><span class="line">st.session_state.messages = []</span><br><span class="line"></span><br><span class="line">for message in st.session_state.messages:</span><br><span class="line">with st.chat_message(message[&quot;role&quot;]):</span><br><span class="line">st.markdown(message[&quot;content&quot;])</span><br><span class="line"></span><br><span class="line">if prompt := st.chat_input(&quot;你好?&quot;):</span><br><span class="line">st.session_state.messages.append(&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: prompt&#125;)</span><br><span class="line">with st.chat_message(&quot;user&quot;):</span><br><span class="line">st.markdown(prompt)</span><br><span class="line"></span><br><span class="line">    with st.chat_message(&quot;assistant&quot;):</span><br><span class="line">        stream = client.chat.completions.create(</span><br><span class="line">            model=st.session_state[&quot;openai_model&quot;],</span><br><span class="line">            messages=[</span><br><span class="line">                &#123;&quot;role&quot;: m[&quot;role&quot;], &quot;content&quot;: m[&quot;content&quot;]&#125;</span><br><span class="line">                for m in st.session_state.messages</span><br><span class="line">            ],</span><br><span class="line">            stream=True,</span><br><span class="line">        )</span><br><span class="line">        response = st.write_stream(stream)</span><br><span class="line">    st.session_state.messages.append(&#123;&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: response&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>demo效果:</p>
+<p>另外还有一个点就是LLM调用重要的参数如何去选择（top_p, temprature, presence_penalty），我这边整理了几个核心参数的调整思路。 对应我们的这个分析任务，显然是以新闻资料为核心，寻求生成的确定性。</p>
+<p><img src="/../img/netease/img_16.png" alt="img_16.png"></p>
+<h3 id="3-3-4-inference加速"><a href="#3-3-4-inference加速" class="headerlink" title="3.3.4 inference加速"></a>3.3.4 inference加速</h3><p>大模型虽然效果优越，但是也因为它”大“，导致服务性能很低，在我们部署服务时，需要采取一定的策略对模型预测进行加速才能获得更好的体验。</p>
+<p>经过调研选择了VLLM这个大模型推理加速框架。 它有几个优点：</p>
+<blockquote>
+<p>1.社区活跃，模型支持很快<br>2.加速效果明显。基于虚拟内存和分页的思想， 采用page attention ，允许在非连续的内存空间内存储token，内存的利用率接近于最优<br>3.使用简单，两行命令即可部署。 示例如下</p>
+</blockquote>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># vllm llama3 openai</span><br><span class="line"># 下载vllm</span><br><span class="line">pip install vllm</span><br><span class="line"># 部署 一个兼容openai api接口的模型服务，端口8000</span><br><span class="line">python -m vllm.entrypoints.openai.api_server --model hfl/llama-3-chinese-8b-instruct-v3 --dtype bfloat16 --gpu-memory-utilization 0.6 --chat-template llama3-instruct-template.jinja --enforce-eager --uvicorn-log-level warning --port 8000  --disable-log-stats --uvicorn-log-level warning</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为了测试实际环境下的效果，我们运行了vllm的对比测试脚本</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/vllm-project/vllm.git</span><br><span class="line">cd vllm/benchmarks</span><br><span class="line"># 测试vllm</span><br><span class="line">python benchmark_throughput.py --model hfl/llama-3-chinese-8b-instruct-v3 --backend vllm --input-len 4096 --output-len 512 --num-prompts 50 --seed 1100 --dtype float16 --gpu-memory-utilization 0.6</span><br><span class="line"># 测试HF</span><br><span class="line">python benchmark_throughput.py --model hfl/llama-3-chinese-8b-instruct-v3 --backend hf --input-len 4096 --output-len 512 --num-prompts 50 --seed 1100 --dtype float16 --gpu-memory-utilization 0.6 --hf-max-batch-size 10</span><br></pre></td></tr></table></figure>
+
+
+<p>效果如下所示，可以看到单条inference 性能上，VLLM大约是HF的两倍， 但是当并发时，VLLM效果提升明显，吞吐量提升10倍。</p>
+<p><img src="/../img/netease/img_17.png" alt="img_17.png"></p>
+<p>当然，我们可以根据我们的显卡环境采取其他的加速方法，如</p>
+<ul>
+<li>输入输出优化。 如prompt 裁剪， 规整； 限制输出序列长度等</li>
+<li>模型优化。 模型压缩， 使用量化模型，使用更小参数模型等等</li>
+</ul>
+<p>下面来看看整体效果的演示， 速度还是非常快的：</p>
+<h1 id="4-总结"><a href="#4-总结" class="headerlink" title="4. 总结"></a>4. 总结</h1><p>RAG的agent开发，入门还是比较简单的，现在市面上可用的框架也非常多，只需花费一些时间就能搭出一个可用的demo. 但是想要做的好，稳定服务，还是需要费很多的功夫去研究的，希望我的经验能给大家带来一些收获，少走一些弯路。</p>
+<p>目前这个系统还不是很完善， 包括相关性判断，搜索意图判断等都有很大的优化空间。做这个东西的初衷是希望能在音乐热点的场景中进行应用，目前也已经在实践的过程中了，去辅助音乐热点的挖掘和运营。后续的话还希望添加的功能包括：</p>
+<ul>
+<li>音乐热点的识别与事件总结。</li>
+<li>结合云音乐站内知识做融合，分析。比如识别事件歌手，歌曲，原因，产出文案等等。</li>
+</ul>
+<p>参考文献:</p>
+<p>[1]. <a target="_blank" rel="noopener" href="https://techcommunity.microsoft.com/blog/azure-ai-services-blog/azure-ai-search-outperforming-vector-search-with-hybrid-retrieval-and-reranking/3929167">Azure AI Search: Outperforming vector search with hybrid retrieval and ranking capabilities</a></p>
+<p>[2]. <a target="_blank" rel="noopener" href="https://blog.laoda.de/archives/docker-compose-install-searxng">【好玩儿的Docker项目】SearXNG</a></p>
+<p>[3]. <a target="_blank" rel="noopener" href="https://www.53ai.com/news/qianyanjishu/2024061372409.html">RAG 高效应用指南：Embedding 模型的选择和微调</a></p>
+<p>[4]. <a target="_blank" rel="noopener" href="https://techdiylife.github.io/blog/topic.html?category2=t07&blogid=0049">ReRank 与 Embedding 模型的区别？ 如何选择 ReRank 模型？</a></p>
+<p>[5]. <a target="_blank" rel="noopener" href="https://blog.csdn.net/lkg5211314/article/details/136142533">【时代前沿】：单测场景下tempature、top_p、frequency_penalty、presence_penalty参数调整经验分享</a></p>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2025/02/28/%E7%BD%91%E6%98%93KM%E7%A4%BE%E5%8C%BA%E5%88%86%E4%BA%AB-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E5%9F%BA%E4%BA%8ERAG%E7%9A%84%E7%83%AD%E7%82%B9-AI%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/">https://yyf1050886654.github.io/2025/02/28/%E7%BD%91%E6%98%93KM%E7%A4%BE%E5%8C%BA%E5%88%86%E4%BA%AB-%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E5%9F%BA%E4%BA%8ERAG%E7%9A%84%E7%83%AD%E7%82%B9-AI%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2025/02/16/%E7%BD%91%E6%98%93%E6%B1%87%E6%8A%A5-AI%E8%BE%85%E5%8A%A9%E7%BC%96%E7%A8%8B/">  
+        <span class="next-text nav-default">网易汇报-AI辅助编程</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024 - 2025      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
