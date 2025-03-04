@@ -212,6 +212,338 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2025/03/04/%E7%BD%91%E6%98%93KM%E7%A4%BE%E5%8C%BA%E5%88%86%E4%BA%AB-%E5%B0%8FP%E8%80%81%E5%B8%88%E6%9C%8D%E5%8A%A1GC%E5%8D%A1%E9%A1%BF%E5%AE%9A%E4%BD%8D%E8%A7%A3%E5%86%B3/">网易KM社区分享-小P老师服务GC卡顿定位解决</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-03-04
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <blockquote>
+<p>小P老师作为有道AI大模型的重点服务，稳定性与低延迟至关重要。但随着开学季到来，接口流量增加，服务偶现请求延迟升高和GC卡顿异常重启现象。<br>本文总结上述问题的排查思路及定位过程，相信对遇到内存泄漏、CPU升高、JVM GC异常等问题的小伙伴，有借鉴意义。</p>
+</blockquote>
+<h1 id="一、背景和现象"><a href="#一、背景和现象" class="headerlink" title="一、背景和现象"></a>一、背景和现象</h1><p>小P老师服务（java服务容器部署、jdk17、G1回收器）核心任务是提供教育场景下的大模型对话式问答。随着开学季到来，流量也逐渐上升，保障服务稳定性是比较重要的任务之一。</p>
+<p>大模型对话式问答通常是一个流式过程，模型回答是一段一段输出给用户的，为了观察到整个模型的延时情况，大模型回答完毕的时间(total time)以及大模型每一段回答的时间(interval time)都添加了监控。</p>
+<p>近期发现，小P老师服务里子曰大模型interval time的监控总是超时告警，但是子曰大模型自身的interval time监控确实正常的，同时很奇怪的是只有一个或者部分容器pod出问题。</p>
+<p>这两个监控有什么区别呢？简单来说一个是A使用B时对B的监控，另外一个是B对自身的监控，所以理论来说他两监控应该基本一致才是符合预期的（抛去网络延时）。</p>
+<p>从这一现象看，说明小P老师本身代码逻辑存在耗时情况或者网络有问题。</p>
+<p>另外之前小P也出现过类似情况，我们使用了Huggingface去做大模型token计算，这个组件cpu占用率很多，所以按照之前惯例会查看cpu是否够用。<br><img src="/../img/netease/littleP/img.png" alt="img.png"></p>
+<p><img src="/../img/netease/littleP/img_1.png" alt="img_1.png"></p>
+<p>图1 容器cpu使用图</p>
+<p><img src="/../img/netease/littleP/img_2.png" alt="img_2.png"></p>
+<p>图2 jvm监控图</p>
+<p>于是发现了图1这样的现象，在容器cpu监控图中发现在服务告警期间cpu usages（使用量）和cpu cfs throttled（抢占）有尖刺。同时也是机缘巧合，想看看jvm里cpu使用占用率多少，于是在图2（黄色线是分配的内存、绿色线是使用的内存)发现了比较重要的一个信息，jvm在这期间eden区分配降低，old区使用、分配激增，维持了一段时间后就自行恢复了。于是我便去查看了一段时间内的GC日志</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[2024-10-23T20:23:56.727+0800] GC(77) Pause Young (Normal) (G1 Evacuation Pause)</span><br><span class="line">[2024-10-23T20:23:56.727+0800] GC(77) Using 1 workers of 1 for evacuation</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) MMU target violated: 201.0ms (200.0ms/201.0ms)</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77)   Pre Evacuate Collection Set: 12.5ms</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77)   Merge Heap Roots: 56.7ms</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77)   Evacuate Collection Set: 5334.5ms</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77)   Post Evacuate Collection Set: 15.4ms</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77)   Other: 0.5ms</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Eden regions: 482-&gt;0(63)</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Survivor regions: 17-&gt;13(63)</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Old regions: 32-&gt;32</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Archive regions: 2-&gt;2</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Humongous regions: 473-&gt;456 // 标记1</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Metaspace: 156861K(158080K)-&gt;156861K(158080K) NonClass: 139277K(139840K)-&gt;139277K(139840K) Class: 17583K(18240K)-&gt;17583K(18240K)</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) Pause Young (Normal) (G1 Evacuation Pause) 4018M-&gt;2007M(6144M) 5419.626ms // 标记2</span><br><span class="line">[2024-10-23T20:24:02.147+0800] GC(77) User=5.08s Sys=0.20s Real=5.42s // 标记3</span><br></pre></td></tr></table></figure>
+
+<p>确实发现了异常的点，标记1可以看出Humongous regions数量非常多且这一次GC并没有回收该区域的内容。(Normal GC是会回收Humongous区域的)</p>
+<p>标记2可以看出整个GC耗时大概5.4s，当然从标记3可以更清楚的看出GC耗时，所以我们猜测子曰大模型interval time告警可能和GC耗时过久有关系。</p>
+<p>至此我们整合一下问题现象：</p>
+<ul>
+<li>小P老师服务对子曰大模型的延时监控发生告警，且与子曰大模型自身监控不一致</li>
+<li>只有一部分pod有问题</li>
+<li>告警期间服务cpu使用率激增</li>
+<li>告警期间jvm内存eden区域分配减少，old区域使用、分配激增，一段时间后恢复</li>
+</ul>
+<p>Humongous regions回收不明显，GC停顿过长</p>
+<p>根据上述现象，我们可以判断出服务延时告警时和GC有关系，也就是需要从内存的角度来分析为什么GC会停顿这么久，可以算是一个切入点。</p>
+<p>分析内存有一个得力工具<a target="_blank" rel="noopener" href="https://eclipse.dev/mat/">MemeoryAnayzer(MAT)</a>，接下来会先重点介绍一下这个工具，同时也会介绍在jdk17中的G1垃圾回收器。当然如果对此熟悉的可以直接跳过看<a target="_blank" rel="noopener" href="https://km.netease.com/v4/section/tm599/detail/blog/234938#4">定位过程</a>。</p>
+<h1 id="二、Garbage-First-G1-垃圾回收器"><a href="#二、Garbage-First-G1-垃圾回收器" class="headerlink" title="二、Garbage-First (G1) 垃圾回收器"></a>二、Garbage-First (G1) 垃圾回收器</h1><blockquote>
+<p><a target="_blank" rel="noopener" href="https://docs.oracle.com/en/java/javase/17/gctuning/garbage-first-g1-garbage-collector1.html#GUID-ED3AB6D3-FD9B-4447-9EDF-983ED2F7A573">引用文章</a></p>
+</blockquote>
+<p>Garbage-First (G1) 垃圾收集器针主要对大内存多核的服务，目的是实现应用程序和环境在延迟和吞吐量之间的最佳平衡。</p>
+<p>特点：</p>
+<ul>
+<li>服务堆大小大于10GB。</li>
+<li>对象分配和对象移动的速度可能会随着时间的推移而发生很大变化。<blockquote>
+<p>Rates of object allocation and promotion that can vary significantly over time.</p>
+</blockquote>
+</li>
+<li>堆中存在大量碎片。</li>
+<li>可预测的暂停时间目标不超过几百毫秒，避免长时间的垃圾收集暂停。</li>
+</ul>
+<h2 id="2-1-基本概念"><a href="#2-1-基本概念" class="headerlink" title="2.1 基本概念"></a>2.1 基本概念</h2><p>G1 将堆分为<strong>年轻代</strong>（young）和<strong>老年代</strong>（gen）。空间回收工作集中在最高效的年轻代上，偶尔也会在老年代进行空间回收。</p>
+<p>G1 首先回收最高效区域的空间（即大部分被垃圾填充的区域，因此得名）。</p>
+<p>G1 主要通过撤离（evacuation）来回收空间：在选定的内存区域找到存活对象复制到新的内存区域，并在过程中对其进行压缩。撤离完成后，先前的空间可用来重新分配。</p>
+<p>G1不是实时收集器。尝试尽可能在设定的暂时时间下完成回收，但对于给定的暂停，不能保证绝对满足。</p>
+<h2 id="2-2-堆布局"><a href="#2-2-堆布局" class="headerlink" title="2.2 堆布局"></a>2.2 堆布局</h2><p><img src="/../img/netease/littleP/img_3.png" alt="img_3.png"></p>
+<p>图3 G1垃圾回收器</p>
+<p>年轻代包含eden区域（红色）和survivor区域（红色，带“S”）。这些区域内部是连续的，但在G1中这些区域通常以非连续模式排列在内存中。old区域（浅蓝色）构成老生代。对于跨多个区域的对象，会有一个非常大的old区域（浅蓝色，带“H”），叫做Humongous区域 。</p>
+<p>应用程序总是分配到年轻代，即eden区域，巨大对象被分配到old区域。</p>
+<h2 id="2-3-垃圾回收周期"><a href="#2-3-垃圾回收周期" class="headerlink" title="2.3 垃圾回收周期"></a>2.3 垃圾回收周期</h2><p>G1 收集器在两个阶段之间交替。young-only阶段包括垃圾回收(garbage collections)，这个阶段会逐渐填满当前可用的内存</p>
+<p>空间回收阶段是 G1 除了处理年轻代之外，还会逐步回收老生代中的空间。然后，循环从年轻代阶段重新开始。</p>
+<p><img src="/../img/netease/littleP/img_4.png" alt="img_4.png"></p>
+<p>图4 垃圾回收周期预览</p>
+<p>以下列表详细描述了 G1 垃圾收集周期的各个阶段、暂停以及阶段之间的转换：</p>
+<ol>
+<li><p>仅年轻代阶段（Young-only phase）：此阶段以Normal young collections收集开始，会将对象提升到老年代。当老年代占用率达到某个阈值时，Young-only phase和Space-reclamation phase之间的过渡就开始了。此时，G1 会执行Concurrent Start young collection，而不是Normalyoung collections。</p>
+<ul>
+<li><p>Concurrent Start：这种类型的收集除了执行常规Normalyoung collections，还启动标记过程。并发标记确定old区域中的是否可以被回收。在收集标记尚未完全完成时，可能会发生Normalyoung collections。</p>
+</li>
+<li><p>Remark：此这段会完成重新标记。</p>
+</li>
+<li><p>Cleanup：这个阶段决定是否进行Space-reclamation phase。如果确定进行Space-reclamation phase，那么Young-only phase就会进行一次Prepare Mixed young collection.</p>
+</li>
+</ul>
+</li>
+<li><p>空间回收阶段（Space-reclamation phase）：此阶段会进行Mixed collections，除了young区域外，还会撤离old区域中的存活对象。当 G1 确定撤离更多老生代区域不会产生足够的可用空间时，空间回收阶段结束。</p>
+</li>
+</ol>
+<blockquote>
+<ol>
+<li>Young-only phase: This phase starts with a few Normal young collections that promote objects into the old generation. The transition between the young-only phase and the space-reclamation phase starts when the old generation occupancy reaches a certain threshold, the Initiating Heap Occupancy threshold. At this time, G1 schedules a Concurrent Start young collection instead of a Normal young collection.</li>
+</ol>
+</blockquote>
+<blockquote>
+<ul>
+<li>Concurrent Start : This type of collection starts the marking process in addition to performing a Normal young collection. Concurrent marking determines all currently reachable (live) objects in the old generation regions to be kept for the following space-reclamation phase. While collection marking hasn’t completely finished, Normal young collections may occur. Marking finishes with two special stop-the-world pauses: Remark and Cleanup.</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>Remark: This pause finalizes the marking itself, performs global reference processing and class unloading, reclaims completely empty regions and cleans up internal data structures. Between Remark and Cleanup G1 calculates information to later be able to reclaim free space in selected old generation regions concurrently, which will be finalized in the Cleanup pause.</li>
+</ul>
+</blockquote>
+<blockquote>
+<ul>
+<li>Cleanup: This pause determines whether a space-reclamation phase will actually follow. If a space-reclamation phase follows, the young-only phase completes with a single Prepare Mixed young collection.</li>
+</ul>
+</blockquote>
+<blockquote>
+<ol start="2">
+<li>Space-reclamation phase: This phase consists of multiple Mixed collections that in addition to young generation regions, also evacuate live objects of sets of old generation regions. The space-reclamation phase ends when G1 determines that evacuating more old generation regions wouldn’t yield enough free space worth the effort.</li>
+</ol>
+</blockquote>
+<p>空间回收后，收集周期将以另一个年轻阶段重新启动。作为兜底，如果应用程序在收集活跃度信息时内存不足，G1 将像其他收集器一样执行就会执行Full</p>
+<h2 id="2-4-垃圾回收阶段和回收集"><a href="#2-4-垃圾回收阶段和回收集" class="headerlink" title="2.4 垃圾回收阶段和回收集"></a>2.4 垃圾回收阶段和回收集</h2><blockquote>
+<p>garbage Collection Pauses and Collection Set</p>
+</blockquote>
+<p>G1执行垃圾收集和空间回收是在stop-the-world pauses时间内完成的，存活的对象会从堆的一个区域移动到另一个区域，并且对这些对象的引用也会调整。</p>
+<p>对于non-humongous的移动：</p>
+<ul>
+<li>年轻一代（eden和survivor）的对象被复制到survivor区域或old区域，取决于它们的年龄。</li>
+<li>来自old的对象被复制到其他old</li>
+</ul>
+<p>对于大对象来说，除非被回收不然永远不会被移动。</p>
+<p>对于回收集（collection set）：</p>
+<ul>
+<li>在 Young-Only ，回收集仅由年轻一代的区域以及可能被回收的巨大区域组成。</li>
+<li>在空间回收（Space-reclamation）阶段，回收集由年轻代中的区域、包含可能被回收的对象的巨大区域、以及来自收集集合候选区域的一些老生代区域组成。</li>
+</ul>
+<p>G1 在并发周期（concurrent cycle）内准备回收集候选区域。在Remark pause，G1 选择大量闲置空间的低利用率区域。然后在 Remark 和Cleanup pause之间并发准备这些区域以供以后收集使用。Cleanup pause根据效率对准备的结果进行排序。更高效的区域是说，有更多的空间并且回收的时间更少。mixedcollections会更喜欢这些区域。</p>
+<h1 id="三、MemeoryAnayzer-MAT"><a href="#三、MemeoryAnayzer-MAT" class="headerlink" title="三、MemeoryAnayzer(MAT)"></a>三、MemeoryAnayzer(MAT)</h1><blockquote>
+<p><a target="_blank" rel="noopener" href="https://eclipse.dev/mat/">https://eclipse.dev/mat/</a></p>
+</blockquote>
+<h2 id="3-1-重要概念"><a href="#3-1-重要概念" class="headerlink" title="3.1 重要概念"></a>3.1 重要概念</h2><h3 id="3-1-1-可达性"><a href="#3-1-1-可达性" class="headerlink" title="3.1.1 可达性"></a>3.1.1 可达性</h3><p><strong>可达</strong></p>
+<p>这个对象仍然有地方引用着他</p>
+<p><strong>不可达</strong></p>
+<p>这个对象没有任何对象被引用</p>
+<h3 id="3-1-2-Shallow-与Retained-Heap的区别"><a href="#3-1-2-Shallow-与Retained-Heap的区别" class="headerlink" title="3.1.2 Shallow 与Retained Heap的区别"></a>3.1.2 Shallow 与Retained Heap的区别</h3><p><strong>Shallow</strong> 是一个对象所消耗的内存。对象每个引用需要32或64位（取决于操作系统体系结构），每个Integer需要4字节，每个Long需要8字节，等等。</p>
+<blockquote>
+<p>Shallow heap is the memory consumed by one object. An object needs 32 or 64 bits (depending on the OS architecture) per reference, 4 bytes per Integer, 8 bytes per Long, etc. Depending on the heap dump format the size may be adjusted (e.g. aligned to 8, etc…) to model better the real consumption of the VM.</p>
+</blockquote>
+<p>X的<strong>Retained set</strong>表示当X被GC垃圾回收后需要移除的对象列表</p>
+<blockquote>
+<p><strong>Retained set</strong> of X is the set of objects which would be removed by GC when X is garbage collected.</p>
+</blockquote>
+<p>X的<strong>Retained heap</strong>是Retained set里所有对象的Shallow大小</p>
+<blockquote>
+<p><strong>Retained heap</strong> of X is the sum of shallow sizes of all objects in the retained set of X, i.e. memory kept alive by X.</p>
+</blockquote>
+<p>通俗的来说，<strong>Shallow</strong> 是这个对象的大小，<strong>Retained heap</strong>是这个对象被回收之后内存释放的大小</p>
+<p><img src="/../img/netease/littleP/img_5.png" alt="img_5.png"></p>
+<p>图5 对象引用图以及Retained Set</p>
+<h3 id="3-1-3-Dominator-Tree"><a href="#3-1-3-Dominator-Tree" class="headerlink" title="3.1.3 Dominator Tree"></a>3.1.3 Dominator Tree</h3><p>MAT提供了对象图的Dominator Tree，将对象引用图转化为Dominator Tree能够轻松识别保留内存的最大块以及对象之间的依赖关系，下面是一些定义</p>
+<ul>
+<li>X <strong>dominates</strong> Y，表示在对象图中，每一个去Y的路径上都需要经过X。</li>
+<li>X是Y的<strong>immediate dominator</strong> ，表示X是距离Y最近的支配者</li>
+<li><strong>dominator tree</strong> 是由对象图直接构建而来，能够展现一个对象的immediate dominator</li>
+</ul>
+<p>图6是将对象图（左侧）构建为<strong>dominator tree</strong> （右侧）</p>
+<p><img src="/../img/netease/littleP/img_6.png" alt="img_6.png"></p>
+<p>图6 对象引用图以及Retained Set</p>
+<p>通俗的来说，X dominates Y表示，如果X被回收那么Y一定被回收。但我们常说的引用，如果X引用Y，那么Y是不一定会被回收的，因为Y有可能被Z引用。这就是为什么MAT引入 <strong>Dominator</strong>这个概念。</p>
+<h2 id="3-2-常用功能"><a href="#3-2-常用功能" class="headerlink" title="3.2 常用功能"></a>3.2 常用功能</h2><h3 id="3-2-1-Histogram"><a href="#3-2-1-Histogram" class="headerlink" title="3.2.1 Histogram"></a>3.2.1 Histogram</h3><p>Histogram列举出每一个class的对象数量以及他的shallow size和retained size，可以快速找出大的对象类</p>
+<p><img src="/../img/netease/littleP/img_7.png" alt="img_7.png"></p>
+<p>图7 Histogram列表</p>
+<p>默认情况下retained size展示的是估算值，也可通过计算才获取他的准确值。</p>
+<p><img src="/../img/netease/littleP/img_11.png" alt="img_11.png"></p>
+<p>图8 Histogram计算准确retained size</p>
+<p>可以查看对象被谁引用或者他又引用了谁</p>
+<p><img src="/../img/netease/littleP/img_10.png" alt="img_10.png"></p>
+<p>图9 Histogram查看引用关系</p>
+<p><img src="/../img/netease/littleP/img_9.png" alt="img_9.png"></p>
+<p>图10 Histogram查看引用关系结果</p>
+<p>Histogram默认是通过class是分组的，也可以根据包或者加载器</p>
+<p><img src="/../img/netease/littleP/img_8.png" alt="img_8.png"></p>
+<p>图11 Histogram通过其他类型分组</p>
+<h3 id="3-2-2-Dominator-Tree"><a href="#3-2-2-Dominator-Tree" class="headerlink" title="3.2.2 Dominator Tree"></a>3.2.2 Dominator Tree</h3><p><strong>Dominator tree</strong>展示了在堆中最大的对象列表。X对象的下一级表示，X被回收之后需要被垃圾回收的对象列表。（也就是X直接支配的对象）同样也可以按类加载器、包进行分组。</p>
+<blockquote>
+<p>The next level of the tree lists those objects that would be garbage collected if all incoming references to the parent node were removed.</p>
+</blockquote>
+<p><img src="/../img/netease/littleP/img_12.png" alt="img_12.png"></p>
+<p>图12 Dominator Tree</p>
+<p>以上图为例，占用堆内存最大的是TaskThread的http-no-8080-exec-2线程，其本身大小是Shallow Heap是120字节，Retained Heap是2417669960字节，占用整个堆内存94.90%。图中将AspectJExpressionPointcut展开，表示当AspectJExpressionPointcut被内存回收之后，展开列表里的所有对象都会被回收，也就是他的retained set</p>
+<h3 id="3-2-3-Immediate-Dominators"><a href="#3-2-3-Immediate-Dominators" class="headerlink" title="3.2.3 Immediate Dominators"></a>3.2.3 Immediate Dominators</h3><p>可以快速找出当前这组（类&#x2F;对象）的所有immediate dominator（直接支配者）</p>
+<p><img src="/../img/netease/littleP/img_13.png" alt="img_13.png"></p>
+<p>图13 Histogram找某个类的immediate dominator</p>
+<p>下列展现支配Object[]的类列表</p>
+<p><img src="/../img/netease/littleP/img_14.png" alt="img_14.png"></p>
+<p>图14 Object[]类的immediate dominator</p>
+<p>其中所选的那一行表示，TaskThread一共有37个对象，其中支配了133个Object[]，并且TaskThread的本身对象大小(shallow size)是4440bytes，他支配的Object[]是2147491680bytes的大小</p>
+<h3 id="3-2-4-Leak-report"><a href="#3-2-4-Leak-report" class="headerlink" title="3.2.4 Leak report"></a>3.2.4 Leak report</h3><p>Leak report会列举出可能存在内存泄漏的点，以及发生的栈信息位置</p>
+<p><img src="/../img/netease/littleP/img_15.png" alt="img_15.png"></p>
+<p>图15 Leak report</p>
+<h1 id="四、定位过程"><a href="#四、定位过程" class="headerlink" title="四、定位过程"></a>四、定位过程</h1><p>根据在第一节所观察到的问题现象，我们从内存角度来分析GC停顿之间为何这么久？按照惯例，通常都会看一下内存中的大对象，因为大对象一般是造成内存出现问题的罪魁祸首，并且大对象也是最容易发现的。</p>
+<h2 id="4-1-查看大对象"><a href="#4-1-查看大对象" class="headerlink" title="4.1 查看大对象"></a>4.1 查看大对象</h2><blockquote>
+<p>jmap -hsito [pid] | head -n [num]</p>
+</blockquote>
+<p><img src="/../img/netease/littleP/img_16.png" alt="img_16.png"></p>
+<p>图16 小P老师服务某时刻大对象</p>
+<p>大部分服务大对象前列就是byte、int等基本类型（不同的jdk版本可能会不同），也看不出什么门道。</p>
+<p>通常先重点关注项目自己的包，再看一些引用的包。图16已经圈出了一些比较可疑的对象，但类比了同类稳定服务，第10行对象也是存在且现象一致的，于是就暂时排除他的嫌疑。</p>
+<p>接下来就是12、13行这两个对象，他们用来做流式场景下线程之间上下文的自动传递，在github上看有人也提出了使用该组件的<a target="_blank" rel="noopener" href="https://github.com/micrometer-metrics/context-propagation/issues/148">内存问题</a>，我们把他列为可疑对象。</p>
+<p>再接着就是20行这个对象，他是之前讲到的<a target="_blank" rel="noopener" href="https://huggingface.co/">Huggingface</a>组件，用来做大模型token计算。这个组件cpu占用率很高（之前性能自测过，图17）。那有没有可能在某个时刻计算量很大导致cpu激增，而容器分配的cpu不够用（而我们也确实发生了cpu抢占的情况），导致长期持有jvm对象而无法回收带来的GC卡顿，所以我也把他列为了可疑对象。</p>
+<p>接下来我们来验证猜想。</p>
+<p><img src="/../img/netease/littleP/img_17.png" alt="img_17.png"></p>
+<p>图17 Huggingface组件性能测试cpu、内存使用情况</p>
+<h3 id="4-1-1-验证猜想"><a href="#4-1-1-验证猜想" class="headerlink" title="4.1.1 验证猜想"></a>4.1.1 验证猜想</h3><p>我们将图16中，12、13行对象涉及的组件以及20行对象涉及的组件，分别打开&#x2F;关闭来做性能测试，看 GC和jvm是否有明显变化，但当时并没有发现带来明显的jvm变化以及GC卡顿问题。那么问题可能出现在其他大对象上，这时候就需要把堆内存dump下来做分析了。</p>
+<h2 id="4-2-内存dump"><a href="#4-2-内存dump" class="headerlink" title="4.2 内存dump"></a>4.2 内存dump</h2><p>根据我们之前观察的现象，old区域激增，一段时间后回落，这不太符合内存泄漏的现象，可能就是大对象被长期持有无法释放，于是在dump内存时，选择将堆里的对象全部dump而不仅仅是存活的对象。</p>
+<blockquote>
+<p>jmap -dump:live,format&#x3D;b,file&#x3D;dump.hprof [pid]</p>
+</blockquote>
+<h2 id="4-3-使用MAT工具分析"><a href="#4-3-使用MAT工具分析" class="headerlink" title="4.3 使用MAT工具分析"></a>4.3 使用MAT工具分析</h2><blockquote>
+<p><a target="_blank" rel="noopener" href="https://eclipse.dev/mat/">下载地址</a></p>
+</blockquote>
+<p>注意一般堆文件多大，MAT内存就需要分配多大，修改方式<a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_45859054/article/details/131096947">参考</a>。</p>
+<p>MAT工具通常我们可以使用他从这几个角度分析：</p>
+<ul>
+<li>堆内存中的大对象有些什么？</li>
+<li>这些大对象为什么没被回收？看他的支配者：immediate Dominators，看他的GC root</li>
+<li>这些大对象为什么这么大？看他支配了谁：retained set</li>
+</ul>
+<h3 id="4-3-1-导入堆文件"><a href="#4-3-1-导入堆文件" class="headerlink" title="4.3.1 导入堆文件"></a>4.3.1 导入堆文件</h3><p><img src="/../img/netease/littleP/img_18.png" alt="img_18.png"></p>
+<p>图18 堆文件导入示意图</p>
+<h3 id="4-3-2-查看大对象"><a href="#4-3-2-查看大对象" class="headerlink" title="4.3.2 查看大对象"></a>4.3.2 查看大对象</h3><p>使用Histogram查看大的对象（类），根据Retained Heap来排序（点击Retained Heap按钮就可以排序）</p>
+<p><img src="/../img/netease/littleP/img_19.png" alt="img_19.png"></p>
+<p>图19 堆文件大的对象（类）列表</p>
+<p>发现最大的类是java.lang.object[]，是一个数组，于是按照刚才思路我们先看他为什么没被回收？就看他的支配者。</p>
+<h3 id="4-3-3-查看大对象支配者"><a href="#4-3-3-查看大对象支配者" class="headerlink" title="4.3.3 查看大对象支配者"></a>4.3.3 查看大对象支配者</h3><p>尝试看下这个大对象的支配者，看看是不是因为这个支配者应该被回收但是没被回收。</p>
+<p>图20发现java.lang.object[]最大的支配者是TaskThread这个类，一共有37个对象实例，支配了133个java.lang.object[]，TaskThread类本身大小是4440bytes，支配的对象java.lang.object[]大小是2147491680bytes。</p>
+<p>其实看到这里已经没有意义了，因为他是处理http请求的线程，是不可能被回收的，但我们看一下这个TaskThread的GC Root ，看是否是被不小心创建出来的而没释放。</p>
+<p><img src="/../img/netease/littleP/img_20.png" alt="img_20.png"></p>
+<p>图20 java.lang.object[]的支配者</p>
+<h3 id="4-3-4-查看GC-root"><a href="#4-3-4-查看GC-root" class="headerlink" title="4.3.4 查看GC root"></a>4.3.4 查看GC root</h3><p>一般来说查看Gc root时都会选择 exclude weak&#x2F;soft references，因为这两个引用肯会被GC掉，这是用来查内存泄漏的，但我们场景是对象是被长时间持有段时间无法回收，而不是一直无法回收。所以这里选择展现了所有的references。</p>
+<p><img src="/../img/netease/littleP/img_21.png" alt="img_21.png"></p>
+<p>图21 查看TaskThreadGC root示意图</p>
+<p>从图22来，TaskThread都是tomcat创建的线程用来处理http请求的，http-nio-8080-exec-2支配了很大的对象，那就是刚才java.lang.object[]，这种被线程支配的对象，大概率是临时变量，也就是方法栈里创建出来的变量，http-nio-8080-exec-2是不可能被回收的。</p>
+<p><img src="/../img/netease/littleP/img_22.png" alt="img_22.png"></p>
+<p>图22 TaskThreadGC root</p>
+<p>但是临时变量的回收，会在方法执行完，对他引用没有了之后进行。因为我们dump某一个时刻的堆栈信息，可能线程没有执行完，没被回收也是正常的。但是在http所有的线程中，只有这个线程持有很大的对象明显是不合理。于是我接着看 java.lang.object[]对象为什么这么大？</p>
+<h3 id="4-3-5-查看retained-set"><a href="#4-3-5-查看retained-set" class="headerlink" title="4.3.5 查看retained set"></a>4.3.5 查看retained set</h3><p><img src="/../img/netease/littleP/img_23.png" alt="img_23.png"></p>
+<p>图23 查看java.lang.object[]Retained Set示意图</p>
+<p>查看java.lang.object[]Retained Set可以看出他支配了哪些对象&#x2F;类，就可以知道他为什么这么大（retained set是包含本身的）</p>
+<p><img src="/../img/netease/littleP/img_24.png" alt="img_24.png">图22.png</p>
+<p>图24 java.lang.object[]Retained Set</p>
+<p>从图24可以看出，在其所有支配的对象中，其本身是最大的，到这里好像陷入了死结。</p>
+<p>这个对象被谁支配？是一个线程。这个对象为什么这么大？是因为他本身就很大。</p>
+<p>但回想起刚才说的，这个对象被http线程支配，因为线程没有执行完，引用没消失所以一直存在，于是我就想能不能看一下这个线程的栈信息，正好MAT中也有这样的功能。</p>
+<h3 id="4-3-6-查看栈信息"><a href="#4-3-6-查看栈信息" class="headerlink" title="4.3.6 查看栈信息"></a>4.3.6 查看栈信息</h3><p><img src="/../img/netease/littleP/img_25.png" alt="img_25.png"></p>
+<p>图25 所有线程的栈信息</p>
+<p>从图25来看，http-nio-8080-exec-2占用了很大的retained heap，就接着点开来看就是整个线程的堆栈情况（不排序的话默认就是执行路径）</p>
+<p><img src="/../img/netease/littleP/img_26.png" alt="img_26.png"></p>
+<p>图26 http-nio-8080-exec-2堆栈信息</p>
+<p>看堆栈信息，一般来说是从上到下找到首个业务代码进行分析，从图26可以看出从业务代码ChatManagerImpl.java:300处添加一个元素到列表，最后触发了容器扩容，最终导致OutOfMemoryError。并且这个线程在执行copyOf时持有很大的内存大小Max Local Retained Heap（本地变量保留大小），已经定位到业务代码了，接下来就根据业务代码去看看原因。</p>
+<h3 id="4-3-7-跟踪业务代码"><a href="#4-3-7-跟踪业务代码" class="headerlink" title="4.3.7 跟踪业务代码"></a>4.3.7 跟踪业务代码</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> List&lt;ChatInfoDO&gt; <span class="title function_">getChatInfoHistory</span><span class="params">(String userId, String taskId, Long parentChatId,</span></span><br><span class="line"><span class="params">                                           Integer groupLevelCount)</span> <span class="keyword">throws</span> LlmBusinessException &#123;</span><br><span class="line">   <span class="comment">// 根据chat_group_level粗筛（只取最近的chatCount个level）</span></span><br><span class="line">   List&lt;ChatInfoDO&gt; chatInfoDOList = chatInfoDOMapper.selectChatHistory(userId, taskId, parentChatId,</span><br><span class="line">           groupLevelCount);</span><br><span class="line">   <span class="keyword">if</span> (chatInfoDOList == <span class="literal">null</span> || chatInfoDOList.size() == <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">LlmBusinessException</span>(ErrorCode.USER_WRONG_CHAT_HISTORY);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="comment">// 根据 parentChatId 串起 chatHistory 返回，此时是逆序的</span></span><br><span class="line">   Map&lt;Long, ChatInfoDO&gt; chatIdMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">   <span class="keyword">for</span> (ChatInfoDO chatInfoDO : chatInfoDOList) &#123;</span><br><span class="line">      chatIdMap.put(chatInfoDO.getChatId(), chatInfoDO);</span><br><span class="line">   &#125;</span><br><span class="line">   List&lt;ChatInfoDO&gt; history = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">   <span class="type">Long</span> <span class="variable">chatId</span> <span class="operator">=</span> parentChatId;</span><br><span class="line">   <span class="comment">// 逆序查找，从最后一条对话chatId开始，继续条件：chatId=当前parentChatChatId（子节点找父节点）</span></span><br><span class="line">   ChatInfoDO chatInfoDO;</span><br><span class="line">   <span class="keyword">while</span> ((chatInfoDO = chatIdMap.get(chatId)) != <span class="literal">null</span>) &#123;</span><br><span class="line">      history.add(chatInfoDO); <span class="comment">// 标记1  问题代码处</span></span><br><span class="line">      chatId = chatInfoDO.getParentChatId();</span><br><span class="line">   &#125;</span><br><span class="line">   Collections.reverse(history);</span><br><span class="line">   <span class="keyword">return</span> history;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在分析可疑点之前，我先简单描述下这段代码所做的事情。</p>
+<p>在小P老师对话场景中，是采用一问一答的形式，例如下方图27所示，蓝色表示用户，淡红色表示系统回答。</p>
+<p><img src="/../img/netease/littleP/img_27.png" alt="img_27.png"></p>
+<p>图27 大模型对话示意图</p>
+<p>为了让模型更好的理解用户问题，通常我们会像图26所示，携带所有的历史消息送给模型。当前业务代码就是找到用户的历史对话然后构建起来提供给模型。</p>
+<p><img src="/../img/netease/littleP/img_28.png" alt="img_28.png"></p>
+<p>图28 携带历史对话示意</p>
+<p>如图29所示，我们给每个消息两个属性id&#x3D;xxx、parendId&#x3D;xxx，这样来呈现一种父子关系，用户输入消息时生成id，并通过传入的parentId&#x3D;3向上寻找消息，找到id&#x3D;3的消息，循环寻找，直到parentId&#x3D;-1</p>
+<p><img src="/../img/netease/littleP/img_29.png" alt="img_29.png"></p>
+<p>图29 构建历史对话示意图</p>
+<p>回过头我们来看业务代码，标记1就是栈信息所示的位置，这处代码其实有一个很明显的风险点while循环构建链表，同时结合我们的对象是一个大数组，那这个while循环就很可疑。结合刚才业务代码逻辑的分析，我当时想到了以下可疑点：</p>
+<ul>
+<li>一个消息的id和parentId一致发生了循环，导致死循环</li>
+<li>chatInfoDOMapper.selectChatHistory()从数据库查出来的数据量很大</li>
+</ul>
+<p>接着看了数据库查询语句chatInfoDOMapper.selectChatHistory()不可能发生查出很多数据的问题。</p>
+<p>那么现在最可疑的就是消息循环了，本来分享到这就结束了。要去查数据库看看有没有id和parentId重复的数据了，但因为当时是和同事们在分享这篇文章，同事们就提出了两个问题。</p>
+<ul>
+<li>有没有可能是两个消息发生了循环？消息A找到了消息B，消息B又找回了消息A。</li>
+<li>MAT可以看这个链表里有啥吗？以及能不能看这个对象的值，不然查库可能会很慢。</li>
+</ul>
+<p>很显然第一个是很有可能的。 第二个问题因为对MAT还是初次使用所以不太了解，但在同事的引导下，我们尝试看链表里具体的数据是什么样子。</p>
+<p>4.3.8 查看栈具体用了哪些对象<br><img src="/../img/netease/littleP/img_30.png" alt="img_30.png"></p>
+<p>图30 栈的临时变量</p>
+<p>如图30所示，我们继续点击业务代码方法栈点，就可以看到这个方法栈点引用了（注意是引用不是支配）HashMap、ArrayList、ChatInfoDO，因为根据业务代码分析可能是ArrayList膨胀，所以继续点击ArrayList可以看他引用的元素elementData，包括了object[]、ChatInfoDO。这里问题就展现出来了，如图30红框所示，ArrayList奇数位置[1],[3],[5]…都是ChatInfoDO_A，偶数位置[0],[2],[4]…都是ChatInfoDO_B，并且再次点击ChatInfoDO_A和ChatInfoDO_B就可以看到他们的chatId、parentChatId，这时候看到他们确实互为引用了，如图31所示。</p>
+<p><img src="/../img/netease/littleP/img_31.png" alt="img_31.png"></p>
+<p>图31 互为引用的消息</p>
+<p>至此问题原因顺利找到。</p>
+<p>后续分析还发现，不仅是两个消息会循环，多个消息也会循环。历史消息构建其实是单链表从尾到头的构建过程，找到头节点就停止，但某个位置产生了环就导致悲剧。所以得出一点建议：之后while的使用一定得注意！！！。</p>
+<p>虽然原因找到了，但为什么产生重复的Id呢？我们设计的Id可是唯一的！于是我们又分析了生成Id的代码。</p>
+<p>4.4 分析ID重复的原因</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IDGeneratorUtil</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 循环数</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">long</span> <span class="variable">cycleNumber</span> <span class="operator">=</span> <span class="number">10000</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 循环下限</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">long</span> <span class="variable">startNumber</span> <span class="operator">=</span> <span class="number">10001</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 循环上限</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">long</span> <span class="variable">stopNumber</span> <span class="operator">=</span> <span class="number">99999</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 返回一个当前时间的long类型数字（非线程安全）</span></span><br><span class="line"><span class="comment">     * 理论上每毫秒可生成id 89999 个</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="type">long</span> <span class="title function_">getNextId</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (cycleNumber &lt; stopNumber) &#123;</span><br><span class="line">            cycleNumber++;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            cycleNumber = startNumber;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> System.currentTimeMillis() + cycleNumber;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因为小P老师服务是分布式服务，有多个节点，需要保障消息唯一Id。常见唯一Id方式很多：UUID、雪花等等，但基于我们的考虑并没有使用上边的方式。</p>
+<p>当时在设计唯一Id时主要考虑以下几点：</p>
+<ul>
+<li>具有时间性</li>
+<li>生产效率高</li>
+<li>符合数字需求<br>于是就通过时间戳来体现时间性，在加一个全局唯一的循环数，这样是不是具有符合上述的要求了？</li>
+</ul>
+<p>但在大家的分析下发现了这样一个BUG，假如当前时间是10，随机数是10，过了一段时间后当前时间是19，随机数已经发生循环变成了1，这样两个Id是不是都一样变成20了（但概率确实很低！！！）</p>
+<p>到此终于真相大白了！</p>
+<h1 id="五、-总结"><a href="#五、-总结" class="headerlink" title="五、 总结"></a>五、 总结</h1><p>分析过程其实是坎坷的，总结的时候，已变成已知答案寻找答案的过程，所以看起来会很顺畅。</p>
+<p>问题千奇百怪，分析过程也千奇百怪，但总结了一些小经验。</p>
+<ul>
+<li>监控jvm内存或者可以观察jvm是比较重要的</li>
+<li>GC日志也是比较重要的日志</li>
+<li>内存问题一般可以从大对象着手，分析对象为什么这么大？为什么没被回收？</li>
+<li>MAT的Histogram、Dominator Tree看大对象</li>
+<li>MAT的Immediate Dominators看大对象被谁直接支配而没回收</li>
+<li>MAT的retained set看大对象支配了哪些，导致他这么大</li>
+<li>MAT的线程分析，来分析线程持有对象特别大的情况，分析栈信息</li>
+</ul>
+<p>当然，在问题处理的过程中，还有一些不可忽视的细节操作，对排查问题至关重要。</p>
+<ul>
+<li>如何抓取偶现问题的JVM dump现场？</li>
+<li>只有内存泄漏才会引起内存使用率升高吗？</li>
+<li>如何分析GC日志数据，推断问题原因？</li>
+</ul>
+<p>基于篇幅有限，本文不再赘述，后续会编写系列KM文章，为大家带来实践中走过的弯路与总结的小技巧。</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2025/03/04/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-%E5%AE%8C%E7%BB%93%E7%AF%87/">网易牛马日志-完结篇</a>
       
     </h1>
@@ -1415,83 +1747,6 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">esGet</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">Script</span> <span class="variable">script</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;Math.random()&quot;</span>);</span><br><span class="line">    <span class="type">ScriptSortBuilder</span> <span class="variable">sortBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ScriptSortBuilder</span>(script, ScriptSortBuilder.ScriptSortType.NUMBER)</span><br><span class="line">            .order(SortOrder.ASC);</span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">    boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;recommendData&quot;</span>));</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">            .query(boolQuery) <span class="comment">// 查询参数</span></span><br><span class="line">            .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;recommendData&quot;</span>&#125;, <span class="literal">null</span>)</span><br><span class="line">            .sort(sortBuilder)</span><br><span class="line">            .size(<span class="number">500</span>);</span><br><span class="line">    SearchHit[] searchHits = domainDataIndex.query(sourceBuilder);</span><br><span class="line">    <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (SearchHit searchHit : searchHits) &#123;</span><br><span class="line">        <span class="type">DomainIndexBO</span> <span class="variable">domainIndexBO</span> <span class="operator">=</span> JSON.parseObject(searchHit.getSourceAsString(),DomainIndexBO.class);</span><br><span class="line">        <span class="type">RecommendDataBO</span> <span class="variable">recommendData</span> <span class="operator">=</span> domainIndexBO.getRecommendData();</span><br><span class="line">        <span class="type">StringBuilder</span> <span class="variable">stringBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">        stringBuilder.append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getDomain()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(String.join(<span class="string">&quot;,&quot;</span>, recommendData.getProducts())).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (recommendData.getAliCategories().isEmpty())&#123;</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> (RecommendDataBO.AliCategory aliCategory : recommendData.getAliCategories()) &#123;</span><br><span class="line">                stringBuilder.append(aliCategory.getName()).append(<span class="string">&quot;:&quot;</span>).append(aliCategory.getScore()).append(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        stringBuilder.append(<span class="string">&quot;$&quot;</span>).append(recommendData.getIsBizP()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getIsBizVersion()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getProductsVersion()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(recommendData.getAliCategoryVersion()))&#123;</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            stringBuilder.append(recommendData.getAliCategoryVersion());</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">result</span> <span class="operator">=</span> stringBuilder.toString();</span><br><span class="line">        log.info(<span class="string">&quot;第&quot;</span>+i+<span class="string">&quot;个:&quot;</span>+result);</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>。。。未完待续</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/12/02/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week1-2/">网易牛马日志-week1-2</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-12-02
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="需求1：与推荐侧数据同步"><a href="#需求1：与推荐侧数据同步" class="headerlink" title="需求1：与推荐侧数据同步"></a>需求1：与推荐侧数据同步</h1><h2 id="1-配置kafka"><a href="#1-配置kafka" class="headerlink" title="1.配置kafka"></a>1.配置kafka</h2><p>kafka批量消费，设置消费者组，使得每次消费的时候从头消费</p>
-<blockquote>
-<p>消费者组能从头开始消费必须得有消息，也就是说如果消息过期了还是消费不了的，这个过期时间在delete.retention.ms里面配置，当前topic的过期时间是604800000，也就是一个礼拜。</p>
-<p>还有一种办法是通过kafka给定的某个脚本参数来指定offset的消费位置。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="keyword">public</span> KafkaListenerContainerFactory&lt;ConcurrentMessageListenerContainer&lt;String, String&gt;&gt;</span><br><span class="line"><span class="title function_">recommendDomainDataListenerContainer</span><span class="params">(KafkaProperties kafkaProperties)</span> &#123;</span><br><span class="line">    ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; factory = <span class="keyword">new</span> <span class="title class_">ConcurrentKafkaListenerContainerFactory</span>&lt;&gt;();</span><br><span class="line">    Map&lt;String, Object&gt; map = kafkaProperties.buildConsumerProperties();</span><br><span class="line">    <span class="comment">//批量消费50个</span></span><br><span class="line">    map.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, <span class="number">50</span>);</span><br><span class="line">    map.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, <span class="number">10</span> * <span class="number">60</span> * <span class="number">1000</span>);</span><br><span class="line">    map.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, <span class="number">3000</span>); <span class="comment">// 3秒上报一次心跳</span></span><br><span class="line">    map.put(ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, <span class="number">10</span> * <span class="number">60</span> * <span class="number">1000</span>);</span><br><span class="line">    map.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, <span class="string">&quot;earliest&quot;</span>);<span class="comment">//消费者组每次都从头开始消费</span></span><br><span class="line">    ConsumerFactory&lt;String, String&gt; consumerFactory = <span class="keyword">new</span> <span class="title class_">DefaultKafkaConsumerFactory</span>&lt;&gt;(map);</span><br><span class="line">    factory.setConsumerFactory(consumerFactory);</span><br><span class="line">    factory.setConcurrency(<span class="number">2</span>); <span class="comment">// 2个线程</span></span><br><span class="line">    factory.setBatchListener(<span class="literal">true</span>);</span><br><span class="line">    <span class="keyword">return</span> factory;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="2-配置kafka的消费者"><a href="#2-配置kafka的消费者" class="headerlink" title="2.配置kafka的消费者"></a>2.配置kafka的消费者</h2><p>由于是批量请求rpc接口，因此需要解决请求失败带来的<strong>消息丢失</strong>问题，意思是如果请求失败了，这些domain还会被消费，这里的思路是用一个set来保存没有消费的domain，如果在某处出错了，就会重新往kafka里面发消息，实现不漏消息。</p>
-<blockquote>
-<p>2024.12.2 在这上面栽了跟头</p>
-<p>想法很美好但是实际上线还是出现了漏消息，成功率只有90%。</p>
-<p>首先这个domainSet不能设置成全局变量，因为所有的线程都会更改这个变量，会有复杂的并发安全问题。其次是可能出现异常的时间点：</p>
-<ul>
-<li>消费的时候就出现问题，可能性很小</li>
-<li>拿着所有50条去请求rpc接口的时候</li>
-<li>rpc接口失败或者别的状态码</li>
-<li>es更新出错</li>
-</ul>
-<p>由此可见需要在rpc接口请求之前就要初始化domainSet，所以在消费消息的时候就需要同时加入domainSet。但如果rpc接口请求成功了，需要清空domainSet，为什么呢？因为有可能domain是50个，那边只有40个可返回域名，如果再按照50个就会有消息被重复发送，例如虽然消息里面有<a target="_blank" rel="noopener" href="http://www.baidu.com,但是rpc接口里面死活没有,这个时候再去重新往kafka里面投重新消费是不合适的,所以在这里需要遍历response,然后保存进清空了的domainset里面./">www.baidu.com，但是rpc接口里面死活没有，这个时候再去重新往kafka里面投重新消费是不合适的，所以在这里需要遍历response，然后保存进清空了的domainSet里面。</a></p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@KafkaListener(</span></span><br><span class="line"><span class="meta">        //这里是&#123;&#125;，可以配置多个topic</span></span><br><span class="line"><span class="meta">        topics = &#123;TOPIC&#125;,</span></span><br><span class="line"><span class="meta">        groupId = &quot;recommendation-ready-group-bugfix-v1&quot;,</span></span><br><span class="line"><span class="meta">        containerFactory = &quot;recommendDomainDataListenerContainer&quot;</span></span><br><span class="line"><span class="meta">)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">listener</span><span class="params">(List&lt;ConsumerRecord&lt;String, String&gt;&gt; records)</span> &#123;</span><br><span class="line">    log.info(<span class="string">&quot;RecommendDomainDataListener | size:&#123;&#125;&quot;</span>, records.size());</span><br><span class="line">    Set&lt;String&gt; domains = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">    Set&lt;String&gt; domainSet = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">    <span class="type">StopWatch</span> <span class="variable">sw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StopWatch</span>();</span><br><span class="line">    sw.start();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span>(ConsumerRecord&lt;String, String&gt; record :records) &#123;</span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">kafkaMsg</span> <span class="operator">=</span> JSON.parseObject(record.value());</span><br><span class="line">            <span class="type">String</span> <span class="variable">domain</span> <span class="operator">=</span> kafkaMsg.getString(<span class="string">&quot;domain&quot;</span>);</span><br><span class="line">            domain = DomainUtil.format(domain);</span><br><span class="line">            <span class="keyword">if</span>(StringUtils.isBlank(domain)) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            domains.add(domain);</span><br><span class="line">            domainSet.add(domain);</span><br><span class="line">        &#125;</span><br><span class="line">        batchGetRecommendationDetail(domains,domainSet);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable e)&#123;</span><br><span class="line">        <span class="keyword">for</span> (String domain : domainSet)&#123;</span><br><span class="line">            Map&lt;String,String&gt; map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">            map.put(<span class="string">&quot;domain&quot;</span>,domain);</span><br><span class="line">            kafkaProducer.send(TOPIC, domain, JSON.toJSONString(map));</span><br><span class="line">        &#125;</span><br><span class="line">        log.error(<span class="string">&quot;RecommendDomainDataListener | consumer message error. put in queue &#123;&#125;.&quot;</span>, JSON.toJSONString(domains),e);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123;</span><br><span class="line">        sw.stop();</span><br><span class="line">        log.info(<span class="string">&quot;RecommendDomainDataListener | &#123;&#125;, cost: &#123;&#125;&quot;</span>, domains.size(), sw.getTime());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="3-GRPC请求"><a href="#3-GRPC请求" class="headerlink" title="3.GRPC请求"></a>3.GRPC请求</h2><p>grpc是让远程方法变得像本地方法一样简单，这里用了推荐侧的一个接口，确实只用引用一个jar包就行，背后就是一些复杂的网络请求。这个接口的可以一次传50个domain，状态码主要关注429，这里是触发了限流，需要按照上面的方法进行重新消费，消费多少发送多少相同的域名。</p>
-<blockquote>
-<p>grpc方法的qps是1，触发了限流要降速，Thread.sleep(1000);</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">batchGetRecommendationDetail</span><span class="params">(Set&lt;String&gt; domains,Set&lt;String&gt; domainSet)</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">    Recommendation.<span class="type">GetDomainInfosRequest</span> <span class="variable">request</span> <span class="operator">=</span> Recommendation.GetDomainInfosRequest.newBuilder()</span><br><span class="line">            .addAllDomains(domains)</span><br><span class="line">            .setDomainSourceValue(DOMAIN_SOURCE_GRPC_VALUE).build();</span><br><span class="line">    Recommendation.<span class="type">GetDomainInfosResponse</span> <span class="variable">response</span> <span class="operator">=</span> recommendationClient.getDomainInfos(request);</span><br><span class="line">    <span class="keyword">if</span> (response != <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!response.getSuccess() || response.getCode() != GRPC_SUCCESS_CODE)&#123;</span><br><span class="line">            <span class="comment">//触发grpc限流，该方法降速，重新消费</span></span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(String.valueOf(response.getCode()));</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">&quot;getRecommendationDetail. code:&#123;&#125;&quot;</span>,response.getCode());</span><br><span class="line">        <span class="keyword">if</span>(!CollectionUtils.isEmpty(response.getDataList()))&#123;</span><br><span class="line">            List&lt;Recommendation.DomainInfo&gt; domainInfoList = response.getDataList();</span><br><span class="line">            <span class="keyword">for</span> (Recommendation.DomainInfo domainInfo : domainInfoList)&#123;</span><br><span class="line">                domainSet.add(domainInfo.getDomain());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (Recommendation.DomainInfo domainInfo : domainInfoList)&#123;</span><br><span class="line">                convert(domainInfo,domainSet);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;Recommendation.GetDomainInfosResponse returns null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h2 id="4-转换对象"><a href="#4-转换对象" class="headerlink" title="4.转换对象"></a>4.转换对象</h2><p>这个没什么好说的，就是拷贝属性到当前项目的bean</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>主要熟悉了测试环境和线上环境，以及kafka的一些配置和机制，对于异常处理的理解加深了。</p>
-<h1 id="需求2：定时发送新域名"><a href="#需求2：定时发送新域名" class="headerlink" title="需求2：定时发送新域名"></a>需求2：定时发送新域名</h1><p>需要每天的00:00去es里面检查昨天新增的域名，通过kafka发送消息。</p>
-<ol>
-<li>计算昨天00:00到23：59的时间戳：由于字段里面只有updateTime没有createTime，而且也是用时间戳来保存的，要先计算一下时间。</li>
-<li>拼es的查询语句：range来查询时间，synFlag是防止重复发送的，有这个字段的可以认为已经发过了。</li>
-<li>scrollSearch循环查找，不了解，但是大家都是这样用的。</li>
-</ol>
-<blockquote>
-<p>es的操作跟数据库很像，而且网易封装的很好，index就相当于数据库表名，DomainDataIndex可以看作mybatis的实现类，AbstractIndex就是BaseMapper那种用来基础的</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@XxlJob(&quot;newDomainSyncRecommend&quot;)</span></span><br><span class="line"><span class="keyword">public</span> ReturnT&lt;String&gt; <span class="title function_">newDomainSyncRecommend</span> <span class="params">(String param)</span> <span class="keyword">throws</span> ParseException &#123;</span><br><span class="line">    <span class="comment">//昨天的同一时刻</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">yesterday</span> <span class="operator">=</span> System.currentTimeMillis() - <span class="number">1000</span> * <span class="number">3600</span> * <span class="number">24</span>;</span><br><span class="line">    <span class="comment">//昨天零点零分零秒的毫秒数</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">zero</span> <span class="operator">=</span> yesterday / (<span class="number">1000</span> * <span class="number">3600</span> * <span class="number">24</span>) * (<span class="number">1000</span> * <span class="number">3600</span> * <span class="number">24</span>) - TimeZone.getDefault().getRawOffset();<span class="comment">//今天零点零分零秒的毫秒数</span></span><br><span class="line">    <span class="comment">//昨天23点59分59秒的毫秒数</span></span><br><span class="line">    <span class="type">long</span> <span class="variable">twelve</span> <span class="operator">=</span> zero + <span class="number">24</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">1000</span> - <span class="number">1</span>;</span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">    boolQuery.filter(QueryBuilders.rangeQuery(<span class="string">&quot;updateTime&quot;</span>)</span><br><span class="line">            .gte(zero)</span><br><span class="line">            .lte(twelve));</span><br><span class="line">    boolQuery.mustNot(QueryBuilders.existsQuery(<span class="string">&quot;synFlag&quot;</span>));</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">            .query(boolQuery) <span class="comment">// 查询参数</span></span><br><span class="line">            .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;domain&quot;</span>&#125;,</span><br><span class="line">                    <span class="literal">null</span>)</span><br><span class="line">            .size(<span class="number">100</span>);</span><br><span class="line">    <span class="keyword">if</span> (domainDataIndex == <span class="literal">null</span>) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;domainDataIndex is null&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    domainDataIndex.scrollSearch(sourceBuilder, searchHits -&gt; &#123;</span><br><span class="line">        <span class="keyword">for</span> (SearchHit searchHit : searchHits) &#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">domain</span> <span class="operator">=</span> searchHit.getId();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//更新同步标识</span></span><br><span class="line">                Map&lt;String,Boolean&gt; updateMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">                updateMap.put(<span class="string">&quot;synFlag&quot;</span>,<span class="literal">true</span>);</span><br><span class="line">                domainDataIndex.updateByProcessor(domain,updateMap);</span><br><span class="line">                log.info(<span class="string">&quot;domainDataIndex upsert success ,domain : &#123;&#125;&quot;</span>,domain);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">catch</span> (Throwable e)&#123;</span><br><span class="line">                log.error(<span class="string">&quot;domainDataIndex upsert failed ,domain : &#123;&#125;&quot;</span>,domain,e);</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//组织kafka消息</span></span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">jsonObject</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JSONObject</span>();</span><br><span class="line">            jsonObject.put(<span class="string">&quot;domain&quot;</span>,domain);</span><br><span class="line">            kafkaProducer.send(<span class="string">&quot;new_domain_sync_recommend_topic&quot;</span>,domain,JSON.toJSONString(jsonObject));</span><br><span class="line">            log.info(<span class="string">&quot;kafka send success ,domain : &#123;&#125;&quot;</span>,domain);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">return</span> ReturnT.SUCCESS;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
     
     
