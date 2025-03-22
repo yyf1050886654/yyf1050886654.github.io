@@ -212,6 +212,79 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/12/05/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week3/">网易牛马日志-week3</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-12-05
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="需求3：优化应用侧分页查询收藏接口"><a href="#需求3：优化应用侧分页查询收藏接口" class="headerlink" title="需求3：优化应用侧分页查询收藏接口"></a>需求3：优化应用侧分页查询收藏接口</h1><p>利用上watchTime字段，xxljob只更新上一周查看过的条目，可以减少带宽。</p>
+<h2 id="1-改造判断逻辑"><a href="#1-改造判断逻辑" class="headerlink" title="1.改造判断逻辑"></a>1.改造判断逻辑</h2><p>保存watchTime，首先需要获得该用户的accountId，还要获取某一条推荐对象的旧watchTime，判断是否是今天，如果是一天那就不用更新，如果是一天就需要更新。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">if (!pageRes.getContent().isEmpty())&#123;</span><br><span class="line">    Date oldWatchTime = pageRes.getContent().get(0).getWatchTime();</span><br><span class="line">    watchTimeJudgeAndUpdate(Long.parseLong(AuthInfoUtils.getContext().getAuthInfo().getAccId()),oldWatchTime);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>这个方法按道理来说要变成异步的，看后续用多线程或者@Async解决</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">watchTimeJudgeAndUpdate</span><span class="params">(Long accountId,Date oldWatchTime)</span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//一天只保存一次watchTime</span></span><br><span class="line">        <span class="keyword">if</span> (oldWatchTime == <span class="literal">null</span> || !isSameDay(oldWatchTime,<span class="keyword">new</span> <span class="title class_">Date</span>()))&#123;</span><br><span class="line">            tbGlobalCollectEntityService.updateWatchTime(accountId);</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">&quot;watchTimeUpdate success , accountId : &#123;&#125;&quot;</span>,accountId);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable e)&#123;</span><br><span class="line">        log.error(<span class="string">&quot;watchTimeUpdate failed , accountId : &#123;&#125;&quot;</span>,accountId,e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="type">boolean</span> <span class="title function_">isSameDay</span><span class="params">(Date date1, Date date2)</span> &#123;</span><br><span class="line">    <span class="type">SimpleDateFormat</span> <span class="variable">sdf</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleDateFormat</span>(<span class="string">&quot;yyyyMMdd&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> sdf.format(date1).equals(sdf.format(date2));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里刚开始是用了jpa的抽象仓库一个一个更新，但是mentor说效率太低了，不如直接写sql，在这个方法里面支持跟mybatis那样直接执行sql。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TbGlobalCollectEntityService</span> <span class="keyword">extends</span> <span class="title class_">AbstractEasyEntityService</span>&lt;TbGlobalCollectEntity&gt; &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> TbGlobalCollectRepository repository;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">updateWatchTime</span><span class="params">(Long accountId)</span>&#123;</span><br><span class="line">        repository.updateWatchTime(accountId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>sql是更新所有当前accountId下，没有取消掉的推荐条目，把他们的watchTime都改为现在。</p>
+<p>这里不需要返回当前时间，就更加说明这个判断逻辑跟前端没什么关系了，所以应该用异步。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">@Modifying</span><br><span class="line">@Transactional</span><br><span class="line">@Query(value = &quot;update TbGlobalCollectEntity p set p.watchTime=NOW() where p.status != -1 and p.accountId = :accountId&quot;)</span><br><span class="line">int updateWatchTime(@Param(&quot;accountId&quot;) Long accountId);</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-xxljob改造"><a href="#2-xxljob改造" class="headerlink" title="2.xxljob改造"></a>2.xxljob改造</h2><p>保存了watchTime，每周执行一次的定时任务需要改成查询所有watchTime为上周的条目。</p>
+<p>DateUtil这个工具可以找到今天0点和上周0点的Date对象，然后再用jpa进行查询，把所有的数据投入kafka里。</p>
+<blockquote>
+<p>优化的本意是减少部分挖掘facebook的流量。但是因为在这个topic里面不止有这个任务，还有部分通讯录挖掘的任务。减少了这部分流量同时也会减少通讯录挖掘的流量，但是后者更加有价值，并不应该减少。所以按照道理来说应该分为两个topic进行操作。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">collectLogUpdate</span><span class="params">(<span class="type">int</span> param)</span> &#123;</span><br><span class="line">    <span class="type">Date</span> <span class="variable">endDate</span> <span class="operator">=</span> DateUtil.trimAndIncreDate(<span class="keyword">new</span> <span class="title class_">Date</span>(),<span class="number">0</span>);</span><br><span class="line">    <span class="type">Date</span> <span class="variable">startDate</span> <span class="operator">=</span> DateUtil.trimAndDecreDate(<span class="keyword">new</span> <span class="title class_">Date</span>(), param);</span><br><span class="line">    List&lt;Specification&lt;TbGlobalCollectEntity&gt;&gt; specifications = Lists.newArrayList();</span><br><span class="line">    specifications.add(of(TbGlobalCollectEntity.class, <span class="string">&quot;status&quot;</span>, NEQ, GlobalSubscribeStatusEnum.DELETE.getStatus()));</span><br><span class="line">    specifications.add(of(TbGlobalCollectEntity.class, <span class="string">&quot;watchTime&quot;</span>, GTE, startDate));</span><br><span class="line">    specifications.add(of(TbGlobalCollectEntity.class, <span class="string">&quot;watchTime&quot;</span>, LTE, endDate));</span><br><span class="line">    List&lt;TbGlobalCollectEntity&gt; records = tbGlobalCollectEntityService.findAll(specifications);</span><br><span class="line">    <span class="keyword">if</span> (CollectionUtils.isEmpty(records)) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (TbGlobalCollectEntity record : records) &#123;</span><br><span class="line">        kafkaProducer.send(KafkaConstants.COWORK_GLOBAL_COLLECT_DETAIL_CHANGE, String.valueOf(record.getId()), String.valueOf(record.getId()));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="需求4：查验500条数据"><a href="#需求4：查验500条数据" class="headerlink" title="需求4：查验500条数据"></a>需求4：查验500条数据</h2><p>这个的工作量不在代码上而在于excel上，学到了一些技巧。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">GET cowork_global_domain_info/_search</span><br><span class="line">&#123;</span><br><span class="line">  &quot;query&quot;: &#123;</span><br><span class="line">    &quot;bool&quot;: &#123;</span><br><span class="line">      &quot; must &quot;: [</span><br><span class="line">        &#123;</span><br><span class="line">          &quot;exists&quot;: &#123;</span><br><span class="line">            &quot;field&quot;: &quot;recommendData&quot;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      ]</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">    ,&quot;sort&quot;: &#123;</span><br><span class="line">    &quot;_script&quot;: &#123;</span><br><span class="line">      &quot;script&quot;: &quot;Math.random()&quot;,</span><br><span class="line">      &quot;type&quot;: &quot;number&quot;,</span><br><span class="line">      &quot;order&quot;: &quot;asc&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  ,&quot;_source&quot;: [&quot;recommendData&quot;]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的点：</p>
+<ol>
+<li>随机从917w中找，这里sort要用random脚本</li>
+<li>最好不要用滚动查询，有多少条是多少条</li>
+<li>searchHit对象是一个大的对象DomainIndexBO，recommendData只是其中的一个字段。所以getSourceAsString包装的是DomainIndexBO，刚开始类型转换没弄明白耽误很久。</li>
+<li>excel小技巧：在这种需要保留很多字段的时候可以用￥(dollar符)分开，因为很少有业务里面会用，防止误操作。例如在这个场景里面日志可以打印成”{recommendData.domain}￥{recomendData.other}”，然后在excel按照￥分行。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">esGet</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">Script</span> <span class="variable">script</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;Math.random()&quot;</span>);</span><br><span class="line">    <span class="type">ScriptSortBuilder</span> <span class="variable">sortBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ScriptSortBuilder</span>(script, ScriptSortBuilder.ScriptSortType.NUMBER)</span><br><span class="line">            .order(SortOrder.ASC);</span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">    boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;recommendData&quot;</span>));</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">            .query(boolQuery) <span class="comment">// 查询参数</span></span><br><span class="line">            .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;recommendData&quot;</span>&#125;, <span class="literal">null</span>)</span><br><span class="line">            .sort(sortBuilder)</span><br><span class="line">            .size(<span class="number">500</span>);</span><br><span class="line">    SearchHit[] searchHits = domainDataIndex.query(sourceBuilder);</span><br><span class="line">    <span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">for</span> (SearchHit searchHit : searchHits) &#123;</span><br><span class="line">        <span class="type">DomainIndexBO</span> <span class="variable">domainIndexBO</span> <span class="operator">=</span> JSON.parseObject(searchHit.getSourceAsString(),DomainIndexBO.class);</span><br><span class="line">        <span class="type">RecommendDataBO</span> <span class="variable">recommendData</span> <span class="operator">=</span> domainIndexBO.getRecommendData();</span><br><span class="line">        <span class="type">StringBuilder</span> <span class="variable">stringBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">StringBuilder</span>();</span><br><span class="line">        stringBuilder.append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getDomain()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(String.join(<span class="string">&quot;,&quot;</span>, recommendData.getProducts())).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (recommendData.getAliCategories().isEmpty())&#123;</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">for</span> (RecommendDataBO.AliCategory aliCategory : recommendData.getAliCategories()) &#123;</span><br><span class="line">                stringBuilder.append(aliCategory.getName()).append(<span class="string">&quot;:&quot;</span>).append(aliCategory.getScore()).append(<span class="string">&quot;,&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        stringBuilder.append(<span class="string">&quot;$&quot;</span>).append(recommendData.getIsBizP()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getIsBizVersion()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        stringBuilder.append(recommendData.getProductsVersion()).append(<span class="string">&quot;$&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(recommendData.getAliCategoryVersion()))&#123;</span><br><span class="line">            stringBuilder.append(<span class="string">&quot;null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            stringBuilder.append(recommendData.getAliCategoryVersion());</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">result</span> <span class="operator">=</span> stringBuilder.toString();</span><br><span class="line">        log.info(<span class="string">&quot;第&quot;</span>+i+<span class="string">&quot;个:&quot;</span>+result);</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>。。。未完待续</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/12/02/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week1-2/">网易牛马日志-week1-2</a>
       
     </h1>
@@ -1251,114 +1324,6 @@
 <li>优化慢sql</li>
 <li>正确使用索引：选择合适的字段创建索引（不为NULL的字段，频繁查找但是不是频繁增删的字段）；避免索引失效；考虑在字符串上建立前缀索引；避免冗余索引</li>
 </ol>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/19/%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%88%B7%E9%A2%98/">一句话刷题</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-19
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <ul>
-<li><strong>无重复字符的最长字串</strong>：滑动窗口+heshset，右窗口需要在for外，每轮循环移动右窗口</li>
-<li>LRU缓存机制：偷懒直接linkedHashMap，hashmap长度并不为cachesize，重写替换条件为size&gt;cachesize，构造函数要传一个允许get后重排序的boolean</li>
-<li>反转链表：pre,p,q三指针</li>
-<li>数组第k个最大元素：快排思想，根据每次划分的结果二分查找</li>
-<li>最大子数组和：动态规划，看前面的是否为负数，为负数就抛弃自己作为开头，为正数就自己加上</li>
-<li>合并两个有序链表：模拟题</li>
-<li><strong>最长回文字串</strong>：二维动态规划，撇去前后剩下的也是回文子串</li>
-<li>两数之和：hashmap存余数</li>
-<li>二叉树层次遍历：queue秒杀，记得最牢的一集</li>
-<li>搜索旋转排序数组：随便划分总有一段是顺序的</li>
-<li>岛屿数量：dfs上下左右</li>
-<li>全排列：dfs回溯，visited数组</li>
-<li>有效的括号：stack秒了</li>
-<li>二叉树的最近公共祖先：回溯，找两个列表的最末尾相同元素</li>
-<li>环形链表：hashmap看是否包括</li>
-<li>反转链表2：模拟</li>
-<li><strong>最长递增子序列</strong>：动态规划，找前面每一个比自己小的，取最大值+1</li>
-<li>字符串相加：太简单不说</li>
-<li><strong>接雨水</strong>：单调栈，左-&gt;右和右-&gt;左，取最小值</li>
-<li><strong>编辑距离</strong>：二维动态规划，需要考虑左右对角线三个，对角线（相同），左右对角线取最大+1（不相同）</li>
-<li><strong>最长公共子序列</strong>：二维动态规划。比上面的好理解，对角线的+1（相同），左右取最大（不相同）</li>
-<li>栈实现队列：两个栈来回倒，一个入一个出，在入之前检查出是否为空，反之亦然</li>
-<li>括号生成：左右括号剩余数量判别，右边的数量一定得大于等于左边剩余</li>
-<li>反转字符串中的单词：split和stringbuilder</li>
-<li>二叉树的锯齿状层次遍历： 基本上就是普通的层次遍历，用reversed就可以倒转。</li>
-<li>环形链表2：哈希表存节点，遍历的时候同时检车哈希表是否含有</li>
-<li>二叉树右视图：层次遍历</li>
-<li>子集：回溯，以1234为例，依次增加子集的元素个数</li>
-<li>组合总和：回溯，每次dfs都是传剩余，递归终止条件是剩余&lt;0，&#x3D;0就添加一条，最后会有重复，需要一个排序+hashset去重</li>
-<li><strong>分割回文串：</strong> 两步走：首先二维动态规则找到所有的回文字串；再类似prim算法遍历dp数组回溯</li>
-<li>单词搜索：回溯，上下左右依次dfs，条件全为或，有一个为真就会是真</li>
-<li>找到字符串中所有字母异位词：哈希表（偷懒方法，滑动窗口每一个与目标字符串数组进行比较，用toCharArray和Arrays.sort和equals）</li>
-<li>电话号码的字母组合：哈希表写一个键盘集合，然后回溯</li>
-<li>重排链表：快慢指针找中点（奇数得在正常中点的后面一个）+后半部分倒转链表+双指针连接</li>
-<li>旋转图像：沿着左下右上对角线对调，然后按行按照中线对调</li>
-<li>搜索二维矩阵2：四个指针上下左右，逐步缩小范围，当循环内不再发生改变就为真</li>
-<li>腐烂的橘子：多源bfs，跟二叉树的层次遍历差不多</li>
-<li>课程表：拓扑排序，先记录所有点的入度，每次都找到入度为0的点，如果最后还有入度不为0的说明有环</li>
-<li>从前序与中序遍历序列构造二叉树：经典题目，要时不时写一下</li>
-<li>实现前缀树：Trim[26]数组，要用一个isend区分是前缀还是单词</li>
-<li>有序数组转化为二叉搜索树：二分+递归</li>
-<li><strong>单词拆分：</strong> 动态规划，当dp[j] &#x3D;&#x3D; 1 &amp;&amp; hashset.contains(s.subString(i,j))时dp[i]&#x3D;1，字符串在字典里当且仅当划分的两部分应该也在字典里</li>
-<li>打家劫舍：经典dp题目，有两种策略，不抢的时候选择上一个两种情况中最大的，抢的时候前一个只能不抢。</li>
-<li><strong>最大正方形：</strong> 二维dp，dp[i][j]表示以ij为左下角的最大正方形，取左，上，对角线三个里面最小的。</li>
-<li>最小路径和：二维dp入门题目，看一眼肯定会</li>
-<li><strong>零钱兑换：</strong> dp数组长度为钱的多少，dp表示当前钱兑换的最少次数。每次往后移动都需要首尾指针一起动</li>
-<li><strong>排序链表：</strong> 菜就多练</li>
-<li>两数相加：两个链表做加法，太简单了不说，还有个2，就是反转之后相加</li>
-<li>k个一组翻转链表：虽然是hard但是很简单，思路一定要清晰</li>
-<li><strong>二叉树的最大路径和</strong>：树形dp，用一个全局变量保存全局最大路径和，返回的时候需要判断子树是否为负数，如果都为负数就返回自己，只要有一个是正数就返回自己+正数</li>
-<li>二叉树的直径：跟上面思路是一样的，但是dp返回的是当前树的高度，也是用全局变量保存最大值</li>
-<li>打家劫舍3：树形dp，根节点抢了子节点都不能抢了，取其中dp[0]的和再加自己的，不抢就找dp[0]和dp[1]中较大的那个</li>
-<li>求根到叶子节点数字之和：深度和广度+回溯</li>
-<li>路径总和：回溯</li>
-<li><strong>字符串解码：</strong> 双栈，存数和字符串，遇到]后进行循环拼接，再将前面的依次出栈直到[</li>
-<li>最长连续序列：首先set去重，然后遍历，如果有比当前元素小的就跳过，也就是说每次都找一段里面最小的元素。然后用一个全局变量保存最大的。</li>
-<li>最长公共前缀：按列遍历，注意长度是否超出</li>
-<li>螺旋矩阵：上下左右四个指针，需要注意只有一列或者一行的情况，在循环的过程中要保持上下界左右界不越界</li>
-<li>合并K个升序链表：两两合并即可，或者每次都找最小节点</li>
-<li>删除链表的倒数第N个节点：栈先进后出</li>
-<li>复制ip地址：回溯，但是还有一点边界没搞明白</li>
-<li><strong>二叉树的最大宽度</strong>：新建一个内部类，保存编号，左节点是<em>2，右节点是</em>2+1，按层次遍历，找出一层内编号差最大的。</li>
-<li>对称二叉树：递归比较左子树和右字数</li>
-<li><strong>每种字符至少取k个</strong>：反向思维，滑动窗口。先哈希表存所有元素的个数，然后再-k，r随着循环移动，移动一次对应元素个数-1，当哈希表内出现负数元素，左边指针移动并且释放元素直到哈希表内都不为负数。最后取出最大的那次</li>
-<li><strong>最小覆盖字串</strong>：滑动窗口，首先哈希表保存目标字符的个数。r随着循环移动，每次都从哈希表减去对应字符的个数，如果不在哈希表就跳过。如果哈希表所有元素都小于等于0（也就是说集齐了所有，这里有可能比原来多），那么就记录这个长度，左边指针开始动直到再一次没有集齐元素</li>
-<li>二叉树的最大深度：左右子树求最大，dp</li>
-<li>平衡二叉树判断，返回一个数组，[0]是高度，[1]是是否平衡</li>
-<li>岛屿的最大面积：dfs没什么好说的</li>
-<li><strong>N皇后</strong>：终极回溯题，上下和两侧的对角线都不能有元素重复。设置四个visited数组，然后每一行开始尝试放q，如果能进行到最后一行那就保存，其余就是回溯操作</li>
-</ul>
 
     
     

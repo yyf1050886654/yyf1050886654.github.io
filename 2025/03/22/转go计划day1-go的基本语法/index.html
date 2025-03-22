@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <!-- Website mata -->
+<meta charset="UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+
+<!-- Disable transformation -->
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+<meta name="theme-color" content="#f8f5ec" />
+<meta name="msapplication-navbutton-color" content="#f8f5ec">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#f8f5ec">
+
+<!-- Website description -->
+
+<meta name="description" content="ProjectMygo!!!!!-go的基本语法" />
+
+
+<!-- Website keywords -->
+
+<meta name="keywords" content="golang, YYF&#39;s Blog" />
+
+
+
+
+<!-- Website rss -->
+
+<link rel="alternate" href="/default" title="YYF's Blog" >
+
+
+<!-- Website favicon -->
+
+<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=3.0.0" />
+
+
+<!-- Canonical, good for google search engine -->
+<link rel="canonical" href="https://yyf1050886654.github.io/2025/03/22/转go计划day1-go的基本语法/" />
+
+<!-- Fancybox styling -->
+
+<link rel="stylesheet" type="text/css" href="/lib/fancybox/jquery.fancybox.css" />
+
+
+<!-- MathJax (LaTeX) support -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });  
+  </script>
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+<!-- Theme styling -->
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=3.0.0" />
+
+<!-- Analytics and push -->
+
+
+
+  
+
+
+
+<!-- LeanCloud Counter -->
+
+
+<script>
+  window.config = {"leancloud":{"app_id":null,"app_key":null,"server_url":null,"cdn":null},"toc":true,"fancybox":true,"latex":true};
+</script>
+  
+  <title>ProjectMygo!!!!!-go的基本语法 - YYF&#39;s Blog</title>
+
+<meta name="generator" content="Hexo 7.1.1"></head>
+
+<body>
+  <div class="scrollPercentage"></div>
+  <div id="mobile-navbar" class="mobile-navbar">
+  <div class="mobile-header-logo">
+    <a href="/." class="logo">YYF&#39;s Blog</a>
+  </div>
+  <div class="mobile-navbar-icon">
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+
+<nav id="mobile-menu" class="mobile-menu slideout-menu">
+  <ul class="mobile-menu-list">
+    
+    <a href="/">
+      <li class="mobile-menu-item">
+        
+        
+        首页              </li>
+    </a>
+    
+    <a href="/archives/">
+      <li class="mobile-menu-item">
+        
+        
+        归档              </li>
+    </a>
+    
+    <a href="/tags/">
+      <li class="mobile-menu-item">
+        
+        
+        标签              </li>
+    </a>
+    
+    <a href="/categories/">
+      <li class="mobile-menu-item">
+        
+        
+        分类              </li>
+    </a>
+    
+    <a href="/collect/">
+      <li class="mobile-menu-item">
+        
+        
+        收藏              </li>
+    </a>
+    
+    <a href="/about/">
+      <li class="mobile-menu-item">
+        
+        
+        关于              </li>
+    </a>
+    
+  </ul>
+</nav>
+  <div class="container" id="mobile-panel">
+    <header id="header" class="header">
+      <div class="logo-wrapper">  
+  <a href="/." class="logo">YYF's Blog</a>  
+</div>  
+  
+<nav class="site-navbar">  
+    
+    <ul id="menu" class="menu">  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/">  
+              
+              
+              首页  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/archives/">  
+              
+              
+              归档  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/tags/">  
+              
+              
+              标签  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/categories/">  
+              
+              
+              分类  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/collect/">  
+              
+              
+              收藏  
+              
+          </a>  
+        </li>  
+        
+        <li class="menu-item">  
+          <a class="menu-item-link" href="/about/">  
+              
+              
+              关于  
+              
+          </a>  
+        </li>  
+        
+    </ul>  
+    
+</nav>  
+
+    </header>
+    <main id="main" class="main">
+      <div class="content-wrapper">
+        <div id="content" class="content">
+          <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      ProjectMygo!!!!!-go的基本语法
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-03-22
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+  <div class="post-toc" id="post-toc">
+    <h2 class="post-toc-title">文章目录</h2>
+    <div class="post-toc-content">
+      <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%98%E9%87%8F%EF%BC%8C%E7%BB%93%E6%9E%84%E4%B8%8E%E5%87%BD%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">变量，结构与函数</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%98%E9%87%8F"><span class="toc-number">1.1.</span> <span class="toc-text">变量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BD%E6%95%B0%E4%B8%8E%E5%88%A4%E6%96%AD%E7%BB%93%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">函数与判断结构</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E7%BB%84%EF%BC%8C%E5%88%87%E7%89%87%E5%92%8C%E5%93%88%E5%B8%8C%E8%A1%A8"><span class="toc-number">2.</span> <span class="toc-text">数组，切片和哈希表</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E7%BB%84"><span class="toc-number">2.1.</span> <span class="toc-text">数组</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%87%E7%89%87slice"><span class="toc-number">2.2.</span> <span class="toc-text">切片slice</span></a></li></ol></li></ol>
+    </div>
+  </div>
+  
+
+  <div class="post-content">
+    
+    <blockquote>
+<p>实习了一段时间深感java已经不太行了，转go才是出路</p>
+</blockquote>
+<p><img src="/../img/golang/learn/img.png" alt="go"></p>
+<h1 id="变量，结构与函数"><a href="#变量，结构与函数" class="headerlink" title="变量，结构与函数"></a>变量，结构与函数</h1><h2 id="变量"><a href="#变量" class="headerlink" title="变量"></a>变量</h2><p>与java不同，go可以不显示声明变量数据类型。一般来说有：</p>
+<ul>
+<li>整数型int,int8,int16,int32,int64,无符号整型uint,uint8,uint16,uint32,uint64</li>
+<li>浮点型：float32,float64,相当于单精度浮点型float和双精度浮点型double</li>
+<li>布尔：true和false，值得一提的是bool赋初始值的时候默认false</li>
+<li>字符串：string直接就是一个数据类型了，还有一个rune，后续再去了解</li>
+</ul>
+<p>很重要的一点是go语言的变量声明了就必须得用，而且最后不用加分号。下面是声明数据类型的例子，有:&#x3D;可以代替var进行类型推断，可以同时推断多个类型（但我觉得还是显示声明类型比较好，否则一个函数返回来怎么判断类型）</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> age_1 <span class="type">uint8</span> = <span class="number">31</span></span><br><span class="line"><span class="keyword">var</span> age_2 = <span class="number">32</span></span><br><span class="line">age_3 := <span class="number">33</span></span><br><span class="line">fmt.Println(age_1, age_2, age_3)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> age_4, age_5, age_6 <span class="type">int</span> = <span class="number">31</span>, <span class="number">32</span>, <span class="number">33</span></span><br><span class="line">fmt.Println(age_4, age_5, age_6)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> name_1, age_7 = <span class="string">&quot;Tom&quot;</span>, <span class="number">30</span></span><br><span class="line">fmt.Println(name_1, age_7)</span><br><span class="line"></span><br><span class="line">name_2, is_boy, height := <span class="string">&quot;Jay&quot;</span>, <span class="literal">true</span>, <span class="number">180.66</span></span><br><span class="line">fmt.Println(name_2, is_boy, height)</span><br></pre></td></tr></table></figure>
+
+<p>常量也是类似，可以进行类型推断，但是必须赋初始值，且一旦定义了就不能改变了，类似java中的private static final int &#x3D; 1;这种</p>
+<h2 id="函数与判断结构"><a href="#函数与判断结构" class="headerlink" title="函数与判断结构"></a>函数与判断结构</h2><p>go的函数与主流编程语言类似，但是估计不分static和非静态，也是给出参数列表和返回值。但是这里可以返回多个变量，这一点应该会比java好</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> numerator <span class="type">int</span> = <span class="number">11</span></span><br><span class="line">	<span class="keyword">var</span> denominator <span class="type">int</span> = <span class="number">2</span></span><br><span class="line">	<span class="keyword">var</span> result, remainder <span class="type">int</span> = intDivision(numerator, denominator)</span><br><span class="line">	fmt.Println(result, remainder)</span><br><span class="line">	</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">intDivision</span><span class="params">(num1, num2 <span class="type">int</span>)</span></span> (<span class="type">int</span>, <span class="type">int</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> result <span class="type">int</span> = num1 / num2</span><br><span class="line">	<span class="keyword">var</span> remainder <span class="type">int</span> = num1 % num2</span><br><span class="line">	<span class="keyword">return</span> result, remainder</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意这里的异常处理，与java中try-catch的思想不同，函数在返回的时候也会给一个error返回值，外部调用通过error是否为nil来判断函数执行是否出错。这是一个广泛使用的设计思想，后续可能需要遵守。</p>
+<p>例如这里的除数为0的例子，当除数为0相当于要抛出异常，用errors包下的一个函数throw new RunTimeException()，再在主函数去判断这个error是否为空，为空说明没有抛出异常。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;errors&quot;</span></span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> numerator <span class="type">int</span> = <span class="number">11</span></span><br><span class="line">	<span class="keyword">var</span> denominator <span class="type">int</span> = <span class="number">0</span></span><br><span class="line">	result, remainder, err := intDivision(numerator, denominator)</span><br><span class="line">	<span class="comment">//执行正常</span></span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">		fmt.Println(result, remainder)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		fmt.Println(err)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">intDivision</span><span class="params">(num1, num2 <span class="type">int</span>)</span></span> (<span class="type">int</span>, <span class="type">int</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> err <span class="type">error</span></span><br><span class="line">	<span class="keyword">if</span> num2 == <span class="number">0</span> &#123;</span><br><span class="line">		err = errors.New(<span class="string">&quot;num1 is zero&quot;</span>)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>, <span class="number">0</span>, err</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">var</span> result <span class="type">int</span> = num1 / num2</span><br><span class="line">	<span class="keyword">var</span> remainder <span class="type">int</span> = num1 % num2</span><br><span class="line">	<span class="keyword">return</span> result, remainder, err</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>最后提一下go的判断结构，if后面的括号必须贴着同一行，else的哪一行必须写成”} else {“，否则编译器会报错，此外switch语句不需要写break了</p>
+<h1 id="数组，切片和哈希表"><a href="#数组，切片和哈希表" class="headerlink" title="数组，切片和哈希表"></a>数组，切片和哈希表</h1><h2 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h2><p>go中的数组跟java的数组很像，但是go的数组可以操作指针。数组的大小在声明的时候就已经固定，如果想用跟ArrayList那样的动态数组，请使用slice切片。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> intArr [<span class="number">10</span>]<span class="type">int32</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(intArr); i++ &#123;</span><br><span class="line">		intArr[i] = <span class="type">int32</span>(i + <span class="number">1</span>)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//左闭右开，这个就是下标为456的三个元素</span></span><br><span class="line">	fmt.Println(intArr[<span class="number">4</span>:<span class="number">7</span>])</span><br><span class="line"></span><br><span class="line">	<span class="comment">//地址</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(intArr); i++ &#123;</span><br><span class="line">		fmt.Println(&amp;intArr[i])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//这里输出结果是连续的4B，说明经典数组是连续分布的</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>值得注意的是这里数组如果传入的是形式变量，需要传地址，跟c语言一样，否则就只会改变形参</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> arr = [<span class="number">5</span>]<span class="type">int</span>&#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>&#125;</span><br><span class="line">	withAddress(&amp;arr)</span><br><span class="line">	fmt.Println(arr)<span class="comment">//[1 20 3 4 5]</span></span><br><span class="line">	noAddress(arr)</span><br><span class="line">	fmt.Println(arr)<span class="comment">//[1 20 3 4 5]</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">withAddress</span><span class="params">(a *[5]<span class="type">int</span>)</span></span> &#123;</span><br><span class="line">	a[<span class="number">1</span>] = <span class="number">20</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">noAddress</span><span class="params">(a [5]<span class="type">int</span>)</span></span> &#123;</span><br><span class="line">	a[<span class="number">3</span>] = <span class="number">20</span></span><br><span class="line">	fmt.Println(a)<span class="comment">//[1 20 3 20 5]</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="切片slice"><a href="#切片slice" class="headerlink" title="切片slice"></a>切片slice</h2><p>基本上跟ArrayList的机制一样，长度和容量，如果到了设定阈值就会动态扩容。如果能够预估业务数据量，在构造slice的时候直接指定容量可以免去动态扩容的开销。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> <span class="string">&quot;fmt&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	sliceDynamic()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 静态方法创建</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sliceStatic</span><span class="params">()</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">var</span> slice []<span class="type">int32</span> = []<span class="type">int32</span>&#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>&#125;</span><br><span class="line">	<span class="comment">//length is 3, with capacity is 3</span></span><br><span class="line">	fmt.Printf(<span class="string">&quot;length is %v, with capacity is %v\n&quot;</span>, <span class="built_in">len</span>(slice), <span class="built_in">cap</span>(slice))</span><br><span class="line">	slice = <span class="built_in">append</span>(slice, <span class="number">4</span>)</span><br><span class="line">	<span class="comment">//length is 4, with capacity is 6</span></span><br><span class="line">	fmt.Printf(<span class="string">&quot;length is %v, with capacity is %v\n&quot;</span>, <span class="built_in">len</span>(slice), <span class="built_in">cap</span>(slice))</span><br><span class="line">	fmt.Println(slice)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 动态方法创建</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">sliceDynamic</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">//可以指定构造长度和容量，这里构造了一个长度为3，容量为20的slice</span></span><br><span class="line">	<span class="keyword">var</span> intSlice []<span class="type">int32</span> = <span class="built_in">make</span>([]<span class="type">int32</span>, <span class="number">3</span>, <span class="number">20</span>)</span><br><span class="line">	fmt.Printf(<span class="string">&quot;length is %v, with capacity is %v\n&quot;</span>, <span class="built_in">len</span>(intSlice), <span class="built_in">cap</span>(intSlice))</span><br><span class="line">	<span class="comment">//前三个元素是初始化了的，后面没有</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="built_in">len</span>(intSlice); i++ &#123;</span><br><span class="line">		fmt.Println(intSlice[i])</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//就跟ArrayList一样，如果业务能够预估动态数组的长度，最好还是构造的时候就提前设定好</span></span><br><span class="line">	<span class="comment">//否则会频繁进行扩容，影响效率</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//取数逻辑。左闭右开，跟java中subString类似</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">slicePartition</span><span class="params">()</span></span> &#123;</span><br><span class="line">	sli := []<span class="type">int</span>&#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>&#125;</span><br><span class="line">	fmt.Printf(<span class="string">&quot;len=%d cap=%d slice=%v\n&quot;</span>, <span class="built_in">len</span>(sli), <span class="built_in">cap</span>(sli), sli)</span><br><span class="line"></span><br><span class="line">	fmt.Println(<span class="string">&quot;sli[1] ==&quot;</span>, sli[<span class="number">1</span>])</span><br><span class="line">	fmt.Println(<span class="string">&quot;sli[:] ==&quot;</span>, sli[:])</span><br><span class="line">	<span class="comment">//sli[1]-&gt;sli[len-1]</span></span><br><span class="line">	fmt.Println(<span class="string">&quot;sli[1:] ==&quot;</span>, sli[<span class="number">1</span>:])</span><br><span class="line">	<span class="comment">//sli[0]-&gt;sli[4-1]</span></span><br><span class="line">	fmt.Println(<span class="string">&quot;sli[:4] ==&quot;</span>, sli[:<span class="number">4</span>])</span><br><span class="line">	<span class="comment">//sli[0]-&gt;sli[3-1]</span></span><br><span class="line">	fmt.Println(<span class="string">&quot;sli[0:3] ==&quot;</span>, sli[<span class="number">0</span>:<span class="number">3</span>])</span><br><span class="line">	fmt.Printf(<span class="string">&quot;len=%d cap=%d slice=%v\n&quot;</span>, <span class="built_in">len</span>(sli[<span class="number">0</span>:<span class="number">3</span>]), <span class="built_in">cap</span>(sli[<span class="number">0</span>:<span class="number">3</span>]), sli[<span class="number">0</span>:<span class="number">3</span>])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    
+  </div>
+
+  
+  <!-- Post Copyright -->
+
+<div class="post-copyright">
+  <p class="copyright-item">
+    <span>原文作者: </span>
+    <a href="https://yyf1050886654.github.io">Yifan Yang</a>
+  </p>
+  <p class="copyright-item">
+    <span>原文链接: </span>
+    <a href="https://yyf1050886654.github.io/2025/03/22/%E8%BD%ACgo%E8%AE%A1%E5%88%92day1-go%E7%9A%84%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95/">https://yyf1050886654.github.io/2025/03/22/%E8%BD%ACgo%E8%AE%A1%E5%88%92day1-go%E7%9A%84%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95/</a>
+  </p>
+  <p class="copyright-item">
+    <span>许可协议: </span>
+    
+    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">知识共享署名-非商业性使用 4.0 国际许可协议</a>
+  </p>
+</div>
+
+    
+
+  
+
+  
+  <footer class="post-footer">
+    
+    <div class="post-tags">
+      
+      <a href="/tags/golang/">golang</a>
+      
+    </div>
+    
+      
+  <nav class="post-nav">  
+      
+      
+      <a class="next" href="/2025/03/04/%E7%BD%91%E6%98%93KM%E7%A4%BE%E5%8C%BA%E5%88%86%E4%BA%AB-%E5%B0%8FP%E8%80%81%E5%B8%88%E6%9C%8D%E5%8A%A1GC%E5%8D%A1%E9%A1%BF%E5%AE%9A%E4%BD%8D%E8%A7%A3%E5%86%B3/">  
+        <span class="next-text nav-default">网易KM社区分享-小P老师服务GC卡顿定位解决</span>  
+        <span class="prev-text nav-mobile">下一篇</span>  
+        <i class="iconfont icon-right"></i>  
+      </a>  
+      
+  </nav>  
+  
+
+  </footer>
+  
+
+</article>
+        </div>
+          
+  <div class="comments" id="comments">  
+      
+  </div>  
+  
+
+      </div>
+    </main>
+    <footer id="footer" class="footer">
+      <!-- Social Links -->
+
+<div class="social-links">
+  
+  
+  
+  
+  <a href="mailto:1050886654@qq.com" class="iconfont icon-email" title="email"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <a target="_blank" rel="noopener" href="https://github.com/yyf1050886654" class="iconfont icon-github" title="github"></a>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  <a href="/atom.xml" class="iconfont icon-rss" title="rss"></a>
+  
+</div>
+
+
+
+<div class="copyright">
+  <span class="power-by">
+    由 <a class="hexo-link" target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a> 强力驱动
+  </span>
+  <span class="division">|</span>
+  <span class="theme-info">
+    主题 -
+    <a class="theme-link" target="_blank" rel="noopener" href="https://github.com/zeed-w-beez/hexo-theme-even">Even</a>
+  </span>
+  <span class="division">|</span>
+  <span class="hosting-info">
+    footer.hosting
+  </span>
+
+  <span class="copyright-year">
+    <span>
+      
+      &copy;
+      
+      2024 - 2025      
+    </span>
+
+    <span class="heart">
+      <i class="iconfont icon-heart"></i>
+    </span>
+
+    <span class="author">Yifan Yang</span>
+  </span>
+
+</div>
+    </footer>
+    <div class="back-to-top" id="back-to-top"> <i class="iconfont icon-up"></i> </div>
+  </div>
+    
+    
+    
+    
+    
+    
+    
+  
+
+  
+
+
+
+
+
+
+
+<script type="text/javascript" src="/lib/jquery"></script>
+
+
+
+<script type="text/javascript" src="/lib/slideout"></script>
+
+
+
+<script type="text/javascript" src="/lib/fancybox"></script>
+
+
+
+  <script type="text/javascript" src="/js/src/even.js?v=3.0.0"></script>
+</body>
+
+</html>
