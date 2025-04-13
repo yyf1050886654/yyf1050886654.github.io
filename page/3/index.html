@@ -212,6 +212,285 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/09/22/Mysql%E9%9D%A2%E8%AF%95%E7%AF%87/">Mysql面试篇</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-09-22
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="Mysql的数据结构"><a href="#Mysql的数据结构" class="headerlink" title="Mysql的数据结构"></a>Mysql的数据结构</h2><ul>
+<li>数字型：整型（tinyint,smallint,int,bigint），浮点型（float,double），定点型（decimal）</li>
+<li>字符串：char，varchar，tinytext，text，mediumtext，longtext，tinyblob，blob，mediumblob，longblob</li>
+<li>日期：date，timestamp</li>
+</ul>
+<blockquote>
+<p>定点型是指定小数点后几位的。char是定长的，varchar是可变的，一般设计的是最大长度。如果超过长度char是需要修改表结构的。而且相同字符串在存储层面两者是相同的。但是varchar内存占用稍高，某些高级操作是需要遍历。</p>
+</blockquote>
+<h2 id="Mysql查询流程"><a href="#Mysql查询流程" class="headerlink" title="Mysql查询流程"></a>Mysql查询流程</h2><ol>
+<li>连接器：连接客户端的http请求，校验用户名密码</li>
+<li>查询缓存，如果缓存里面有就直接返回（这里在8版本就废弃了，因为命中率实在太低了）</li>
+<li>词法分析语法分析</li>
+<li>执行器：包括预处理，例如将*换成表的字段；优化器，选择效率较高的执行计划执行，能用索引就不用全表扫描；执行器，执行sql然后返回结果给客户端</li>
+</ol>
+<h2 id="InnoDB和MyISAM"><a href="#InnoDB和MyISAM" class="headerlink" title="InnoDB和MyISAM"></a>InnoDB和MyISAM</h2><ol>
+<li>事务</li>
+<li>行级锁</li>
+<li>索引</li>
+<li>支持外键</li>
+<li>崩溃恢复redolog</li>
+</ol>
+<h2 id="InnoDB的存储形式"><a href="#InnoDB的存储形式" class="headerlink" title="InnoDB的存储形式"></a>InnoDB的存储形式</h2><p>众所周知InnoDB存储数据的数据结构是B+树，其中树的节点就是数据页。</p>
+<p>数据页内部：</p>
+<p>一个数据页上会有多条记录，对应着实际的记录。在数据页内部是按照主键id顺序排列的。除此之外还有一个页目录，将顺序排列的某些记录归为一个槽。例如一个数据页有12345，可能12是一个槽，345是另一个，槽只保存最大的那个节点。当搜索的时候，比如我要搜索4，由于4大于12这个页的最大值2，所以会在345里面搜索。这个时候需要遍历的成本就低很多了。一般来说槽只会包含不超过8条记录。使用二分法找到这个槽，然后在在这个槽进行遍历。页目录只是为了加快在页内的查找速度。实际上每一个页里面记录也是通过链表串起来的。对外只会暴露当前页主键最大值和最小值。方便b+树的查找。</p>
+<p>B+树：</p>
+<p>b+树与b树的不同点在于，b+只有底层真正存储数据，b树在非叶子节点也会存储数据。而且b+底层是一个双向链表，可以方便进行范围查询。对于innoDB而言，为索引节点还是数据节点根据页头的某个字段决定。索引节点中存储着下一个表对应的最小主键。我们可以把查找一次当作一次io，由于索引节点能存储的数据是很多的，千万级别的数据最多也不过三四层，也就是说io次数会很小。b+树的缺点是会由于添加数据导致分裂，影响性能。</p>
+<blockquote>
+<p>InnoDB默认得要一个索引，可以不显式的给出，但是背后隐藏列会默认出一个索引作为数据页的排序参照</p>
+</blockquote>
+<h2 id="为什么用B-树而不是B树，红黑树或者跳表"><a href="#为什么用B-树而不是B树，红黑树或者跳表" class="headerlink" title="为什么用B+树而不是B树，红黑树或者跳表"></a>为什么用B+树而不是B树，红黑树或者跳表</h2><ul>
+<li>b树：由于非叶子节点也会存储数据，那么就没有b+树存储数据多。查询的效率也不稳定，可能在非底层就查询到数据了。而且不是双向链表，范围查询做不到</li>
+<li>红黑树：也是二叉树，io次数肯定比b+树多，跳表同理</li>
+<li>哈希表：不支持范围查询，这同样是redis为什么用跳表而不是哈希表的理由</li>
+</ul>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引是为了加快搜索而建立的数据结构</p>
+<ul>
+<li>按照数据结构划分：B+树索引，Hash索引</li>
+<li>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</li>
+<li>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</li>
+</ul>
+<blockquote>
+<p>唯一索引：create unique index index_name on table(index_column_1)</p>
+<p>普通索引：create index index_name on table(index_column_1)</p>
+<p>前缀索引：create index index_name on table(length(index_column_1))</p>
+</blockquote>
+<ul>
+<li>字段个数：单列索引，联合索引</li>
+</ul>
+<blockquote>
+<p>联合索引：create index index_name on table(index_column_1,index_column_2)</p>
+</blockquote>
+<h2 id="联合索引范围查询"><a href="#联合索引范围查询" class="headerlink" title="联合索引范围查询"></a>联合索引范围查询</h2><p><strong>select * from t_table where a &gt; 1 and b &#x3D; 1</strong></p>
+<p>这里只会用到a一个索引，因为只有a能缩小范围，b是无序的，无法缩小范围。如果没有索引下推只能一个个回表通过b进行筛选</p>
+<p><strong>select * from t_table where a &gt;&#x3D; 1 and b &#x3D; 1</strong></p>
+<p>这里会用到两个索引，因为a&#x3D;1的时候b是有序的，b能够缩小范围</p>
+<p><strong>select * from t_table where a between 1 and 2 and b &#x3D; 1</strong></p>
+<p>mysql中between是左闭右闭区间，所以两个都能用</p>
+<p><strong>select * from t_table where a like ‘m%’ and b &#x3D; 1</strong></p>
+<p>mysql中between是左闭区间，所以b也能用</p>
+<h2 id="索引失效场景"><a href="#索引失效场景" class="headerlink" title="索引失效场景"></a>索引失效场景</h2><blockquote>
+<p>什么时候无法使用索引？就是通过某些手段找不到原先的顺序了</p>
+</blockquote>
+<ul>
+<li>左或左右模糊匹配：例如%like和%like%，索引在这个字段上是根据最左匹配的，如果第一个字符都不知道，那后续的就是无序的了</li>
+<li>对索引使用函数：例如count()某个索引，这个时候也是走不了的，因为count不是一个索引</li>
+<li>对索引进行表达式计算：只要是在等号左边的也用不了，mysql没做这部分优化</li>
+<li>对索引隐式类型转换：在mysql中字符串会自动变成数字进行比较，索引当索引为字符串，而查询的时候用id&#x3D;1来比较，会自动类型转换，相当于索引使用了隐式函数变成数字于查询条件进行比较</li>
+<li>联合索引非最左匹配：联合索引（a,b,c）如果查询条件只有b，c，就不会走索引。但是如果是ac还是可以走a的索引，如果有索引下推的话在二级索引可以通过判断c减少回表次数；如果没有就只能用a减少判断，最后回到server也就是索引是id的那个表中一个个判断c，这样会有很多回表</li>
+<li>where子句中的or：如果只有一个条件是有索引，那就会失效，因为在or条件下只用满足一个就可以了</li>
+</ul>
+<h2 id="Mysql事务"><a href="#Mysql事务" class="headerlink" title="Mysql事务"></a>Mysql事务</h2><p>首先是事务的ACID四个特性：</p>
+<ul>
+<li>原子性：事务内的东西是同时完成或者同时取消的。innodb的事务可以做到，redis的事务就没有原子性。</li>
+<li>一致性：事务完成前后，由一个一致的状态转移到另一个一致的状态。例如银行转账两个账户600+800，转账后总数是不能变的</li>
+<li>隔离性：并发导致的事务之间应该隔离，一个人购买商品的事务不应该影响另一个人的购买</li>
+<li>持久性：持久化下来，掉电也不会丢失</li>
+</ul>
+<p>InnoDB的持久性是通过redolog完成的，原子性是undolog，隔离性是MVCC完成的，一致性是上面三者都完成后就会保证一致性。</p>
+<h2 id="事务隔离级别"><a href="#事务隔离级别" class="headerlink" title="事务隔离级别"></a>事务隔离级别</h2><ul>
+<li>脏读：一个事务还没有提交，别的事务就能看到它的修改了。例如事务1修改了余额，事务2读取了这部分，但是事务1触发回滚，这就导致事务2读到了脏数据。</li>
+<li>不可重复读：在一个事务内读取两次数据，两次数据读取的不一样。这通常是由于另一个事务的提交，这个数据对于其他事务都是可见的（有点像volatile）</li>
+<li>幻读： 查询数量，事务内前后查询两次不一致，像发生了幻觉</li>
+</ul>
+<p>事务隔离级别：</p>
+<ul>
+<li>读未提交：</li>
+<li>读提交：解决脏读</li>
+<li>可重复读：解决脏读+不可重复读</li>
+<li>串行化：解决幻读+不可重复读+幻读</li>
+</ul>
+<h2 id="MVCC（多版本并发控制）"><a href="#MVCC（多版本并发控制）" class="headerlink" title="MVCC（多版本并发控制）"></a>MVCC（多版本并发控制）</h2><p>在前面讲的记录中有两个隐藏字段：添加该条记录的事务id和指向上一个版本undolog指针。MVCC是依靠这两个字段完成的，更新数据时会在数据页中替换新的记录，然后将旧的记录作为指针保存下来，这时所有的版本都连成一条链，包含了当时进行更新的事务id。</p>
+<p>MVCC提供了ReadView这个数据结构，由于事务id是顺序递增的，ReadView将事务id分为三个部分，已经提交的事务，正在进行的事务和没有发生的事务。已经提交的事务是有访问权的，正在运行的事务是不允许查看的，此时如果发生并发现象，查询数据的时候会根据这三个范围和当前全部的事务id进行过滤，这样就能避免读到还没有提交事务的数据。从而解决了脏读问题</p>
+<p><strong>MVCC是如何解决不可重复读的</strong></p>
+<p>主要是ReadView生成的时机问题，如果每一次快照读都生成一个ReadView，有可能在两次快照读期间有别的事务提交了，这两次的ReadView范围就会不一样，还是会发生不可重复读。但是如果在事务刚开始的时候就生成ReadView，就能保证执行下来的可见性，即使在第二次读之前，在readview中的那个事务提交了，还能保证接下来的读操作不可见这个数据。</p>
+<p><strong>MVCC解决了幻读吗</strong></p>
+<p>在默认隔离级别下的innoDB很大程度能够避免幻读，范围查询也需要看版本号。在某些情况下还是能出现幻读，例如当前没有s&#x3D;5的数据，此时进行查询是没有的，另一个事务添加了这条数据，此时事务id在readview里面，是不允许访问的。但是原来事务又更新了这条数据，现在事务id是自己的了。下次查询的时候就会查询出来。（虽然更新一条不存在的数据逻辑上很诡异）</p>
+<p>需要通过间隙锁才能解决幻读，也就是锁住一段范围内的，其他事务添加这段范围内的数据就会被阻塞。</p>
+<h2 id="redolog"><a href="#redolog" class="headerlink" title="redolog"></a>redolog</h2><p>前面所讲的数据库事务的ACID中，持久性就是由redolog保证的。mysql在更新的时候先写redolog，然后再在合适的实际将redolog真正写在数据页上。首先读取操作的时候不会每次都从磁盘io，会缓存在buffer pool中，那么写操作也会在buffer pool中操作，此时就变成了一个脏页。redolog的左右就是把这个脏页的操作记录并持久化下来，这个过程是比刷数据页要快的，很多时候查询的并不是顺序读，有可能在很多数据页上。</p>
+<p><strong>刷盘时机:</strong></p>
+<p>redolog也是有缓冲区的，把buffer pool中的修改保存在redolog缓存区中，然后再在合适的时机刷盘，一般有以下几个时机：</p>
+<ul>
+<li>mysql正常关闭</li>
+<li>后台线程会每隔1s刷盘</li>
+<li>当缓冲区满了一半就触发</li>
+<li>根据刷盘策略</li>
+</ul>
+<p>刷盘策略有以下三种：</p>
+<ul>
+<li>每次事务提交只写在缓冲区中，但是如果在1s内掉电，redolog buffer就会没有了，这种策略可能会掉最多1s的数据</li>
+<li>每次事务提交直接写磁盘，效率较低，但是安全</li>
+<li>每次事务提交给操作系统的page cache，交给操作系统写。这种情况如果mysql停机了还是能写，因为操作系统没有停止，但是如果掉点了还是会丢1s的数据，算是上面两种的一个折中。</li>
+</ul>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_16.png" alt="" />
+</div>
+
+<p><strong>日志文件组：</strong></p>
+<p>redolog不是一个文件，而是多个文件，这些文件按照环形存储，会覆盖。头指针是checkpoint，尾指针是write pos。每次有缓冲区来的数据就移动pos。如果mysql进行了redolog到数据块的持久化，checkpoint就往后移动。</p>
+<p>如果这个环形文件满了，就需要阻塞mysql，进行部分redolog到数据页的操作。</p>
+<p><strong>总结：</strong></p>
+<p>redolog保证了mysql的持久性，这种操作比直接修改数据页要高效，由于直接修改数据页可能会存在随机写的情况，而redolog是追加写，就好像每次找东西随机写就是看目录找书页，而追加就是往后翻一页。</p>
+<p>然而redolog在某些策略下也不是万无一失的，因为redolog也是有缓存的，如果没有及时写在磁盘里就会丢失1s的数据。</p>
+<blockquote>
+<p>由此可见redolog和真正存在数据页中还有一段时间差，那这个时候来了一个读请求，怎么保证一致性？<br>会在buffer pool找，而不是直接去磁盘找，本来redolog就是为了存buffer pool的脏页的，是内存同步到外存，</p>
+</blockquote>
+<h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><p>binlog是解决主从同步的一种日志形式，只记录写操作，select和show是不记录的。有三种格式形式：</p>
+<ul>
+<li>statement：只记录更新的语句，不管前后状态，一般存储的数据量较小</li>
+<li>row：不光记录更新的具体语句，更新前后的状态也保存，一般用在需要计算的sql语句，例如now()，用第一种方式就会造成数据不一致，第二种会保存在主机上面的结果。当然存储的数据量会更大</li>
+<li>mix：根据具体sql的形式选取策略，例如正常sql就用statement，涉及到计算的就用row</li>
+</ul>
+<p><strong>刷盘方式：</strong></p>
+<p>与redolog类似，也有一个缓冲区，但是binlog的缓冲区线程之间是独立的，最终都要写进磁盘。</p>
+<ul>
+<li>0：不同线程的binlog buffer写到page cache里面，由操作系统写回</li>
+<li>1：直接写到磁盘</li>
+<li>n：n个线程的binlog buffer写到page cache后触发一次写到磁盘。掉电就丢失n个线程的数据</li>
+</ul>
+<h2 id="binlog就够了为什么还需要redolog"><a href="#binlog就够了为什么还需要redolog" class="headerlink" title="binlog就够了为什么还需要redolog"></a>binlog就够了为什么还需要redolog</h2><p>binlog主要负责主从同步，redolog负责恢复数据库。一个是外部机制，一个是内部机制，两者独立但是互补，服务于不同的需求。</p>
+<h2 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h2><p>如果在binlog和redolog之间出现问题就会导致数据不一致。所以需要两阶段提交</p>
+<div style="text-align: center;">
+  <img src="../img/Mysql/img_17.png" alt="" />
+</div>
+
+<p>写redo的时候设置为prepare，等到binlog写完了才设置为commit状态。mysql认为binlog写完了就是一个事务结束，即便没有再设置redolog的状态。</p>
+<p>例如在写完redolog时宕机，binlog没有写，这个时候就会触发回滚；但是写完了binlog宕机了，redolog没有被改变为commit，还是会被认为事务提交了</p>
+<p><strong>存在什么问题：</strong></p>
+<ul>
+<li>多线程下需要原子性</li>
+<li>如果是“双1配置”，一个事务io两次</li>
+</ul>
+<h2 id="Mysql的锁"><a href="#Mysql的锁" class="headerlink" title="Mysql的锁"></a>Mysql的锁</h2><ol>
+<li>数据库锁：只有在进行数据库备份或者迁移的时候才会用</li>
+<li>表级锁：表级读锁写锁，读写意向锁，自增锁，元数据锁</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>X</th>
+<th>IX</th>
+<th>S</th>
+<th>IS</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>X</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>不兼容</td>
+</tr>
+<tr>
+<td>IX</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>不兼容</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>S</td>
+<td>不兼容</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+</tr>
+<tr>
+<td>IS</td>
+<td>不兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+<td>兼容</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>解释一下：IX表示表内已经有行在进行X操作了，此时不允许全局上锁，所以全局X和S都不允许；全局X的条件是里面没有任何一个在进行读写操作，所以与所有都不兼容；IS和IX能兼容是因为都只是作为指示作用，IS和IX可能锁住的列不一样，他们的存在只能影响全局锁。<br>3. 行级锁：记录锁（锁住id&#x3D;1这条记录），间隔锁（锁住（2，5）区间的），临键锁（锁住（2,5]）</p>
+</blockquote>
+<h2 id="Mysql什么时候上锁"><a href="#Mysql什么时候上锁" class="headerlink" title="Mysql什么时候上锁"></a>Mysql什么时候上锁</h2><p>执行select for update或者update的时候，在事务执行范围内会上一个对当前事务有效的锁，一般锁的单位是<strong>临键锁</strong>，在某些情况下会退化成记录锁或者间隔锁。这一部分的提出正是为了解决。</p>
+<p><strong>唯一索引等值查询</strong></p>
+<ol>
+<li>select * from user where id &#x3D; 1 for update;如果有id&#x3D;1这条记录，临键锁就会退化为记录锁，只锁住当前这个id&#x3D;1，因为这样就不会有别的事务来进行更改避免不可重复读</li>
+<li>select * from user where id &#x3D; 1 for update；如果没有id&#x3D;1这条记录，就会退化为间隔锁，找到最近的两个区间例如（0，3）锁住这段，不允许添加数据避免幻读</li>
+</ol>
+<p><strong>唯一索引范围查询</strong></p>
+<ol>
+<li>select * from user where id &gt; 15 for update;如果有id&#x3D;20的记录，那就会加锁(15,20]，(20,INf]</li>
+<li>select * from user where id &gt;&#x3D; 15 for update;如果有id&#x3D;15，加锁15，(15,20]，(20,INf]</li>
+<li>select * from user where id &lt; 6 for update;如果有id&#x3D;1,5,10的记录，加锁(-INF,1],(1,5],(5,10)</li>
+<li>select * from user where id &lt;&#x3D; 5 for update;(-INF,1],(1,5]</li>
+</ol>
+<p><strong>非唯一索引等值查找</strong></p>
+<p>只用记住一点，非唯一索引是按照大小排序的，索引值相同再按照id升序排序。{(15,14),(25,20)}，锁住非唯一索引（15，25），如果新增的值在其中就不允许插入，如果&#x3D;15且id&gt;14也是不允许的，右边同理。</p>
+<h2 id="Mysql死锁"><a href="#Mysql死锁" class="headerlink" title="Mysql死锁"></a>Mysql死锁</h2><div style="text-align: center;">
+  <img src="../img/Mysql/img_18.png" alt="" />
+</div>
+
+<p>由于间隙锁是可以重复的，两边都锁住了不允许添加。</p>
+<h2 id="慢sql"><a href="#慢sql" class="headerlink" title="慢sql"></a>慢sql</h2><p><strong>产生慢sql的原因</strong></p>
+<ol>
+<li>索引未生效或者根本没有索引，导致全表扫描</li>
+<li>数据量太大了，加索引都不行。这个时候就要考虑分库分表了</li>
+<li>sql书写不当，过多的join操作或者子查询过多，子查询会产生一张新表；或者是深度分页；用了比较长的排序</li>
+<li>数据量比较大的时候，redolog满了，在更新checkpoint的时候会阻塞</li>
+<li>等待行级锁</li>
+</ol>
+<p><strong>如何发现慢sql</strong></p>
+<ol>
+<li>mysql自己可以开启慢sql查询日志，将查询时间大于1s的记录下来</li>
+<li>预防慢sql，做全局sql扫描。阿里的<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/LZRSQJufGRpRw6u4h_Uyww">这篇文章</a>提到了可以使用JVM的沙箱模型。相当于一个大的aop模型（值得一提的是gclib也是跟这个原理类似），通过在实例前后进行监听就可以无侵入式地录制HTTP&#x2F;Java&#x2F;Dubbo入参&#x2F;返回值，业务系统无感知。基于这个能力，我们可以方便的采集和SQL执行相关的Java方法参数以及返回值。通过配置采集点，来采集执行sql的java代码的相关方法、参数和返回值，辅助实现sql采集功能。</li>
+</ol>
+<p><strong>如何识别高危sql</strong></p>
+<ul>
+<li>不符合规范的sql：不允许使用外键，深度分页优化，子查找过多，有*</li>
+<li>用explain观察，row字段过多需要优化，type字段是否使用索引，extra是否有排序操作，以及是否索引下推，索引覆盖。</li>
+</ul>
+<h2 id="常见的sql优化手段"><a href="#常见的sql优化手段" class="headerlink" title="常见的sql优化手段"></a>常见的sql优化手段</h2><ol>
+<li>避免使用*：因为在查询的过程中还有一个预处理过程，可以自己写的就不要交给sql去查询，而且无法使用覆盖索引，也就是不用回表</li>
+<li>深度分页优化：比如有1000000页，查询这个页的时候就是深度分页了。可以用子表查询这个页的第一条记录，然后再去查比这个大的10条记录作为范围。有两个缺点，首先是id必须自增，其次是子表查询不推荐</li>
+<li>避免多join，避免使用外键</li>
+<li>优化慢sql</li>
+<li>正确使用索引：选择合适的字段创建索引（不为NULL的字段，频繁查找但是不是频繁增删的字段）；避免索引失效；考虑在字符串上建立前缀索引；避免冗余索引</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/09/19/%E4%B8%80%E5%8F%A5%E8%AF%9D%E5%88%B7%E9%A2%98/">一句话刷题</a>
       
     </h1>
@@ -1397,92 +1676,6 @@
 <p>同样的，在前文所述的tomcat的spring加载中，我们的代码会使用到spring的一系列注解，在spring容器初始化的过程中也会产生依赖。也就是说，本来是shared（也有可能是common）类加载器加载的spring类，但需要用到classpath下的自己写的应该由并行web应用处理的类。这与spi机制所产生的问题是一致的。</p>
 <p>此时也是通过线程上下文类加载器进行解决，只不过这里在开辟一个线程的时候重新set这个变量为当前的并行web应用类加载器，原理与上面的类似。<br><img src="/../img/jvm/img_4.png"></p>
 <h3 id="真的打破了双亲委派机制吗？"><a href="#真的打破了双亲委派机制吗？" class="headerlink" title="真的打破了双亲委派机制吗？"></a>真的打破了双亲委派机制吗？</h3><p>其实没有，从宏观上看，这里的Driver还是启动类加载器进行加载，mysql还是应用程序类加载器进行加载，也没有重新写loadclass方法。但也确实是由启动类加载器委派应用程序类加载器进行了加载。只不过是角度不同的问题，从宏观上没有打破，微观上打破了。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/08/14/jvm-class%E6%96%87%E4%BB%B6%E5%92%8C%E7%B1%BB%E7%9A%84%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B/">jvm-class文件和类的加载过程</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-08-14
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="class文件"><a href="#class文件" class="headerlink" title="class文件"></a>class文件</h1><p>java所推出的口号是：一次编译，处处执行。这种跨平台性主要就是由屏蔽操作系统底层的jvm所实现的，java程序从编译到执行有几个阶段，首先是java程序被javac编译器编译成.class的字节码文件，jvm加载并运行这一个中间文件，再通过jvm自身的接近底层的方法，实现在window，macos和linux上的跨平台。</p>
-<p>我的个人理解是，java为了保证跨平台性牺牲了一部分效率，这部分牺牲主要体现在要多一个通用的字节码文件的编译，而不是直接就从java变成机器能够执行的汇编了。</p>
-<h2 id="class文件的结构"><a href="#class文件的结构" class="headerlink" title="class文件的结构"></a>class文件的结构</h2><p>字节码文件主要有几个部分构成：</p>
-<ol>
-<li>魔数和大小版本号：“cafebabe”，大版本号码就是-44，比如jdk8的版本号是52</li>
-<li>常量池：最核心的部分，主要是字面量和符号引用，注意：在class文件中的都是符号引用，可以想象成逻辑地址，而在类加载的<strong>解析</strong>过程中，才会变为物理地址的引用。</li>
-<li>字段表：当前类的变量</li>
-<li>方法表：当前类的方法</li>
-<li>属性：很复杂的一个表示</li>
-</ol>
-<p>案例：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ClassFile</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">J</span> <span class="operator">=</span> <span class="string">&quot;2222222&quot;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> k;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getK</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> k;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setK</span><span class="params">(<span class="type">int</span> k)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="built_in">this</span>.k = k;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (IllegalStateException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<h3 id="魔数和大小版本号"><a href="#魔数和大小版本号" class="headerlink" title="魔数和大小版本号"></a>魔数和大小版本号</h3><p>首先，改变一个文件的后缀名是不会改变其文件本身的编码结构的，jvm不能仅仅是校验后缀是不是.class来判断是否为一个字节码文件，所以在文件内容的开头有一个cafebabe的校验，只有以这个为开头的才是jvm所需要的字节码文件，当然也不仅仅是要满足这一点，在后续类加载过程的<strong>校验过程</strong>中会详细说明。<br>其次大版本号码就是当前jdk版本+44，还有小版本，这一部分是为了jvm在校验的过程中判断当前的class是否能够兼容版本，一般当然是只能向下兼容。、</p>
-<h3 id="常量池"><a href="#常量池" class="headerlink" title="常量池"></a>常量池</h3><blockquote>
-<p>在常量池之前，需要补充一下各种名以及描述符</p>
-<ul>
-<li>全限定名和非限定名：<strong>Class文件中的类和接口，都是使用全限定名，又被称作Class的二进制名称</strong>。例如“com&#x2F;ikang&#x2F;JVM&#x2F;classfile”是这个类的全限定名，仅仅是把类全名中的“.”替换成了“&#x2F;”而已，为了使连续的多个全限定名之间不产生混淆，在使用时最后一般会加入一个“;”表示全限定名结束。<br><strong>非限定名又被称作简单名称</strong>，Class文件中的方法、字段、局部变量、形参名称，都是使用简单名称，没有类型和参数修饰，例如这个类中的getK()方法和k字段的简单名称分别是“getK”和“m”。<br>非限定名不得包含ASCII字符. ; [ &#x2F; ，此外方法名称除了特殊方法名称&lt; init &gt;和&lt; clinit &gt;方法之外，它们不能包含ASCII字符&lt;或&gt;，字段名称或接口方法名称可以是&lt; init &gt;或&lt; clinit &gt;，但是没有方法调用指令可以引用&lt; clinit &gt;，只有invokespecial指令可以引用&lt; init &gt;。</li>
-<li>描述符：在class文件里的方法和基本数据类型也有特定的写法，一般来说基本数据类型都是首字母大写作为描述，比如int就为I，<strong>其中long特殊，描述为J</strong>，void为V，引用类型为L+类的全限定名，对于数组类型，每一维度将使用一个前置的“[”字符来描述，如一个定义为“java.lang.String[][]”类型的二维数组，将被记录为：“[[Ljava&#x2F;lang&#x2F;String；”，一个整型数组“int[]”将被记录为“[I”<br>方法描述符的写法看一眼就会，比如Object m(int i, double d, Thread t) {… }则描述符为(IDLjava&#x2F;lang&#x2F;Thread;)Ljava&#x2F;lang&#x2F;Object;</li>
-</ul>
-</blockquote>
-<p>言归正传，常量池有两部分内容：字面量和符号引用。字面量就是一个变量的对应值，符号引用就是名称，主要有三部分名称：类与接口的全限定名，字段的名称和描述符（NameAndType），方法的名称和描述符（NameAndType）。<br>每一个字段都有自己的结构，具体见<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_43767015/article/details/105310047?ops_request_misc=&request_id=&biz_id=102&utm_term=class%E6%96%87%E4%BB%B6&utm_medium=distribute.pc_search_result.none-task-blog-2~all~sobaiduweb~default-0-105310047.142%5Ev100%5Epc_search_result_base4&spm=1018.2226.3001.4187">这篇博客</a>。<br>说几个比较重要的：</p>
-<ol>
-<li>CONSTANT_Utf8_info和CONSTANT_String_info：前者是真正存储字符串本体的，而后者的结构只包含引用utf8的索引位置，为什么这样设计？当多个String名字不同但是值相同的时候，就可以只创建一条CONSTANT_Utf8_info常量，多个String可以引用，从而节省空间；其次是有可能符号引用也是当前值，例如声明了String a &#x3D; “a”，这样多少也能节约空间。</li>
-<li>CONSTANT_NameAndType_info：name就是字段或者方法的非限定名，type是其描述符，这个同样是引用类型，放的是CONSTANT_Utf8_info的索引。例如println:(Ljava&#x2F;lang&#x2F;String;)V</li>
-<li>CONSTANT_Fieldref_info和CONSTANT_Methodref_info：两个字段，前者是这个字段或者方法的名字引用，后者是CONSTANT_Methodref_info的引用 <div style="text-align: center;">
-   <img src="../img/jvm/img.png" alt="" />
- </div></li>
-<li>CONSTANT_Class_info：类的全限定名，注意所有的类都会有java&#x2F;lang&#x2F;Object这个类的class常量，因为除了Object本身，其余都是继承自它。</li>
-</ol>
-<h3 id="访问标志"><a href="#访问标志" class="headerlink" title="访问标志"></a>访问标志</h3><p>用2字节作为访问标志，其中16位的某些位置可能代表了某些修饰词，例如public，final，interface等</p>
-<h3 id="当前类，父类和接口索引"><a href="#当前类，父类和接口索引" class="headerlink" title="当前类，父类和接口索引"></a>当前类，父类和接口索引</h3><p>类索引用于确定这个类的全限定名，父类索引用于确定这个类的父类的全限定名，由于 Java 语言的单继承，所以父类索引只有一个，除了 java.lang.Object 之外，所有的 Java 类都有父类，因此除了 java.lang.Object 外，所有 Java 类的父类索引都不为 0。接口索引集合用来描述这个类实现了那些接口，这些被实现的接口将按 implements (如果这个类本身是接口的话则是extends) 后的接口顺序从左到右排列在接口索引集合中。</p>
-<h3 id="字段表"><a href="#字段表" class="headerlink" title="字段表"></a>字段表</h3><ul>
-<li>access_flags: 字段的作用域（public ,private,protected修饰符），是实例变量还是类变量（static修饰符）,可否被序列化（transient 修饰符）,可变性（final）,可见性（volatile 修饰符，是否强制从主内存读写）。</li>
-<li>name_index: 对常量池的引用，表示的字段的名称；</li>
-<li>descriptor_index: 对常量池的引用，表示字段和方法的描述符；</li>
-<li>attributes_count: 一个字段还会拥有一些额外的属性，attributes_count 存放属性的个数；</li>
-<li>attributes[attributes_count]: 存放具体属性具体内容。</li>
-</ul>
-<blockquote>
-<p>这里说一下字段里面常见的属性：<br>ConstantValue：一个字段有了这个说明是被static修饰了的。目前Sun Javac编译器的选择是：如果同时使用final和static来修饰一个变量（按照习惯，这里称“常量”更贴切），并且这个变量的数据类型是基本类型或者java.lang.String的话，就生成ConstantValue属性来进行初始化，即编译的时候；如果这个变量没有被final修饰，或者并非基本类型及字符串，则将会选择在＜clinit＞方法中进行初始化，即类加载的时候。</p>
-</blockquote>
-<h3 id="方法表"><a href="#方法表" class="headerlink" title="方法表"></a>方法表</h3><p>内容基本上与上面一致，也是有访问标志，name，descriptor和属性，这里的属性只要方法内不为空都会有code这个属性</p>
-<p>方法里常见的属性：</p>
-<ul>
-<li>Code：Java方法体里面的代码经过Javac编译之后，最终变为字节码指令存储在Code属性内，Code属性出现在在method_info结构的attributes表中，但在接口或抽象类中就不存在Code属性（JDK1.8可以出现了）。一个方法中的Code属性值有一个。在整个Class文件中，Code属性用于描述代码，所有的其他数据项目都用于描述元数据。在字节码指令之后的是这个方法的显式异常处理表（下文简称异常表）集合，异常表对于Code属性来说并不是必须存在的。</li>
-<li>LineNumberTable：位于Code属性中，描述Java源码行号与字节码行号（字节码的偏移量）之间的对应关系。主要是如果抛出异常时，编译器会显示行号，比如调试程序时展示的行号，就是这个属性的作用。Code属性表中，LineNumberTable可以属性可以按照任意顺序出现。在Code属性 attributes表中，可以有不止一个LineNumberTable属性对应于源文件中的同一行。也就是说，多个LineNumberTable属性可以合起来表示源文件中的某行代码，属性与源文件的代码行之间不必有一一对应的关系。</li>
-<li>exception_table： <strong>在Java虚拟机中，处理异常（catch语句）不是由字节码指令来实现的，而是采用异常表来完成的。</strong> 异常表中每一个数据由4部分组成，分别是start_pc、end_pc、handler_pc和catch_type。这4项表示从方法字节码的start_pc偏移量开始（包括）到end_pc 偏移量为止（不包括）的这段代码中，如果遇到了catch_type所指定的异常， 那么代码就跳转到handler_pc的位置执行，handler_pc即一个异常处理器的起点。在这4项中， start_pc、end_pc和handlerpc 都是字节码的编译量， 也就是在code[code_length]中的位置， 而catch_type为指向常量池的索引，它指向一个CONSTANT_Class_info 类，表示需要处理的异常类型。如果catch_type值为0,那么将会在所有异常抛出时都调用这个异常处理器，这被用于实现finally语句</li>
-</ul>
 
     
     

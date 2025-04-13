@@ -212,6 +212,57 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/03/19/leetcode-2024-3-19/">leetcode-2024-3-19</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-03-19
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="1793-好子数组的最大分数（Hard）"><a href="#1793-好子数组的最大分数（Hard）" class="headerlink" title="1793.好子数组的最大分数（Hard）"></a>1793.好子数组的最大分数（Hard）</h1><p>给你一个整数数组 nums （下标从 0 开始）和一个整数 k 。</p>
+<p>一个子数组 (i, j) 的 <strong>分数</strong> 定义为 min(nums[i], nums[i+1], …, nums[j]) * (j - i + 1) 。一个 好 子数组的两个端点下标需要满足 i &lt;&#x3D; k &lt;&#x3D; j 。</p>
+<p>请你返回 <strong>好</strong> 子数组的最大可能 <strong>分数</strong> 。</p>
+<h2 id="暴力解：超出内存限制"><a href="#暴力解：超出内存限制" class="headerlink" title="暴力解：超出内存限制"></a>暴力解：超出内存限制</h2><blockquote>
+<p>思路：用一个二维数组，dp[i][j]表示num[i]到num[j]的最小值，起始dp[i][i]都为num[i],状态转移方程为：dp[i][j] &#x3D; min{dp[i][j-1],num[i]},<br>其实是可以做出来的。但是这是hard，空间复杂度要求有点高，就会超内存。我的评价是动态规划很好，下次别用了</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximumScore</span><span class="params">(<span class="type">int</span>[] nums, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">    <span class="comment">//二维动态规划</span></span><br><span class="line">    <span class="type">int</span>[][] dp = <span class="keyword">new</span> <span class="title class_">int</span>[nums.length][nums.length];</span><br><span class="line">    <span class="comment">//初始对角线都为自身，自己肯定是最小值</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length; i++) &#123;</span><br><span class="line">        dp[i][i] = nums[i];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; nums.length-<span class="number">1</span>; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> i+<span class="number">1</span>; j &lt; nums.length; j++) &#123;</span><br><span class="line">            <span class="comment">//动态转移方程</span></span><br><span class="line">            dp[i][j] = Math.min(nums[j], dp[i][j - <span class="number">1</span>]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//k要在中间，那么就是矩阵的右上角那块，i&lt;=k&lt;=j</span></span><br><span class="line">    <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> Integer.MIN_VALUE;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt;= k; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> k; j &lt; nums.length; j++) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> j-i+<span class="number">1</span>;</span><br><span class="line">            max = Math.max(max,length*dp[i][j]);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//返回在右上角的最大值</span></span><br><span class="line">    <span class="keyword">return</span> max;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="官方解-：双指针"><a href="#官方解-：双指针" class="headerlink" title="官方解 ：双指针"></a>官方解 ：双指针</h2><blockquote>
+<p>以k为原点，head&#x3D;k-1，rear&#x3D;k+1，左开右开区间，数据长度rear-head+1，初始时长度只有1即为nums[k]本身，也为最小值。<br>那么怎么样找包含他的最小值呢，只要找左右两边比他大的，整体的最小值就是不变的，那么长度*最小值就会有效变大，直到双指针遇到比当前最小值还要小的元素<br>那么由于初始最小值就是本身，那么只要循环本身这个值不断递减就可以了。</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">maximumScore</span><span class="params">(<span class="type">int</span>[] nums, <span class="type">int</span> k)</span> &#123;</span><br><span class="line">    <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> nums.length;</span><br><span class="line">    <span class="type">int</span> <span class="variable">head</span> <span class="operator">=</span> k-<span class="number">1</span>,rear = k+<span class="number">1</span>;</span><br><span class="line">    <span class="type">int</span> <span class="variable">max</span> <span class="operator">=</span> Integer.MIN_VALUE;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> nums[k];;i--)&#123;</span><br><span class="line">        <span class="keyword">while</span> (head &gt;=<span class="number">0</span> &amp;&amp; nums[head] &gt;= i)&#123;</span><br><span class="line">            head--;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">while</span> (rear &lt; nums.length &amp;&amp; nums[rear] &gt;= i)&#123;</span><br><span class="line">            rear++;</span><br><span class="line">        &#125;</span><br><span class="line">        max = Math.max(max,(rear-head-<span class="number">1</span>)*i);</span><br><span class="line">        <span class="keyword">if</span> (head == -<span class="number">1</span> &amp;&amp; rear == length)&#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> max;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>复杂度分析</p>
+<p>时间复杂度：O(n+C)，其中 n 是数组nums 的长度，C 是数组 nums 中元素的范围。</p>
+<p>空间复杂度：O(1)。明显比我自己写的暴力解好</p>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/03/19/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87blog/">我的第一篇blog</a>
       
     </h1>

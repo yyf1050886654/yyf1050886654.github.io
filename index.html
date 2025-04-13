@@ -212,6 +212,51 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2025/04/13/%E6%9D%82%E8%B0%88-%E4%B8%8B%E4%B8%80%E6%AD%A5%E7%9A%84%E6%96%B9%E5%90%91/">杂谈-下一步的方向</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-04-13
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <p>立个flag，我需要在9月份之前完成这些事情：</p>
+<ol>
+<li>论文idea和实验：学习pytorch和图神经网络，可能还得学一些信号处理。（ddl8月份）</li>
+<li>i茅台复现：主体自己实现一下，tidb可以先不用，用sharding-jdbc分片即可（ddl5月份）</li>
+<li>go语言相关：做一个轮子类项目（分布式kv或者MIT6.多少多少的raft），以及一个业务类项目（im即时通讯或者流媒体），这部分其实看情况，也不是一定需要转go（ddl6月份）</li>
+<li>大模型相关：复现gpt2（ddl5月份），继续学习rag的相关工程，主要放在并发上（ddl8月份）</li>
+<li>unity：不是主要工作，只给五一假期几天去尝试一下</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2025/03/22/%E8%BD%ACgo%E8%AE%A1%E5%88%92day1-go%E7%9A%84%E5%9F%BA%E6%9C%AC%E8%AF%AD%E6%B3%95/">ProjectMygo!!!!!-go的基本语法</a>
       
     </h1>
@@ -1619,141 +1664,6 @@
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">base</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!siteMapCompanyService.isOpeningCompany(companyId)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.NON_OPENING_COMPANY.getName(), BizError.NON_OPENING_COMPANY.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">url</span> <span class="operator">=</span> host+<span class="string">&quot;/api/auth/global/overseas/base&quot;</span>;</span><br><span class="line">        Map&lt;String, String&gt; map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">&quot;companyId&quot;</span>, companyId);</span><br><span class="line">        map.put(<span class="string">&quot;appKey&quot;</span>, appKey);</span><br><span class="line">        map.put(<span class="string">&quot;appSecret&quot;</span>, appSecret);</span><br><span class="line">        map.put(<span class="string">&quot;timestamp&quot;</span>, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">        map = OpenApiUtil.packageSign(map, appKey, appSecret);</span><br><span class="line">        <span class="type">String</span> <span class="variable">resut</span> <span class="operator">=</span> OkHttpUtil.get(url, map);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isNotBlank(resut)) &#123;</span><br><span class="line">            <span class="comment">// 图片链接转换</span></span><br><span class="line">            resut = ImagePathConvert.convert(resut);</span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">jsonObject</span> <span class="operator">=</span> JSON.parseObject(resut);</span><br><span class="line">            <span class="type">String</span> <span class="variable">dataResult</span> <span class="operator">=</span> jsonObject.getString(<span class="string">&quot;data&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> loginAuth(JSON.parseObject(dataResult, CompanyBaseVO.class));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">        log.info(<span class="string">&quot;demo error&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">loginAuth</span><span class="params">(CompanyBaseVO companyBaseVO)</span>&#123;</span><br><span class="line">    <span class="type">UserInfoToken</span> <span class="variable">userInfoToken</span> <span class="operator">=</span> UserContext.getContent().getUserInfoToken();</span><br><span class="line">    <span class="comment">//未登录</span></span><br><span class="line">    <span class="keyword">if</span> (userInfoToken == <span class="literal">null</span>) &#123;</span><br><span class="line">        companyBaseVO.setDomain(<span class="string">&quot;*****&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> companyBaseVO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/12/15/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week4/">网易牛马日志-week4</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-12-15
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="需求5：优化prompt"><a href="#需求5：优化prompt" class="headerlink" title="需求5：优化prompt"></a>需求5：优化prompt</h2><h3 id="1-提示词优化"><a href="#1-提示词优化" class="headerlink" title="1.提示词优化"></a>1.提示词优化</h3><blockquote>
-<p>学习了prompt工程，主要的优化思路有（<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/QDzbfUkvSEalLxm3XX9rtA">参考连接</a>）：</p>
-<ol>
-<li>角色提示：“假设我是一个刚入行的电商买家”，类似这种可以将gpt带入角色，以该角色的视角进行输出</li>
-<li>思维链提示：让gpt一步一步进行思考，例如计算1+2+3，先让gpt算出1+2&#x3D;3，然后再去算3+3&#x3D;6，有了思维链能够使ai清晰思考路径，犯错的可能性降低</li>
-<li>思维树提示：跟上面的思维链比起来，思维树要考虑不同的分叉，在执行过程中要考虑不同的情况</li>
-<li>自一致性提示：将模型的温度升高，多次去执行一个问题，返回其中最高频率的答案。对于推荐词的场景不太适用，因为调用次数有限而且时延较大，被mentor否决。</li>
-<li>ReAct提示：用python的api进行调用，功能强大但用不了。<br>综合以上的方法，只有思维链可以作为优化。</li>
-</ol>
-</blockquote>
-<ol>
-<li>近似词：中译英</li>
-</ol>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String synonymsPrompt = MessageFormat.format(&quot;与\&quot;&#123;0&#125;\&quot;意思相近的产品有哪些，</span><br><span class="line">        请用&#123;1&#125;列举10个产品名。要求不包含\&quot;&#123;0&#125;\&quot;，</span><br><span class="line">        输出格式为：jsonArray&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String synonymsPrompt = MessageFormat.format(&quot;What are the products with the similar meaning of \&quot;&#123;0&#125;\&quot;,\n&quot; +</span><br><span class="line">        &quot;Please list 10 product names in &#123;1&#125;. My request is not to include \&quot;&#123;0&#125;\&quot;,\n&quot; +</span><br><span class="line">        &quot;The output format is jsonArray&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
-
-<ol start="2">
-<li>电商词：转为中文思维链</li>
-</ol>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String platformPrompt = MessageFormat.format(&quot;假设我是一个新入行的电商卖家，</span><br><span class="line">        主要经营的是\&quot;&#123;0&#125;\&quot;。我希望能有更多的用户在amazon.com等同类电商网站中搜索到我，</span><br><span class="line">        我可以使用怎样的&#123;1&#125;产品名对自己的产品进行描述？要求不包含\&quot;&#123;0&#125;\&quot;，</span><br><span class="line">        请去掉尽可能多的长尾词，提炼共同的产品描述词。帮我用&#123;2&#125;同义替换10个不同的产品描述。仅输出替换后的数据，</span><br><span class="line">        格式为：jsonArray&quot;, formatValue, language, language) + &quot;,[]&quot;;   </span><br></pre></td></tr></table></figure>
-
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String platformPrompt = MessageFormat.format(&quot;请按照如下提示一步步推理：\n&quot; +</span><br><span class="line">        &quot;第一步，请将产品\&quot;&#123;0&#125;\&quot;从品牌、型号、材料、用途等方面进行扩展，尽量细分且具体到某个品牌的某个产品。\n&quot; +</span><br><span class="line">        &quot;第二步，思考该产品在amazon.com等同类电商网站中显示给用户的商品词是什么。\n&quot; +</span><br><span class="line">        &quot;第三步，提取商品词中的关键信息，不允许出现品牌和型号，长度严格限制在30个字母以内。\n&quot; +</span><br><span class="line">        &quot;综合以上三步，仅用&#123;1&#125;输出十个这样的产品名，要求不包含\&quot;&#123;0&#125;\&quot;格式为：jsonArray,[]&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
-
-<ol start="3">
-<li>行业词：中译英</li>
-</ol>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">prompt = &quot;我是一个新入行的外贸供应商，主要经营的是&quot;+ formatValue +&quot;。我的产品可以应用于哪些行业的哪些产品？帮我列举3个行业，并描述推荐这些行业的理由，在每个行业下列举5个使用该产品制造出来的产品名称。\n&quot; +</span><br><span class="line">        &quot;用json输出，格式为：\n&quot; +</span><br><span class="line">        &quot;行业1\n&quot; +</span><br><span class="line">        &quot;行业名：xxx\n&quot; +</span><br><span class="line">        &quot;推荐理由：xxx\n&quot; +</span><br><span class="line">        &quot;相关产品：xxx\n&quot; +</span><br><span class="line">        &quot;要求：\n&quot; +</span><br><span class="line">        &quot;1、行业名称用&#123;&quot;+languageVersion+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;2、推荐理由用&#123;&quot;+languageVersion+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;3、相关产品用&#123;&quot;+language+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;4、产品名称不能重复。\n&quot; +</span><br><span class="line">        &quot;5、产品名称不需要包含材质等限制。\n&quot; +</span><br><span class="line">        &quot;6、相关产品用#格开。&quot; +</span><br><span class="line">        &quot;7、不包含\&quot;&quot;+formatValue+&quot;\&quot;。&quot;;</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">prompt = &quot;I am a new foreign trade supplier, the main business is \&quot;&quot;+formatValue+&quot;\&quot;. Which products can my product be used in which industries? Give me a list of 3 industries and describe the reasons why you recommend them, and list 5 names of products made with that product under each industry.\n&quot; +</span><br><span class="line">        &quot;Output in json format:\n&quot; +</span><br><span class="line">        &quot; 行业1\n&quot; +</span><br><span class="line">        &quot; 行业名：xxx\n&quot; +</span><br><span class="line">        &quot; 推荐理由：xxx\n&quot; +</span><br><span class="line">        &quot; 相关产品：xxx\n&quot; +</span><br><span class="line">        &quot;Requirement: \&quot;\n&quot; +</span><br><span class="line">        &quot;1. the industry name with &#123;&quot;+languageVersion+&quot;&#125;.\n&quot; +</span><br><span class="line">        &quot;2. recommended reasons use &#123;&quot;+languageVersion+&quot;+&#125;.\n&quot; +</span><br><span class="line">        &quot;3. Use &#123;&quot;+language+&quot;&#125; for related products.\n&quot; +</span><br><span class="line">        &quot;4. the product name can not be repeated.\n&quot; +</span><br><span class="line">        &quot;5. the product name does not need to include material and other restrictions.\n&quot; +</span><br><span class="line">        &quot;6. related products are delimited with #\n&quot; +</span><br><span class="line">        &quot;7. \&quot;&quot;+formatValue+&quot;\&quot; is not included.&quot;;</span><br></pre></td></tr></table></figure>
-
-<p>三个小小的优化耗费了我一周的时间，实际上也没多少提升。</p>
-<h3 id="2-代码逻辑"><a href="#2-代码逻辑" class="headerlink" title="2.代码逻辑"></a>2.代码逻辑</h3><h4 id="近似词和电商词"><a href="#近似词和电商词" class="headerlink" title="近似词和电商词"></a>近似词和电商词</h4><ul>
-<li>首先判断是否为空，或者是否为敏感词（调用网易易盾），随后传入用户信息，访问服务。</li>
-<li>服务内部：传入参数中语言为空默认为英语，然后用CompletableFuture.supplyAsync()搭配线程池完成gpt的两次请求。线程池如下：</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//线程工厂仅仅改名，拒绝策略是发起者自己消化</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ThreadFactory</span> <span class="variable">GPT_THREAD_FACTORY</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadFactoryBuilder</span>().setNameFormat(<span class="string">&quot;GptGrpcWrapper-gpt-pool-%d&quot;</span>).build();</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">GPT_REQUEST_EXECUTOR</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(<span class="number">20</span>,</span><br><span class="line">        <span class="number">40</span>, <span class="number">60</span> * <span class="number">5L</span>, TimeUnit.SECONDS, <span class="keyword">new</span> <span class="title class_">LinkedBlockingDeque</span>&lt;&gt;(<span class="number">3000</span>), GPT_THREAD_FACTORY, <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>.CallerRunsPolicy());</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>请求成功的结果缓存在redis中100天，缓存的key是”cacheKeyPreFix + “v6” + “:” + gptRecommendReqVO.getLanguage()+”:”+gptRecommendReqVO.getValue();”</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Set&lt;String&gt; <span class="title function_">getRecommendWordV1</span><span class="params">(GptRecommendReqVO gptRecommendReqVO, AuthInfo authInfo, String prompt, String cacheKeyPreFix)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">cacheValue</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(gptRecommendReqVO.getValue())) &#123;</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">formatValue</span> <span class="operator">=</span> FormatUtil.escapeFormat(gptRecommendReqVO.getValue());</span><br><span class="line">        <span class="keyword">if</span>(StringUtils.isBlank(formatValue) || formatValue.length()&lt;=<span class="number">1</span>)&#123;</span><br><span class="line">            log.info(<span class="string">&quot;GptGrpcWrapper value:&#123;&#125;,formatValue:&#123;&#125;&quot;</span>,gptRecommendReqVO.getValue(),formatValue);</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(gptRecommendReqVO.getLanguage()==<span class="literal">null</span>)&#123;</span><br><span class="line">            gptRecommendReqVO.setLanguage(<span class="string">&quot;英语&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">language</span> <span class="operator">=</span> gptRecommendReqVO.getLanguage();</span><br><span class="line">        <span class="type">String</span> <span class="variable">cacheKey</span> <span class="operator">=</span> cacheKeyPreFix + <span class="string">&quot;v6&quot;</span> + <span class="string">&quot;:&quot;</span> + gptRecommendReqVO.getLanguage()+<span class="string">&quot;:&quot;</span>+gptRecommendReqVO.getValue();</span><br><span class="line">        cacheValue = recommendWordCache.get(cacheKey);</span><br><span class="line">        <span class="comment">//命中</span></span><br><span class="line">        <span class="keyword">if</span>(StringUtils.isNotBlank(cacheValue))&#123;</span><br><span class="line">            log.info(<span class="string">&quot;GptGrpcWrapper call success,param:&#123;&#125;,result:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),cacheValue);</span><br><span class="line">            <span class="comment">//大段文字中的[&quot;xxx1&quot;,&quot;xxx2&quot;,&quot;xxx3&quot;]</span></span><br><span class="line">            <span class="keyword">if</span>(cacheValue.contains(<span class="string">&quot;[&quot;</span>) &amp;&amp; cacheValue.contains(<span class="string">&quot;]&quot;</span>))&#123;</span><br><span class="line">                cacheValue = cacheValue.substring(cacheValue.indexOf(<span class="string">&quot;[&quot;</span>), cacheValue.lastIndexOf(<span class="string">&quot;]&quot;</span>) + <span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//只取前6个，这个数值是前端定的</span></span><br><span class="line">            Set&lt;String&gt; synonyms = getLimitSize(Lists.newArrayList(JSON.parseArray(cacheValue, String.class)), gptRecommendReqVO.getSize());</span><br><span class="line">            <span class="keyword">return</span> synonyms;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//未命中</span></span><br><span class="line">        log.info(<span class="string">&quot;GptGrpcWrapper call param:&#123;&#125;,prompt:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),prompt);</span><br><span class="line">        CompletableFuture&lt;String&gt; future = CompletableFuture.supplyAsync(</span><br><span class="line">                () -&gt; gptRequest(authInfo.getOrgId(),authInfo.getAccId(),authInfo.getEmail(),prompt, GPTModelVersionEnum.GPT_4O_MINI.getVersion()), GPT_REQUEST_EXECUTOR);</span><br><span class="line">        <span class="comment">//这里实际上还是同步请求，&quot;gpt-recommard-future&quot;是一个日志的名称，超时时间120s</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">res</span> <span class="operator">=</span> (String)FutureResultUtil.getResult(<span class="string">&quot;gpt-recommard-future&quot;</span>,future,<span class="number">120</span>, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(res)) &#123;</span><br><span class="line">            log.info(<span class="string">&quot;getRecommend failed.name:&#123;&#125;,language:&#123;&#125;&quot;</span>,formatValue, language);</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        cacheValue = res;</span><br><span class="line">        <span class="comment">// 推荐词缓存100天</span></span><br><span class="line">        recommendWordCache.set(cacheKey,cacheValue,TimeUnit.DAYS.toMillis(<span class="number">100</span>));</span><br><span class="line">        log.info(<span class="string">&quot;GptGrpcWrapper call success,param:&#123;&#125;,result:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),cacheValue);</span><br><span class="line">        <span class="keyword">if</span>(cacheValue.contains(<span class="string">&quot;[&quot;</span>) &amp;&amp; cacheValue.contains(<span class="string">&quot;]&quot;</span>))&#123;</span><br><span class="line">            cacheValue = cacheValue.substring(cacheValue.indexOf(<span class="string">&quot;[&quot;</span>), cacheValue.lastIndexOf(<span class="string">&quot;]&quot;</span>) + <span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        Set&lt;String&gt; synonyms = getLimitSize(Lists.newArrayList(JSON.parseArray(cacheValue, String.class)), gptRecommendReqVO.getSize());</span><br><span class="line">        <span class="keyword">return</span> synonyms;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="comment">//gpt出的词如果不常规。例如是“好的，接下来为您输出....”，在JSON.parseArray就会报异常不返回给前端。</span></span><br><span class="line">        log.error(<span class="string">&quot;getGptRecommend param:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO), e);</span><br><span class="line">        <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<ol>
-<li>redis只存gpt原始回答，可以改成处理后的回答</li>
-<li>线程池实际上只将近似词和电商词做了异步，在这两个单独的请求里面用future实际还是同步。</li>
-<li>gpt如果输出不理想有两重处理，首先看是否包含了”[“xxx1”,”xxx2”,”xxx3”]”，用subString提取出来，实在是没有那在parseObject就会报错，结果返回为空。</li>
-</ol>
-</blockquote>
-<ul>
-<li>最后处理近似词和电商词的结果，用一个大的hashset去重（但是大小写敏感，这里可以优化成全部小写再比较）</li>
-<li>调用GRPC（有道翻译）兜底，先判断是否出现中文，有中文就翻译。批量翻译返回值是map，key是原文，value是翻译后的。最后进行组装返回。</li>
-</ul>
-<p><strong>总结：调用易盾进行敏感词检测，线程池+CompletableFuture完成两次gpt查询，gpt查询做了一系列异常处理，在redis中缓存100天，最后调用有道翻译的grpc进行兜底。</strong></p>
-<h4 id="行业词"><a href="#行业词" class="headerlink" title="行业词"></a>行业词</h4><ul>
-<li>首先判断是否为空，或者是否为敏感词（调用网易易盾），随后传入用户信息，访问服务。</li>
-<li>服务内部：处理逻辑跟上文类似，在redis中存储gpt原始回答，但是由于输出的是json，相比于近似词和行业词的数组，这里有改变。</li>
-<li>去除”```json”和”```“这类md语法，再根据”行业一，二，三”json形式包装。</li>
-<li>这里要做一些异常处理以增加可用性和鲁棒性，虽然提示词里面写的是用”#“隔开，但是实际上可能返回的还是”,”或者”、”，用一个函数对其进行拆分。</li>
-<li>最后调用有道翻译兜底。</li>
-</ul>
-<h2 id="需求6：订阅更新任务"><a href="#需求6：订阅更新任务" class="headerlink" title="需求6：订阅更新任务"></a>需求6：订阅更新任务</h2><p>订阅更新链路：</p>
-<ol>
-<li>用户前端点击页面就会更新订阅公司的watchTime字段，一天之内只更新一次。</li>
-<li>xxljob每周扫库，搜索的是订阅公司的那个表，将watchTime在前一周的公司发送kafka（自增id而不是公司id）</li>
-<li>kafka消费者拿到这些id去数据库找对应的公司，将订阅公司表项和公司实体项（从es来的，如果前者有companyId就直接查询，如果没有就需要根据名字和地区来查询并保存）作为参数传分别分析<strong>facebook信息，facebook提及信息，海关信息，联系人信息</strong>，开了一个线程池并行处理这些。</li>
-</ol>
-<h3 id="1-facebook信息"><a href="#1-facebook信息" class="headerlink" title="1.facebook信息"></a>1.facebook信息</h3><p>代码太长了，梳理一下就这几部分：</p>
-<ol>
-<li>根据公司实体中的相关facebook链接去请求GRPC接口，返回facebook实体，其中包含个人信息，点赞数量，最近推文等信息。</li>
-<li>从这里开始要注意逻辑，比对的是<strong>GRPC请求来的数据</strong>和<strong>当前数据库中最新的log</strong>。</li>
-<li>去数据库中查询7种type的log，先全部查出来，然后再通过stream和sort得到最近时间的log。</li>
-<li>将这些log分别与GRPC请求来的数据进行比较，例如判断facebook是否更新了，将最近的一条相关log的内容拉出来与GRPC请求来的数据进行比较，如果不一样就需要更新，在库里面新增一条。</li>
-</ol>
-<blockquote>
-<ol>
-<li>facebook地址初始化&#x2F;变更</li>
-<li>facebook邮箱初始化&#x2F;变更</li>
-<li>facebook网站地址初始化&#x2F;变更</li>
-<li>facebook电话初始化&#x2F;变更</li>
-<li>facebook点赞、关注初始化</li>
-<li>facebook中发布了新帖子</li>
-<li>facebook获得1个新评论</li>
-</ol>
-</blockquote>
-<h3 id="2-facebook提及信息"><a href="#2-facebook提及信息" class="headerlink" title="2.facebook提及信息"></a>2.facebook提及信息</h3><ol>
-<li>类似上面的，提及消息也是从GRPC来的，如果返回为null直接返回，这里是一个list，只关注最新的，所以也有stream+sort。</li>
-<li>去数据库查询当前最新的log，主要关注的是这个记录的createTime。</li>
-<li>如果数据库没有，那就说明是最新更新的，向数据库插入一条新的log表明有被提及，直接返回。</li>
-<li>如果数据库有但log的时间比GRPC来的早，说明有新提及，进行更新。</li>
-</ol>
-<h3 id="3-海关信息"><a href="#3-海关信息" class="headerlink" title="3.海关信息"></a>3.海关信息</h3><ol>
-<li>将公司名称格式化，随后去海关数据里面查找新增进出口数据，分别放在两个list里面。</li>
-<li>如果有进出口就分别新增log。</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">customProcess</span><span class="params">(TbGlobalCollectEntity record, CompanySearchBO companyBO, Date startDate, Date endDate)</span> &#123;</span><br><span class="line">    <span class="comment">//海关那边的统一格式&quot;CompanyName-COMBINE-TANZANIA&quot;例如&quot;101 INVESTMENT-COMBINE-TANZANIA&quot;</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">nameAndCountry</span> <span class="operator">=</span> CompanyFormatUtils.combineCompanyNameAndCountry(companyBO.getName(), companyBO.getCountry());</span><br><span class="line">    <span class="comment">//去取出昨天的新增hscode，这个表主要是海关系统在维护</span></span><br><span class="line">    Map&lt;String, CustomInfoBO&gt; map = customDataComponent.batchGetCompanyNewTrxHscode(Lists.newArrayList(nameAndCountry), startDate, endDate);</span><br><span class="line">    List&lt;TbGlobalCollectLogEntity&gt; tbGlobalCollectLogEntities = Lists.newArrayList();</span><br><span class="line">    <span class="keyword">if</span>(map.containsKey(nameAndCountry))&#123;</span><br><span class="line">        <span class="type">CustomInfoBO</span> <span class="variable">customInfoBO</span> <span class="operator">=</span> map.get(nameAndCountry);</span><br><span class="line">        <span class="comment">//出口</span></span><br><span class="line">        <span class="keyword">if</span>(!CollectionUtils.isEmpty(customInfoBO.getExportHsCodeList()))&#123;</span><br><span class="line">            <span class="type">TbGlobalCollectLogEntity</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TbGlobalCollectLogEntity</span>();</span><br><span class="line">            t.setCollectId(record.getId());</span><br><span class="line">            t.setLogDesc(<span class="string">&quot;新供应了hscode为&quot;</span> + Strings.join(customInfoBO.getExportHsCodeList(), <span class="string">&quot;,&quot;</span>) + <span class="string">&quot;等的商品&quot;</span>);</span><br><span class="line">            t.setContent(JSON.toJSONString(customInfoBO.getExportHsCodeList()));</span><br><span class="line">            t.setType(CollectLogTypeEnum.CUSTOM_SHN.getType());</span><br><span class="line">            t.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setInit12(<span class="number">0</span>);</span><br><span class="line">            tbGlobalCollectLogEntities.add(t);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//进口</span></span><br><span class="line">        <span class="keyword">if</span>(!CollectionUtils.isEmpty(customInfoBO.getImportHsCodeList()))&#123;</span><br><span class="line">            <span class="type">TbGlobalCollectLogEntity</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TbGlobalCollectLogEntity</span>();</span><br><span class="line">            t.setCollectId(record.getId());</span><br><span class="line">            t.setLogDesc(<span class="string">&quot;新采购了hscode为&quot;</span> + Strings.join(customInfoBO.getImportHsCodeList(), <span class="string">&quot;,&quot;</span>) + <span class="string">&quot;等的商品&quot;</span>);</span><br><span class="line">            t.setContent(JSON.toJSONString(customInfoBO.getImportHsCodeList()));</span><br><span class="line">            t.setType(CollectLogTypeEnum.CUSTOM_CON.getType());</span><br><span class="line">            t.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setInit12(<span class="number">0</span>);</span><br><span class="line">            tbGlobalCollectLogEntities.add(t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(!CollectionUtils.isEmpty(tbGlobalCollectLogEntities))&#123;</span><br><span class="line">        tbGlobalCollectLogEntityService.saveAll(tbGlobalCollectLogEntities);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="4-联系人信息"><a href="#4-联系人信息" class="headerlink" title="4.联系人信息"></a>4.联系人信息</h3>
     
     
   </div>

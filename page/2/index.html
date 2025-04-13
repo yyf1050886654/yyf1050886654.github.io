@@ -212,6 +212,141 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2024/12/15/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week4/">网易牛马日志-week4</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2024-12-15
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="需求5：优化prompt"><a href="#需求5：优化prompt" class="headerlink" title="需求5：优化prompt"></a>需求5：优化prompt</h2><h3 id="1-提示词优化"><a href="#1-提示词优化" class="headerlink" title="1.提示词优化"></a>1.提示词优化</h3><blockquote>
+<p>学习了prompt工程，主要的优化思路有（<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/QDzbfUkvSEalLxm3XX9rtA">参考连接</a>）：</p>
+<ol>
+<li>角色提示：“假设我是一个刚入行的电商买家”，类似这种可以将gpt带入角色，以该角色的视角进行输出</li>
+<li>思维链提示：让gpt一步一步进行思考，例如计算1+2+3，先让gpt算出1+2&#x3D;3，然后再去算3+3&#x3D;6，有了思维链能够使ai清晰思考路径，犯错的可能性降低</li>
+<li>思维树提示：跟上面的思维链比起来，思维树要考虑不同的分叉，在执行过程中要考虑不同的情况</li>
+<li>自一致性提示：将模型的温度升高，多次去执行一个问题，返回其中最高频率的答案。对于推荐词的场景不太适用，因为调用次数有限而且时延较大，被mentor否决。</li>
+<li>ReAct提示：用python的api进行调用，功能强大但用不了。<br>综合以上的方法，只有思维链可以作为优化。</li>
+</ol>
+</blockquote>
+<ol>
+<li>近似词：中译英</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String synonymsPrompt = MessageFormat.format(&quot;与\&quot;&#123;0&#125;\&quot;意思相近的产品有哪些，</span><br><span class="line">        请用&#123;1&#125;列举10个产品名。要求不包含\&quot;&#123;0&#125;\&quot;，</span><br><span class="line">        输出格式为：jsonArray&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">String synonymsPrompt = MessageFormat.format(&quot;What are the products with the similar meaning of \&quot;&#123;0&#125;\&quot;,\n&quot; +</span><br><span class="line">        &quot;Please list 10 product names in &#123;1&#125;. My request is not to include \&quot;&#123;0&#125;\&quot;,\n&quot; +</span><br><span class="line">        &quot;The output format is jsonArray&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>电商词：转为中文思维链</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String platformPrompt = MessageFormat.format(&quot;假设我是一个新入行的电商卖家，</span><br><span class="line">        主要经营的是\&quot;&#123;0&#125;\&quot;。我希望能有更多的用户在amazon.com等同类电商网站中搜索到我，</span><br><span class="line">        我可以使用怎样的&#123;1&#125;产品名对自己的产品进行描述？要求不包含\&quot;&#123;0&#125;\&quot;，</span><br><span class="line">        请去掉尽可能多的长尾词，提炼共同的产品描述词。帮我用&#123;2&#125;同义替换10个不同的产品描述。仅输出替换后的数据，</span><br><span class="line">        格式为：jsonArray&quot;, formatValue, language, language) + &quot;,[]&quot;;   </span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">String platformPrompt = MessageFormat.format(&quot;请按照如下提示一步步推理：\n&quot; +</span><br><span class="line">        &quot;第一步，请将产品\&quot;&#123;0&#125;\&quot;从品牌、型号、材料、用途等方面进行扩展，尽量细分且具体到某个品牌的某个产品。\n&quot; +</span><br><span class="line">        &quot;第二步，思考该产品在amazon.com等同类电商网站中显示给用户的商品词是什么。\n&quot; +</span><br><span class="line">        &quot;第三步，提取商品词中的关键信息，不允许出现品牌和型号，长度严格限制在30个字母以内。\n&quot; +</span><br><span class="line">        &quot;综合以上三步，仅用&#123;1&#125;输出十个这样的产品名，要求不包含\&quot;&#123;0&#125;\&quot;格式为：jsonArray,[]&quot;, formatValue, language) + &quot;,[]&quot;;</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>行业词：中译英</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">prompt = &quot;我是一个新入行的外贸供应商，主要经营的是&quot;+ formatValue +&quot;。我的产品可以应用于哪些行业的哪些产品？帮我列举3个行业，并描述推荐这些行业的理由，在每个行业下列举5个使用该产品制造出来的产品名称。\n&quot; +</span><br><span class="line">        &quot;用json输出，格式为：\n&quot; +</span><br><span class="line">        &quot;行业1\n&quot; +</span><br><span class="line">        &quot;行业名：xxx\n&quot; +</span><br><span class="line">        &quot;推荐理由：xxx\n&quot; +</span><br><span class="line">        &quot;相关产品：xxx\n&quot; +</span><br><span class="line">        &quot;要求：\n&quot; +</span><br><span class="line">        &quot;1、行业名称用&#123;&quot;+languageVersion+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;2、推荐理由用&#123;&quot;+languageVersion+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;3、相关产品用&#123;&quot;+language+&quot;&#125;。\n&quot; +</span><br><span class="line">        &quot;4、产品名称不能重复。\n&quot; +</span><br><span class="line">        &quot;5、产品名称不需要包含材质等限制。\n&quot; +</span><br><span class="line">        &quot;6、相关产品用#格开。&quot; +</span><br><span class="line">        &quot;7、不包含\&quot;&quot;+formatValue+&quot;\&quot;。&quot;;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">prompt = &quot;I am a new foreign trade supplier, the main business is \&quot;&quot;+formatValue+&quot;\&quot;. Which products can my product be used in which industries? Give me a list of 3 industries and describe the reasons why you recommend them, and list 5 names of products made with that product under each industry.\n&quot; +</span><br><span class="line">        &quot;Output in json format:\n&quot; +</span><br><span class="line">        &quot; 行业1\n&quot; +</span><br><span class="line">        &quot; 行业名：xxx\n&quot; +</span><br><span class="line">        &quot; 推荐理由：xxx\n&quot; +</span><br><span class="line">        &quot; 相关产品：xxx\n&quot; +</span><br><span class="line">        &quot;Requirement: \&quot;\n&quot; +</span><br><span class="line">        &quot;1. the industry name with &#123;&quot;+languageVersion+&quot;&#125;.\n&quot; +</span><br><span class="line">        &quot;2. recommended reasons use &#123;&quot;+languageVersion+&quot;+&#125;.\n&quot; +</span><br><span class="line">        &quot;3. Use &#123;&quot;+language+&quot;&#125; for related products.\n&quot; +</span><br><span class="line">        &quot;4. the product name can not be repeated.\n&quot; +</span><br><span class="line">        &quot;5. the product name does not need to include material and other restrictions.\n&quot; +</span><br><span class="line">        &quot;6. related products are delimited with #\n&quot; +</span><br><span class="line">        &quot;7. \&quot;&quot;+formatValue+&quot;\&quot; is not included.&quot;;</span><br></pre></td></tr></table></figure>
+
+<p>三个小小的优化耗费了我一周的时间，实际上也没多少提升。</p>
+<h3 id="2-代码逻辑"><a href="#2-代码逻辑" class="headerlink" title="2.代码逻辑"></a>2.代码逻辑</h3><h4 id="近似词和电商词"><a href="#近似词和电商词" class="headerlink" title="近似词和电商词"></a>近似词和电商词</h4><ul>
+<li>首先判断是否为空，或者是否为敏感词（调用网易易盾），随后传入用户信息，访问服务。</li>
+<li>服务内部：传入参数中语言为空默认为英语，然后用CompletableFuture.supplyAsync()搭配线程池完成gpt的两次请求。线程池如下：</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//线程工厂仅仅改名，拒绝策略是发起者自己消化</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ThreadFactory</span> <span class="variable">GPT_THREAD_FACTORY</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadFactoryBuilder</span>().setNameFormat(<span class="string">&quot;GptGrpcWrapper-gpt-pool-%d&quot;</span>).build();</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">GPT_REQUEST_EXECUTOR</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(<span class="number">20</span>,</span><br><span class="line">        <span class="number">40</span>, <span class="number">60</span> * <span class="number">5L</span>, TimeUnit.SECONDS, <span class="keyword">new</span> <span class="title class_">LinkedBlockingDeque</span>&lt;&gt;(<span class="number">3000</span>), GPT_THREAD_FACTORY, <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>.CallerRunsPolicy());</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>请求成功的结果缓存在redis中100天，缓存的key是”cacheKeyPreFix + “v6” + “:” + gptRecommendReqVO.getLanguage()+”:”+gptRecommendReqVO.getValue();”</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> Set&lt;String&gt; <span class="title function_">getRecommendWordV1</span><span class="params">(GptRecommendReqVO gptRecommendReqVO, AuthInfo authInfo, String prompt, String cacheKeyPreFix)</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">cacheValue</span> <span class="operator">=</span> <span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(gptRecommendReqVO.getValue())) &#123;</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="type">String</span> <span class="variable">formatValue</span> <span class="operator">=</span> FormatUtil.escapeFormat(gptRecommendReqVO.getValue());</span><br><span class="line">        <span class="keyword">if</span>(StringUtils.isBlank(formatValue) || formatValue.length()&lt;=<span class="number">1</span>)&#123;</span><br><span class="line">            log.info(<span class="string">&quot;GptGrpcWrapper value:&#123;&#125;,formatValue:&#123;&#125;&quot;</span>,gptRecommendReqVO.getValue(),formatValue);</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span>(gptRecommendReqVO.getLanguage()==<span class="literal">null</span>)&#123;</span><br><span class="line">            gptRecommendReqVO.setLanguage(<span class="string">&quot;英语&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">language</span> <span class="operator">=</span> gptRecommendReqVO.getLanguage();</span><br><span class="line">        <span class="type">String</span> <span class="variable">cacheKey</span> <span class="operator">=</span> cacheKeyPreFix + <span class="string">&quot;v6&quot;</span> + <span class="string">&quot;:&quot;</span> + gptRecommendReqVO.getLanguage()+<span class="string">&quot;:&quot;</span>+gptRecommendReqVO.getValue();</span><br><span class="line">        cacheValue = recommendWordCache.get(cacheKey);</span><br><span class="line">        <span class="comment">//命中</span></span><br><span class="line">        <span class="keyword">if</span>(StringUtils.isNotBlank(cacheValue))&#123;</span><br><span class="line">            log.info(<span class="string">&quot;GptGrpcWrapper call success,param:&#123;&#125;,result:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),cacheValue);</span><br><span class="line">            <span class="comment">//大段文字中的[&quot;xxx1&quot;,&quot;xxx2&quot;,&quot;xxx3&quot;]</span></span><br><span class="line">            <span class="keyword">if</span>(cacheValue.contains(<span class="string">&quot;[&quot;</span>) &amp;&amp; cacheValue.contains(<span class="string">&quot;]&quot;</span>))&#123;</span><br><span class="line">                cacheValue = cacheValue.substring(cacheValue.indexOf(<span class="string">&quot;[&quot;</span>), cacheValue.lastIndexOf(<span class="string">&quot;]&quot;</span>) + <span class="number">1</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//只取前6个，这个数值是前端定的</span></span><br><span class="line">            Set&lt;String&gt; synonyms = getLimitSize(Lists.newArrayList(JSON.parseArray(cacheValue, String.class)), gptRecommendReqVO.getSize());</span><br><span class="line">            <span class="keyword">return</span> synonyms;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//未命中</span></span><br><span class="line">        log.info(<span class="string">&quot;GptGrpcWrapper call param:&#123;&#125;,prompt:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),prompt);</span><br><span class="line">        CompletableFuture&lt;String&gt; future = CompletableFuture.supplyAsync(</span><br><span class="line">                () -&gt; gptRequest(authInfo.getOrgId(),authInfo.getAccId(),authInfo.getEmail(),prompt, GPTModelVersionEnum.GPT_4O_MINI.getVersion()), GPT_REQUEST_EXECUTOR);</span><br><span class="line">        <span class="comment">//这里实际上还是同步请求，&quot;gpt-recommard-future&quot;是一个日志的名称，超时时间120s</span></span><br><span class="line">        <span class="type">String</span> <span class="variable">res</span> <span class="operator">=</span> (String)FutureResultUtil.getResult(<span class="string">&quot;gpt-recommard-future&quot;</span>,future,<span class="number">120</span>, TimeUnit.SECONDS);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isBlank(res)) &#123;</span><br><span class="line">            log.info(<span class="string">&quot;getRecommend failed.name:&#123;&#125;,language:&#123;&#125;&quot;</span>,formatValue, language);</span><br><span class="line">            <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">        &#125;</span><br><span class="line">        cacheValue = res;</span><br><span class="line">        <span class="comment">// 推荐词缓存100天</span></span><br><span class="line">        recommendWordCache.set(cacheKey,cacheValue,TimeUnit.DAYS.toMillis(<span class="number">100</span>));</span><br><span class="line">        log.info(<span class="string">&quot;GptGrpcWrapper call success,param:&#123;&#125;,result:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO),cacheValue);</span><br><span class="line">        <span class="keyword">if</span>(cacheValue.contains(<span class="string">&quot;[&quot;</span>) &amp;&amp; cacheValue.contains(<span class="string">&quot;]&quot;</span>))&#123;</span><br><span class="line">            cacheValue = cacheValue.substring(cacheValue.indexOf(<span class="string">&quot;[&quot;</span>), cacheValue.lastIndexOf(<span class="string">&quot;]&quot;</span>) + <span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        Set&lt;String&gt; synonyms = getLimitSize(Lists.newArrayList(JSON.parseArray(cacheValue, String.class)), gptRecommendReqVO.getSize());</span><br><span class="line">        <span class="keyword">return</span> synonyms;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="comment">//gpt出的词如果不常规。例如是“好的，接下来为您输出....”，在JSON.parseArray就会报异常不返回给前端。</span></span><br><span class="line">        log.error(<span class="string">&quot;getGptRecommend param:&#123;&#125;&quot;</span>,JSON.toJSONString(gptRecommendReqVO), e);</span><br><span class="line">        <span class="keyword">return</span> Collections.emptySet();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ol>
+<li>redis只存gpt原始回答，可以改成处理后的回答</li>
+<li>线程池实际上只将近似词和电商词做了异步，在这两个单独的请求里面用future实际还是同步。</li>
+<li>gpt如果输出不理想有两重处理，首先看是否包含了”[“xxx1”,”xxx2”,”xxx3”]”，用subString提取出来，实在是没有那在parseObject就会报错，结果返回为空。</li>
+</ol>
+</blockquote>
+<ul>
+<li>最后处理近似词和电商词的结果，用一个大的hashset去重（但是大小写敏感，这里可以优化成全部小写再比较）</li>
+<li>调用GRPC（有道翻译）兜底，先判断是否出现中文，有中文就翻译。批量翻译返回值是map，key是原文，value是翻译后的。最后进行组装返回。</li>
+</ul>
+<p><strong>总结：调用易盾进行敏感词检测，线程池+CompletableFuture完成两次gpt查询，gpt查询做了一系列异常处理，在redis中缓存100天，最后调用有道翻译的grpc进行兜底。</strong></p>
+<h4 id="行业词"><a href="#行业词" class="headerlink" title="行业词"></a>行业词</h4><ul>
+<li>首先判断是否为空，或者是否为敏感词（调用网易易盾），随后传入用户信息，访问服务。</li>
+<li>服务内部：处理逻辑跟上文类似，在redis中存储gpt原始回答，但是由于输出的是json，相比于近似词和行业词的数组，这里有改变。</li>
+<li>去除”```json”和”```“这类md语法，再根据”行业一，二，三”json形式包装。</li>
+<li>这里要做一些异常处理以增加可用性和鲁棒性，虽然提示词里面写的是用”#“隔开，但是实际上可能返回的还是”,”或者”、”，用一个函数对其进行拆分。</li>
+<li>最后调用有道翻译兜底。</li>
+</ul>
+<h2 id="需求6：订阅更新任务"><a href="#需求6：订阅更新任务" class="headerlink" title="需求6：订阅更新任务"></a>需求6：订阅更新任务</h2><p>订阅更新链路：</p>
+<ol>
+<li>用户前端点击页面就会更新订阅公司的watchTime字段，一天之内只更新一次。</li>
+<li>xxljob每周扫库，搜索的是订阅公司的那个表，将watchTime在前一周的公司发送kafka（自增id而不是公司id）</li>
+<li>kafka消费者拿到这些id去数据库找对应的公司，将订阅公司表项和公司实体项（从es来的，如果前者有companyId就直接查询，如果没有就需要根据名字和地区来查询并保存）作为参数传分别分析<strong>facebook信息，facebook提及信息，海关信息，联系人信息</strong>，开了一个线程池并行处理这些。</li>
+</ol>
+<h3 id="1-facebook信息"><a href="#1-facebook信息" class="headerlink" title="1.facebook信息"></a>1.facebook信息</h3><p>代码太长了，梳理一下就这几部分：</p>
+<ol>
+<li>根据公司实体中的相关facebook链接去请求GRPC接口，返回facebook实体，其中包含个人信息，点赞数量，最近推文等信息。</li>
+<li>从这里开始要注意逻辑，比对的是<strong>GRPC请求来的数据</strong>和<strong>当前数据库中最新的log</strong>。</li>
+<li>去数据库中查询7种type的log，先全部查出来，然后再通过stream和sort得到最近时间的log。</li>
+<li>将这些log分别与GRPC请求来的数据进行比较，例如判断facebook是否更新了，将最近的一条相关log的内容拉出来与GRPC请求来的数据进行比较，如果不一样就需要更新，在库里面新增一条。</li>
+</ol>
+<blockquote>
+<ol>
+<li>facebook地址初始化&#x2F;变更</li>
+<li>facebook邮箱初始化&#x2F;变更</li>
+<li>facebook网站地址初始化&#x2F;变更</li>
+<li>facebook电话初始化&#x2F;变更</li>
+<li>facebook点赞、关注初始化</li>
+<li>facebook中发布了新帖子</li>
+<li>facebook获得1个新评论</li>
+</ol>
+</blockquote>
+<h3 id="2-facebook提及信息"><a href="#2-facebook提及信息" class="headerlink" title="2.facebook提及信息"></a>2.facebook提及信息</h3><ol>
+<li>类似上面的，提及消息也是从GRPC来的，如果返回为null直接返回，这里是一个list，只关注最新的，所以也有stream+sort。</li>
+<li>去数据库查询当前最新的log，主要关注的是这个记录的createTime。</li>
+<li>如果数据库没有，那就说明是最新更新的，向数据库插入一条新的log表明有被提及，直接返回。</li>
+<li>如果数据库有但log的时间比GRPC来的早，说明有新提及，进行更新。</li>
+</ol>
+<h3 id="3-海关信息"><a href="#3-海关信息" class="headerlink" title="3.海关信息"></a>3.海关信息</h3><ol>
+<li>将公司名称格式化，随后去海关数据里面查找新增进出口数据，分别放在两个list里面。</li>
+<li>如果有进出口就分别新增log。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">customProcess</span><span class="params">(TbGlobalCollectEntity record, CompanySearchBO companyBO, Date startDate, Date endDate)</span> &#123;</span><br><span class="line">    <span class="comment">//海关那边的统一格式&quot;CompanyName-COMBINE-TANZANIA&quot;例如&quot;101 INVESTMENT-COMBINE-TANZANIA&quot;</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">nameAndCountry</span> <span class="operator">=</span> CompanyFormatUtils.combineCompanyNameAndCountry(companyBO.getName(), companyBO.getCountry());</span><br><span class="line">    <span class="comment">//去取出昨天的新增hscode，这个表主要是海关系统在维护</span></span><br><span class="line">    Map&lt;String, CustomInfoBO&gt; map = customDataComponent.batchGetCompanyNewTrxHscode(Lists.newArrayList(nameAndCountry), startDate, endDate);</span><br><span class="line">    List&lt;TbGlobalCollectLogEntity&gt; tbGlobalCollectLogEntities = Lists.newArrayList();</span><br><span class="line">    <span class="keyword">if</span>(map.containsKey(nameAndCountry))&#123;</span><br><span class="line">        <span class="type">CustomInfoBO</span> <span class="variable">customInfoBO</span> <span class="operator">=</span> map.get(nameAndCountry);</span><br><span class="line">        <span class="comment">//出口</span></span><br><span class="line">        <span class="keyword">if</span>(!CollectionUtils.isEmpty(customInfoBO.getExportHsCodeList()))&#123;</span><br><span class="line">            <span class="type">TbGlobalCollectLogEntity</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TbGlobalCollectLogEntity</span>();</span><br><span class="line">            t.setCollectId(record.getId());</span><br><span class="line">            t.setLogDesc(<span class="string">&quot;新供应了hscode为&quot;</span> + Strings.join(customInfoBO.getExportHsCodeList(), <span class="string">&quot;,&quot;</span>) + <span class="string">&quot;等的商品&quot;</span>);</span><br><span class="line">            t.setContent(JSON.toJSONString(customInfoBO.getExportHsCodeList()));</span><br><span class="line">            t.setType(CollectLogTypeEnum.CUSTOM_SHN.getType());</span><br><span class="line">            t.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setInit12(<span class="number">0</span>);</span><br><span class="line">            tbGlobalCollectLogEntities.add(t);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//进口</span></span><br><span class="line">        <span class="keyword">if</span>(!CollectionUtils.isEmpty(customInfoBO.getImportHsCodeList()))&#123;</span><br><span class="line">            <span class="type">TbGlobalCollectLogEntity</span> <span class="variable">t</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TbGlobalCollectLogEntity</span>();</span><br><span class="line">            t.setCollectId(record.getId());</span><br><span class="line">            t.setLogDesc(<span class="string">&quot;新采购了hscode为&quot;</span> + Strings.join(customInfoBO.getImportHsCodeList(), <span class="string">&quot;,&quot;</span>) + <span class="string">&quot;等的商品&quot;</span>);</span><br><span class="line">            t.setContent(JSON.toJSONString(customInfoBO.getImportHsCodeList()));</span><br><span class="line">            t.setType(CollectLogTypeEnum.CUSTOM_CON.getType());</span><br><span class="line">            t.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            t.setInit12(<span class="number">0</span>);</span><br><span class="line">            tbGlobalCollectLogEntities.add(t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span>(!CollectionUtils.isEmpty(tbGlobalCollectLogEntities))&#123;</span><br><span class="line">        tbGlobalCollectLogEntityService.saveAll(tbGlobalCollectLogEntities);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-联系人信息"><a href="#4-联系人信息" class="headerlink" title="4.联系人信息"></a>4.联系人信息</h3>
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2024/12/05/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week3/">网易牛马日志-week3</a>
       
     </h1>
@@ -1044,285 +1179,6 @@
 <li>在shard中并行查找segment</li>
 <li>segment根据倒排索引找到对应句子的id返回</li>
 <li>再去根据id进行回表，找到句子返回</li>
-</ol>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/09/22/Mysql%E9%9D%A2%E8%AF%95%E7%AF%87/">Mysql面试篇</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-09-22
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h2 id="Mysql的数据结构"><a href="#Mysql的数据结构" class="headerlink" title="Mysql的数据结构"></a>Mysql的数据结构</h2><ul>
-<li>数字型：整型（tinyint,smallint,int,bigint），浮点型（float,double），定点型（decimal）</li>
-<li>字符串：char，varchar，tinytext，text，mediumtext，longtext，tinyblob，blob，mediumblob，longblob</li>
-<li>日期：date，timestamp</li>
-</ul>
-<blockquote>
-<p>定点型是指定小数点后几位的。char是定长的，varchar是可变的，一般设计的是最大长度。如果超过长度char是需要修改表结构的。而且相同字符串在存储层面两者是相同的。但是varchar内存占用稍高，某些高级操作是需要遍历。</p>
-</blockquote>
-<h2 id="Mysql查询流程"><a href="#Mysql查询流程" class="headerlink" title="Mysql查询流程"></a>Mysql查询流程</h2><ol>
-<li>连接器：连接客户端的http请求，校验用户名密码</li>
-<li>查询缓存，如果缓存里面有就直接返回（这里在8版本就废弃了，因为命中率实在太低了）</li>
-<li>词法分析语法分析</li>
-<li>执行器：包括预处理，例如将*换成表的字段；优化器，选择效率较高的执行计划执行，能用索引就不用全表扫描；执行器，执行sql然后返回结果给客户端</li>
-</ol>
-<h2 id="InnoDB和MyISAM"><a href="#InnoDB和MyISAM" class="headerlink" title="InnoDB和MyISAM"></a>InnoDB和MyISAM</h2><ol>
-<li>事务</li>
-<li>行级锁</li>
-<li>索引</li>
-<li>支持外键</li>
-<li>崩溃恢复redolog</li>
-</ol>
-<h2 id="InnoDB的存储形式"><a href="#InnoDB的存储形式" class="headerlink" title="InnoDB的存储形式"></a>InnoDB的存储形式</h2><p>众所周知InnoDB存储数据的数据结构是B+树，其中树的节点就是数据页。</p>
-<p>数据页内部：</p>
-<p>一个数据页上会有多条记录，对应着实际的记录。在数据页内部是按照主键id顺序排列的。除此之外还有一个页目录，将顺序排列的某些记录归为一个槽。例如一个数据页有12345，可能12是一个槽，345是另一个，槽只保存最大的那个节点。当搜索的时候，比如我要搜索4，由于4大于12这个页的最大值2，所以会在345里面搜索。这个时候需要遍历的成本就低很多了。一般来说槽只会包含不超过8条记录。使用二分法找到这个槽，然后在在这个槽进行遍历。页目录只是为了加快在页内的查找速度。实际上每一个页里面记录也是通过链表串起来的。对外只会暴露当前页主键最大值和最小值。方便b+树的查找。</p>
-<p>B+树：</p>
-<p>b+树与b树的不同点在于，b+只有底层真正存储数据，b树在非叶子节点也会存储数据。而且b+底层是一个双向链表，可以方便进行范围查询。对于innoDB而言，为索引节点还是数据节点根据页头的某个字段决定。索引节点中存储着下一个表对应的最小主键。我们可以把查找一次当作一次io，由于索引节点能存储的数据是很多的，千万级别的数据最多也不过三四层，也就是说io次数会很小。b+树的缺点是会由于添加数据导致分裂，影响性能。</p>
-<blockquote>
-<p>InnoDB默认得要一个索引，可以不显式的给出，但是背后隐藏列会默认出一个索引作为数据页的排序参照</p>
-</blockquote>
-<h2 id="为什么用B-树而不是B树，红黑树或者跳表"><a href="#为什么用B-树而不是B树，红黑树或者跳表" class="headerlink" title="为什么用B+树而不是B树，红黑树或者跳表"></a>为什么用B+树而不是B树，红黑树或者跳表</h2><ul>
-<li>b树：由于非叶子节点也会存储数据，那么就没有b+树存储数据多。查询的效率也不稳定，可能在非底层就查询到数据了。而且不是双向链表，范围查询做不到</li>
-<li>红黑树：也是二叉树，io次数肯定比b+树多，跳表同理</li>
-<li>哈希表：不支持范围查询，这同样是redis为什么用跳表而不是哈希表的理由</li>
-</ul>
-<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引是为了加快搜索而建立的数据结构</p>
-<ul>
-<li>按照数据结构划分：B+树索引，Hash索引</li>
-<li>物理存储划分：聚簇索引（叶子节点是数据），非聚簇索引（叶子节点存的是主键id，后续还要回表去聚簇索引找）</li>
-<li>字段特性：主键索引，唯一索引（建立在唯一字段上的索引），普通索引，前缀索引（查电话号码）</li>
-</ul>
-<blockquote>
-<p>唯一索引：create unique index index_name on table(index_column_1)</p>
-<p>普通索引：create index index_name on table(index_column_1)</p>
-<p>前缀索引：create index index_name on table(length(index_column_1))</p>
-</blockquote>
-<ul>
-<li>字段个数：单列索引，联合索引</li>
-</ul>
-<blockquote>
-<p>联合索引：create index index_name on table(index_column_1,index_column_2)</p>
-</blockquote>
-<h2 id="联合索引范围查询"><a href="#联合索引范围查询" class="headerlink" title="联合索引范围查询"></a>联合索引范围查询</h2><p><strong>select * from t_table where a &gt; 1 and b &#x3D; 1</strong></p>
-<p>这里只会用到a一个索引，因为只有a能缩小范围，b是无序的，无法缩小范围。如果没有索引下推只能一个个回表通过b进行筛选</p>
-<p><strong>select * from t_table where a &gt;&#x3D; 1 and b &#x3D; 1</strong></p>
-<p>这里会用到两个索引，因为a&#x3D;1的时候b是有序的，b能够缩小范围</p>
-<p><strong>select * from t_table where a between 1 and 2 and b &#x3D; 1</strong></p>
-<p>mysql中between是左闭右闭区间，所以两个都能用</p>
-<p><strong>select * from t_table where a like ‘m%’ and b &#x3D; 1</strong></p>
-<p>mysql中between是左闭区间，所以b也能用</p>
-<h2 id="索引失效场景"><a href="#索引失效场景" class="headerlink" title="索引失效场景"></a>索引失效场景</h2><blockquote>
-<p>什么时候无法使用索引？就是通过某些手段找不到原先的顺序了</p>
-</blockquote>
-<ul>
-<li>左或左右模糊匹配：例如%like和%like%，索引在这个字段上是根据最左匹配的，如果第一个字符都不知道，那后续的就是无序的了</li>
-<li>对索引使用函数：例如count()某个索引，这个时候也是走不了的，因为count不是一个索引</li>
-<li>对索引进行表达式计算：只要是在等号左边的也用不了，mysql没做这部分优化</li>
-<li>对索引隐式类型转换：在mysql中字符串会自动变成数字进行比较，索引当索引为字符串，而查询的时候用id&#x3D;1来比较，会自动类型转换，相当于索引使用了隐式函数变成数字于查询条件进行比较</li>
-<li>联合索引非最左匹配：联合索引（a,b,c）如果查询条件只有b，c，就不会走索引。但是如果是ac还是可以走a的索引，如果有索引下推的话在二级索引可以通过判断c减少回表次数；如果没有就只能用a减少判断，最后回到server也就是索引是id的那个表中一个个判断c，这样会有很多回表</li>
-<li>where子句中的or：如果只有一个条件是有索引，那就会失效，因为在or条件下只用满足一个就可以了</li>
-</ul>
-<h2 id="Mysql事务"><a href="#Mysql事务" class="headerlink" title="Mysql事务"></a>Mysql事务</h2><p>首先是事务的ACID四个特性：</p>
-<ul>
-<li>原子性：事务内的东西是同时完成或者同时取消的。innodb的事务可以做到，redis的事务就没有原子性。</li>
-<li>一致性：事务完成前后，由一个一致的状态转移到另一个一致的状态。例如银行转账两个账户600+800，转账后总数是不能变的</li>
-<li>隔离性：并发导致的事务之间应该隔离，一个人购买商品的事务不应该影响另一个人的购买</li>
-<li>持久性：持久化下来，掉电也不会丢失</li>
-</ul>
-<p>InnoDB的持久性是通过redolog完成的，原子性是undolog，隔离性是MVCC完成的，一致性是上面三者都完成后就会保证一致性。</p>
-<h2 id="事务隔离级别"><a href="#事务隔离级别" class="headerlink" title="事务隔离级别"></a>事务隔离级别</h2><ul>
-<li>脏读：一个事务还没有提交，别的事务就能看到它的修改了。例如事务1修改了余额，事务2读取了这部分，但是事务1触发回滚，这就导致事务2读到了脏数据。</li>
-<li>不可重复读：在一个事务内读取两次数据，两次数据读取的不一样。这通常是由于另一个事务的提交，这个数据对于其他事务都是可见的（有点像volatile）</li>
-<li>幻读： 查询数量，事务内前后查询两次不一致，像发生了幻觉</li>
-</ul>
-<p>事务隔离级别：</p>
-<ul>
-<li>读未提交：</li>
-<li>读提交：解决脏读</li>
-<li>可重复读：解决脏读+不可重复读</li>
-<li>串行化：解决幻读+不可重复读+幻读</li>
-</ul>
-<h2 id="MVCC（多版本并发控制）"><a href="#MVCC（多版本并发控制）" class="headerlink" title="MVCC（多版本并发控制）"></a>MVCC（多版本并发控制）</h2><p>在前面讲的记录中有两个隐藏字段：添加该条记录的事务id和指向上一个版本undolog指针。MVCC是依靠这两个字段完成的，更新数据时会在数据页中替换新的记录，然后将旧的记录作为指针保存下来，这时所有的版本都连成一条链，包含了当时进行更新的事务id。</p>
-<p>MVCC提供了ReadView这个数据结构，由于事务id是顺序递增的，ReadView将事务id分为三个部分，已经提交的事务，正在进行的事务和没有发生的事务。已经提交的事务是有访问权的，正在运行的事务是不允许查看的，此时如果发生并发现象，查询数据的时候会根据这三个范围和当前全部的事务id进行过滤，这样就能避免读到还没有提交事务的数据。从而解决了脏读问题</p>
-<p><strong>MVCC是如何解决不可重复读的</strong></p>
-<p>主要是ReadView生成的时机问题，如果每一次快照读都生成一个ReadView，有可能在两次快照读期间有别的事务提交了，这两次的ReadView范围就会不一样，还是会发生不可重复读。但是如果在事务刚开始的时候就生成ReadView，就能保证执行下来的可见性，即使在第二次读之前，在readview中的那个事务提交了，还能保证接下来的读操作不可见这个数据。</p>
-<p><strong>MVCC解决了幻读吗</strong></p>
-<p>在默认隔离级别下的innoDB很大程度能够避免幻读，范围查询也需要看版本号。在某些情况下还是能出现幻读，例如当前没有s&#x3D;5的数据，此时进行查询是没有的，另一个事务添加了这条数据，此时事务id在readview里面，是不允许访问的。但是原来事务又更新了这条数据，现在事务id是自己的了。下次查询的时候就会查询出来。（虽然更新一条不存在的数据逻辑上很诡异）</p>
-<p>需要通过间隙锁才能解决幻读，也就是锁住一段范围内的，其他事务添加这段范围内的数据就会被阻塞。</p>
-<h2 id="redolog"><a href="#redolog" class="headerlink" title="redolog"></a>redolog</h2><p>前面所讲的数据库事务的ACID中，持久性就是由redolog保证的。mysql在更新的时候先写redolog，然后再在合适的实际将redolog真正写在数据页上。首先读取操作的时候不会每次都从磁盘io，会缓存在buffer pool中，那么写操作也会在buffer pool中操作，此时就变成了一个脏页。redolog的左右就是把这个脏页的操作记录并持久化下来，这个过程是比刷数据页要快的，很多时候查询的并不是顺序读，有可能在很多数据页上。</p>
-<p><strong>刷盘时机:</strong></p>
-<p>redolog也是有缓冲区的，把buffer pool中的修改保存在redolog缓存区中，然后再在合适的时机刷盘，一般有以下几个时机：</p>
-<ul>
-<li>mysql正常关闭</li>
-<li>后台线程会每隔1s刷盘</li>
-<li>当缓冲区满了一半就触发</li>
-<li>根据刷盘策略</li>
-</ul>
-<p>刷盘策略有以下三种：</p>
-<ul>
-<li>每次事务提交只写在缓冲区中，但是如果在1s内掉电，redolog buffer就会没有了，这种策略可能会掉最多1s的数据</li>
-<li>每次事务提交直接写磁盘，效率较低，但是安全</li>
-<li>每次事务提交给操作系统的page cache，交给操作系统写。这种情况如果mysql停机了还是能写，因为操作系统没有停止，但是如果掉点了还是会丢1s的数据，算是上面两种的一个折中。</li>
-</ul>
-<div style="text-align: center;">
-  <img src="../img/Mysql/img_16.png" alt="" />
-</div>
-
-<p><strong>日志文件组：</strong></p>
-<p>redolog不是一个文件，而是多个文件，这些文件按照环形存储，会覆盖。头指针是checkpoint，尾指针是write pos。每次有缓冲区来的数据就移动pos。如果mysql进行了redolog到数据块的持久化，checkpoint就往后移动。</p>
-<p>如果这个环形文件满了，就需要阻塞mysql，进行部分redolog到数据页的操作。</p>
-<p><strong>总结：</strong></p>
-<p>redolog保证了mysql的持久性，这种操作比直接修改数据页要高效，由于直接修改数据页可能会存在随机写的情况，而redolog是追加写，就好像每次找东西随机写就是看目录找书页，而追加就是往后翻一页。</p>
-<p>然而redolog在某些策略下也不是万无一失的，因为redolog也是有缓存的，如果没有及时写在磁盘里就会丢失1s的数据。</p>
-<blockquote>
-<p>由此可见redolog和真正存在数据页中还有一段时间差，那这个时候来了一个读请求，怎么保证一致性？<br>会在buffer pool找，而不是直接去磁盘找，本来redolog就是为了存buffer pool的脏页的，是内存同步到外存，</p>
-</blockquote>
-<h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><p>binlog是解决主从同步的一种日志形式，只记录写操作，select和show是不记录的。有三种格式形式：</p>
-<ul>
-<li>statement：只记录更新的语句，不管前后状态，一般存储的数据量较小</li>
-<li>row：不光记录更新的具体语句，更新前后的状态也保存，一般用在需要计算的sql语句，例如now()，用第一种方式就会造成数据不一致，第二种会保存在主机上面的结果。当然存储的数据量会更大</li>
-<li>mix：根据具体sql的形式选取策略，例如正常sql就用statement，涉及到计算的就用row</li>
-</ul>
-<p><strong>刷盘方式：</strong></p>
-<p>与redolog类似，也有一个缓冲区，但是binlog的缓冲区线程之间是独立的，最终都要写进磁盘。</p>
-<ul>
-<li>0：不同线程的binlog buffer写到page cache里面，由操作系统写回</li>
-<li>1：直接写到磁盘</li>
-<li>n：n个线程的binlog buffer写到page cache后触发一次写到磁盘。掉电就丢失n个线程的数据</li>
-</ul>
-<h2 id="binlog就够了为什么还需要redolog"><a href="#binlog就够了为什么还需要redolog" class="headerlink" title="binlog就够了为什么还需要redolog"></a>binlog就够了为什么还需要redolog</h2><p>binlog主要负责主从同步，redolog负责恢复数据库。一个是外部机制，一个是内部机制，两者独立但是互补，服务于不同的需求。</p>
-<h2 id="两阶段提交"><a href="#两阶段提交" class="headerlink" title="两阶段提交"></a>两阶段提交</h2><p>如果在binlog和redolog之间出现问题就会导致数据不一致。所以需要两阶段提交</p>
-<div style="text-align: center;">
-  <img src="../img/Mysql/img_17.png" alt="" />
-</div>
-
-<p>写redo的时候设置为prepare，等到binlog写完了才设置为commit状态。mysql认为binlog写完了就是一个事务结束，即便没有再设置redolog的状态。</p>
-<p>例如在写完redolog时宕机，binlog没有写，这个时候就会触发回滚；但是写完了binlog宕机了，redolog没有被改变为commit，还是会被认为事务提交了</p>
-<p><strong>存在什么问题：</strong></p>
-<ul>
-<li>多线程下需要原子性</li>
-<li>如果是“双1配置”，一个事务io两次</li>
-</ul>
-<h2 id="Mysql的锁"><a href="#Mysql的锁" class="headerlink" title="Mysql的锁"></a>Mysql的锁</h2><ol>
-<li>数据库锁：只有在进行数据库备份或者迁移的时候才会用</li>
-<li>表级锁：表级读锁写锁，读写意向锁，自增锁，元数据锁</li>
-</ol>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>X</th>
-<th>IX</th>
-<th>S</th>
-<th>IS</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>X</td>
-<td>不兼容</td>
-<td>不兼容</td>
-<td>不兼容</td>
-<td>不兼容</td>
-</tr>
-<tr>
-<td>IX</td>
-<td>不兼容</td>
-<td>兼容</td>
-<td>不兼容</td>
-<td>兼容</td>
-</tr>
-<tr>
-<td>S</td>
-<td>不兼容</td>
-<td>不兼容</td>
-<td>兼容</td>
-<td>兼容</td>
-</tr>
-<tr>
-<td>IS</td>
-<td>不兼容</td>
-<td>兼容</td>
-<td>兼容</td>
-<td>兼容</td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>解释一下：IX表示表内已经有行在进行X操作了，此时不允许全局上锁，所以全局X和S都不允许；全局X的条件是里面没有任何一个在进行读写操作，所以与所有都不兼容；IS和IX能兼容是因为都只是作为指示作用，IS和IX可能锁住的列不一样，他们的存在只能影响全局锁。<br>3. 行级锁：记录锁（锁住id&#x3D;1这条记录），间隔锁（锁住（2，5）区间的），临键锁（锁住（2,5]）</p>
-</blockquote>
-<h2 id="Mysql什么时候上锁"><a href="#Mysql什么时候上锁" class="headerlink" title="Mysql什么时候上锁"></a>Mysql什么时候上锁</h2><p>执行select for update或者update的时候，在事务执行范围内会上一个对当前事务有效的锁，一般锁的单位是<strong>临键锁</strong>，在某些情况下会退化成记录锁或者间隔锁。这一部分的提出正是为了解决。</p>
-<p><strong>唯一索引等值查询</strong></p>
-<ol>
-<li>select * from user where id &#x3D; 1 for update;如果有id&#x3D;1这条记录，临键锁就会退化为记录锁，只锁住当前这个id&#x3D;1，因为这样就不会有别的事务来进行更改避免不可重复读</li>
-<li>select * from user where id &#x3D; 1 for update；如果没有id&#x3D;1这条记录，就会退化为间隔锁，找到最近的两个区间例如（0，3）锁住这段，不允许添加数据避免幻读</li>
-</ol>
-<p><strong>唯一索引范围查询</strong></p>
-<ol>
-<li>select * from user where id &gt; 15 for update;如果有id&#x3D;20的记录，那就会加锁(15,20]，(20,INf]</li>
-<li>select * from user where id &gt;&#x3D; 15 for update;如果有id&#x3D;15，加锁15，(15,20]，(20,INf]</li>
-<li>select * from user where id &lt; 6 for update;如果有id&#x3D;1,5,10的记录，加锁(-INF,1],(1,5],(5,10)</li>
-<li>select * from user where id &lt;&#x3D; 5 for update;(-INF,1],(1,5]</li>
-</ol>
-<p><strong>非唯一索引等值查找</strong></p>
-<p>只用记住一点，非唯一索引是按照大小排序的，索引值相同再按照id升序排序。{(15,14),(25,20)}，锁住非唯一索引（15，25），如果新增的值在其中就不允许插入，如果&#x3D;15且id&gt;14也是不允许的，右边同理。</p>
-<h2 id="Mysql死锁"><a href="#Mysql死锁" class="headerlink" title="Mysql死锁"></a>Mysql死锁</h2><div style="text-align: center;">
-  <img src="../img/Mysql/img_18.png" alt="" />
-</div>
-
-<p>由于间隙锁是可以重复的，两边都锁住了不允许添加。</p>
-<h2 id="慢sql"><a href="#慢sql" class="headerlink" title="慢sql"></a>慢sql</h2><p><strong>产生慢sql的原因</strong></p>
-<ol>
-<li>索引未生效或者根本没有索引，导致全表扫描</li>
-<li>数据量太大了，加索引都不行。这个时候就要考虑分库分表了</li>
-<li>sql书写不当，过多的join操作或者子查询过多，子查询会产生一张新表；或者是深度分页；用了比较长的排序</li>
-<li>数据量比较大的时候，redolog满了，在更新checkpoint的时候会阻塞</li>
-<li>等待行级锁</li>
-</ol>
-<p><strong>如何发现慢sql</strong></p>
-<ol>
-<li>mysql自己可以开启慢sql查询日志，将查询时间大于1s的记录下来</li>
-<li>预防慢sql，做全局sql扫描。阿里的<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/LZRSQJufGRpRw6u4h_Uyww">这篇文章</a>提到了可以使用JVM的沙箱模型。相当于一个大的aop模型（值得一提的是gclib也是跟这个原理类似），通过在实例前后进行监听就可以无侵入式地录制HTTP&#x2F;Java&#x2F;Dubbo入参&#x2F;返回值，业务系统无感知。基于这个能力，我们可以方便的采集和SQL执行相关的Java方法参数以及返回值。通过配置采集点，来采集执行sql的java代码的相关方法、参数和返回值，辅助实现sql采集功能。</li>
-</ol>
-<p><strong>如何识别高危sql</strong></p>
-<ul>
-<li>不符合规范的sql：不允许使用外键，深度分页优化，子查找过多，有*</li>
-<li>用explain观察，row字段过多需要优化，type字段是否使用索引，extra是否有排序操作，以及是否索引下推，索引覆盖。</li>
-</ul>
-<h2 id="常见的sql优化手段"><a href="#常见的sql优化手段" class="headerlink" title="常见的sql优化手段"></a>常见的sql优化手段</h2><ol>
-<li>避免使用*：因为在查询的过程中还有一个预处理过程，可以自己写的就不要交给sql去查询，而且无法使用覆盖索引，也就是不用回表</li>
-<li>深度分页优化：比如有1000000页，查询这个页的时候就是深度分页了。可以用子表查询这个页的第一条记录，然后再去查比这个大的10条记录作为范围。有两个缺点，首先是id必须自增，其次是子表查询不推荐</li>
-<li>避免多join，避免使用外键</li>
-<li>优化慢sql</li>
-<li>正确使用索引：选择合适的字段创建索引（不为NULL的字段，频繁查找但是不是频繁增删的字段）；避免索引失效；考虑在字符串上建立前缀索引；避免冗余索引</li>
 </ol>
 
     
