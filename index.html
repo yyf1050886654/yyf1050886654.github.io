@@ -212,6 +212,261 @@
   <header class="post-header">
     <h1 class="post-title">
       
+      <a class="post-link" href="/2025/10/31/%E5%AE%9E%E4%B9%A02-0-%E9%A1%B9%E7%9B%AE%E6%80%BB%E7%BB%93/">实习2.0-项目总结</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-10-31
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h2 id="实习拷打"><a href="#实习拷打" class="headerlink" title="实习拷打"></a>实习拷打</h2><h3 id="项目介绍"><a href="#项目介绍" class="headerlink" title="项目介绍"></a>项目介绍</h3><p>网易外贸通是一个为外贸企业打造的一站式外贸营销平台，主要的功能包括数据获客，邮件营销，客户管理和订单追踪等。<br>我所在的组是做数据获客的，主要业务就是让用户能够通过我们的应用查到他的潜在客户。就比如一个想做服装贸易的就可以通过我们的数据找到对应的国外买家。<br>这一部分数据获取是多渠道的，我们通过海关每年的hscode，各种类似盘踞这些网站采购，以及一些爬虫技术拿到了大概六千万家公司数据。我们的业务一方面是搜索功能，所以我们数据层没用mysql多用的是es；<br>另一部分是数据层，多渠道去搜集这些公司作为我们的信息。</p>
+<h3 id="数据双向同步链路-落库"><a href="#数据双向同步链路-落库" class="headerlink" title="数据双向同步链路-落库"></a>数据双向同步链路-落库</h3><ol>
+<li>目的：我们这边是做数据的，另外一边算法组做的是域名行业分类，意思就是他们把域名对应的html通过某种模型预测一个行业标签，我们组展示需要这个tag，但是他们落库不在我们这边，于是就将这部分有tag的域名推送给我们，kafka消息里面传的是这个domain，但是具体的标签信息需要我们去请求grpc获取。</li>
+<li>解决方案：对于这部分工作我首先是给entity新增了关于域名分类的字段，然后写了一个kafka listener批量消费，grpc接口能够一次传50个域名然后返回50个对应的行业信息。</li>
+<li>遇到问题：由于grpc限流以及有可能域名查不到，会造成消息丢失。他那边grpc接口设置是1秒一次，因此我要保证他那边报错了消息重新消费。</li>
+<li>解决问题：两个set，一个全局set一个失败set，错误可能发生在kafka消费的时候、拿着所有50条去请求rpc接口的时候、rpc接口报错或者没有数据的时候、es更新的时候：<br>（1）kafka消费报错，这里是手动ack的，所以一旦没有消费成功offset也没偏移，一般不会出现这种情况。<br>（2）拿着50条数据请求rpc接口的时候：在消息消费的时候就组装了这两个set，如果这里出现问题，也能保证这50条不提交<br>（3）rpc接口报错或者没有数据的时候：例如限流了，此时也可以返回这50条；但如果返回有效需要清空这个失败set，按照实际他返回的数据再去组装，因为有可能这个域名他就是没有数据，允许一部分这种差异。<br>（4）es落库一条从这个失败set里面移除一条。<br>最终效果是推送了900w条数据，根据新增的这个recommend字段exist查询已落库数量，成功率接近100%，分析了一些差错case，原因基本上是动态问题，原本推送的某些域名后续调整他把字段删除了，因此rpc接口请求不到。</li>
+</ol>
+<h3 id="数据双向同步链路-推送"><a href="#数据双向同步链路-推送" class="headerlink" title="数据双向同步链路-推送"></a>数据双向同步链路-推送</h3><ol>
+<li>目的：我们数据组每天都会搜集域名，算法组需要这些增量数据，因此需要一个topic每天定时通过kafka发送新增域名</li>
+<li>解决方案：xxljob设置每天凌晨推送新增domain数据，根据createTime来看，然后深度分页用scrollSearch解决</li>
+<li>遇到问题：他这边没有createTime，只有updateTime，这就可能导致重复发送了，因此需要一个发送的tag，与mt商量后同意这种做法了</li>
+<li>解决问题：发送的时候同时给数据新增一个字段flag，查询的时候去看有没有这个字段，有并且又是昨天的就发送。</li>
+</ol>
+<h3 id="订阅更新任务"><a href="#订阅更新任务" class="headerlink" title="订阅更新任务"></a>订阅更新任务</h3><p>原本逻辑：每周每个账号订阅的公司消息进行处理和监听；<br>后来逻辑：增加一个watchTime字段，如果用户在这一周查看过这个订阅更新界面就刷新。<br>改造方法：查询接口crud这个字段，一天watchtime只更新一次。然后xxljob里面的执行器加一个这个过滤即可，然后将这些作为一个消息发送给kafka</p>
+<p>kafka消费者拿到这些id去数据库找对应的公司，将订阅公司表项和公司实体项（从es来的，如果前者有companyId就直接查询，如果没有就需要根据名字和地区来查询并保存）作为参数传分别分析facebook信息，facebook提及信息，海关信息，联系人信息，开了一个线程池并行处理这些。<br>原来这块是顺序的，因为本就是离线任务，触发的频率也不高，后续改成了线程池，用了异步编排，以便后续扩展</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">ExecutorService</span> <span class="variable">executor</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>(<span class="number">5</span>,</span><br><span class="line">            <span class="number">10</span>, <span class="number">60</span> * <span class="number">5L</span>, TimeUnit.SECONDS, <span class="keyword">new</span> <span class="title class_">LinkedBlockingDeque</span>&lt;&gt;(<span class="number">2000</span>), COLLECTMONITORCOMPONENT_SERVICE_THREAD_FACTORY, <span class="keyword">new</span> <span class="title class_">ThreadPoolExecutor</span>.CallerRunsPolicy());</span><br></pre></td></tr></table></figure>
+
+
+
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2025/10/31/%E8%99%9A%E6%8B%9F%E7%BA%BF%E7%A8%8B%E4%B8%8E%E5%8C%BA%E5%9D%97%E9%93%BE/">虚拟线程与区块链</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-10-31
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="虚拟线程"><a href="#虚拟线程" class="headerlink" title="虚拟线程"></a>虚拟线程</h1><p>虚拟线程是jdk19提出来的预览特性，jdk21转正。在以往的一对一线程模型中，虽然将进程划分为了线程，但是线程的粒度还是太大了，一个线程占1m，在高并发动不动几十万qps下，内存都不一定打的住。利用粒度更细的协程，可以将这部分开销继续缩小。</p>
+<h2 id="虚拟线程优点"><a href="#虚拟线程优点" class="headerlink" title="虚拟线程优点"></a>虚拟线程优点</h2><ol>
+<li>占据资源少，切换开销小：虚拟线程是一种用户级线程（绿色线程），不需要操作系统管理而是jvm管理。切换开销更小，可能只涉及jvm的堆空间。</li>
+<li>增大cpu的吞吐率，适合io密集型任务：在经典的线程模型中，线程在io时会让出cpu。如果每个线程都要io那么cpu的利用率就很低了，会导致资源耗尽的同时硬件资源没有充分利用。但是虚拟线程是运行在平台线程上的，一个虚拟线程io了可以切到另一个虚拟线程，但是平台线程是不会释放的。这样可以用粒度更低的开销更高效的利用线程资源。</li>
+<li>异步改同步，适合阻塞式io：io多路复用是通过一个线程来监听多个socket的状态，通过大量的异步回调实现，机制较为复杂；虚拟线程跟它解决的问题是一致的，都是解决如何增大并发量；但是虚拟线程不需要进行如此复杂的异步回调，用同步操作即可，如果一个线程在io阻塞，jvm无非就是把平台线程的资源切到另一个虚拟线程，免去了复杂的回调。</li>
+<li>更灵活：有个例子我觉得很形象。传统的线程模型可以理解为一排固定死的插座，虚拟线程模型就是插座连接的插排。你要修改插座是需要改墙体改布线的，对应os和cpu的关系，而且还存在就算插排插满了但是功率还上不去的现象；但是如果用虚拟线程也就是插排，你想要多点接口就换个更大的插排，这样你的功率也上去了，对电力的利用率也很高。</li>
+</ol>
+<h2 id="select-poll-epoll"><a href="#select-poll-epoll" class="headerlink" title="select&#x2F;poll&#x2F;epoll"></a>select&#x2F;poll&#x2F;epoll</h2><ol>
+<li>select: 每一个socket对应一个fd（文件描述符），用户态给内核态监听，最多长度1024，内核态通过循环的方式监听，一旦有io准备就绪就改变fd状态，然后传输给用户态的时候应用进程还需要遍历一边。也就是说既有长度限制，有需要遍历两次，效率较低。</li>
+<li>poll：用链表改变了1024这个数字，其余没区别。还是改变状态让用户态自己去遍历。</li>
+<li>epoll：将socket的文件描述符通过红黑树组织起来，查询效率从on变为ologn，此外将循环遍历变成事件回调，有复杂的事件注册函数。触发机制有水平触发和垂直触发，一旦回调函数说socket准备就绪，就把他放在一个队列里面等待返回用户态，水平触发是只要没读完就一直提醒用户态来读，垂直触发是只提醒一次，但是一次需要全部读完。</li>
+</ol>
+<h2 id="java虚拟线程和go的gmp协程模型"><a href="#java虚拟线程和go的gmp协程模型" class="headerlink" title="java虚拟线程和go的gmp协程模型"></a>java虚拟线程和go的gmp协程模型</h2><h3 id="gmp模型"><a href="#gmp模型" class="headerlink" title="gmp模型"></a>gmp模型</h3><ol>
+<li>g是goroutine，每次在调用go func的时候就会产生一个g，也可以理解为协程控制块；m是机器线程，对应了一个真实的被操作系统调度的线程；p是逻辑处理器，必须要一个g通过p绑定到m才可以运行，相当于一个上下文填充器。</li>
+<li>有两个队列：局部运行队列LRQ，每一个p都有一个这个队列，放等待该p作为中介给m运行的g；全局运行队列GRQ，分配尚未给LRQ的m</li>
+<li>gmp模型是通过调度的方式把g调度给线程，底层运行的还是线程，是一个M对N模型，这点与java是不同的，java的虚拟线程是通过jvm调度的，运行在平台线程上，而不是哪里线程空了就用哪个线程的资源。</li>
+<li>交接机制：如果一个m上的g在等待io，这个时候中介p挂到别的空闲m上让自己队列里面g使用。使得阻塞不会影响整体的调度。</li>
+<li>窃取机制：每个线程都是工贼，没有任务就要去别的LRQ里面偷，或者去GRQ中偷。<br><img src="/../img/golang/gmp/img.png"></li>
+</ol>
+<h3 id="虚拟线程调度模型"><a href="#虚拟线程调度模型" class="headerlink" title="虚拟线程调度模型"></a>虚拟线程调度模型</h3><ol>
+<li>Java 的虚拟线程由 Continuation（保存&#x2F;恢复执行栈）+ Scheduler（Executor） 实现：虚拟线程在运行时被 mount（挂载）到一个 carrier（承载，平台）线程 上执行；遇阻塞时会 yield（保存 continuation 并释放 carrier），阻塞完成或 unpark 时将 continuation 重新提交给 scheduler 以被某个 carrier 线程恢复执行。这个逻辑以 java.lang.VirtualThread + JVM&#x2F;HotSpot 的 continuation 支持 + JDK core libs 的调度器协作实现。</li>
+<li>虚拟线程也支持交接和窃取，这点是gmp学的</li>
+<li>注意虚拟线程使用synchronized会将虚拟线程pin住，因为这里synchronized是监视器锁，锁住的是线程，如果在虚拟线程用这个会把平台线程锁住，无法参与调度。一般并发低没事，高了就会将虚拟线程退化为平台线程。因此要控制同步操作使用基于jdk的reentrantlock好一点。<br><img src="/../img/golang/gmp/img_1.png"></li>
+</ol>
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1>
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
+      <a class="post-link" href="/2025/10/16/%E8%BD%AF%E8%80%83-%E5%9F%BA%E7%A1%80%E9%83%A8%E5%88%86/">软考-基础部分</a>
+      
+    </h1>
+
+    <div class="post-meta">
+      <span class="post-time">
+        2025-10-16
+      </span>
+      
+      
+      
+    </div>
+  </header>
+
+  
+
+  <div class="post-content">
+    
+    
+    
+
+    
+    <h1 id="系统架构设计"><a href="#系统架构设计" class="headerlink" title="系统架构设计"></a>系统架构设计</h1><h2 id="系统架构设计概述"><a href="#系统架构设计概述" class="headerlink" title="系统架构设计概述"></a>系统架构设计概述</h2><ol>
+<li>软件架构设计（Software Architecture）解决了需求分析和设计阶段之间的鸿沟，是需求分析与设计阶段的过渡阶段。一个好的系统架构，能够使得系统在面对灾难性错误时不会产生严重的故障。</li>
+<li>软件架构就是<strong>需求分配</strong>，将满足需求的职责分配到对应的组件上。</li>
+<li>软件架构是软件在结构、行为和属性的高层次抽象。主要由构件的描述、构件之间的联系关系（连接子）、系统继承的模式和一组约束构成。</li>
+<li>软件架构不仅规定了系统的组织架构和拓扑结构，还规定了组件与需求之间的映射关系。</li>
+<li>软件架构解决的核心问题是软件的复用、质量和维护。</li>
+<li>软件架构设计主要有以下三个活动：提出架构模型、进行架构设计、进行架构审核。其中架构设计主要关注软件架构的结构、属性和连接关系，并通过多视图全面描述特定模型的软件架构。</li>
+<li>软件架构在设计更改相对容易的阶段，便于技术人员和非技术人员进行交互，从而展现软件的结构、属性和交互关系。</li>
+<li>软件架构是可传递和可复用的模型。</li>
+</ol>
+<h2 id="软件架构和生命周期"><a href="#软件架构和生命周期" class="headerlink" title="软件架构和生命周期"></a>软件架构和生命周期</h2><ol>
+<li>需求分析阶段：传统的需求分析阶段主要产出的是问题空间，而软件架构在此阶段产生解空间。主要研究的问题是：如何将需求分析转化为软件架构SA；以及如何进行跟踪（包括正向跟踪和反向跟踪）</li>
+<li>设计阶段：主要有三个活动：软件架构的描述、对软件架构进行分析和设计、对产生的设计经验进行总结和复用。其中对SA的描述可以有三个层次：SA的基本描述、体系结构描述语言ADL，SA的多视图。</li>
+<li>实现阶段：软件架构的管理，可以使用项目管理工具；软件架构的实现，如何将SA过渡到具体实现，如何将SA的需求分配到对应构件上，可以采用程序设计语言的思想进行设计；软件架构的测试</li>
+<li>组装阶段：SA给予了一个更高层次的蓝图，主要研究构件之间如何相互关联，也就是连接子的实现；此外还要解决这些构件之间的失配问题，包括构件的失配、连接子的失配以及结构产生的失配问题。</li>
+<li>部署：SA可以为部署提供一个更好的解决方案</li>
+<li>后开发阶段：进行软件架构的演化、复用和维护</li>
+</ol>
+<h2 id="构件"><a href="#构件" class="headerlink" title="构件"></a>构件</h2><ol>
+<li>构件是一个可以独立部署并交付的功能单元，外界可以通过其接口进行访问。由多个原子构件构成，原子构件由模块和资源构成。原子构件是部署，版本控制和替换的基本单位，原子构件一般可以独立部署，但是不会独立部署。都是按照一组原子构件家族进行部署。</li>
+<li>模块是不带资源的原子构件，一个模块可以包含多个类进行打包。</li>
+<li>构件与对象的区别：构件的特征是可以独立部署且独立交付、作为第三方的组装单元，可以由第三方调用、对外隐藏自己状态；对象的特征是可以一个实例单元且有唯一标识、可以有自己的状态、对外进行封装。</li>
+<li>构件接口规定了构件之间通信的格式、模式和协议，使得接口之间传递消息更具有规范性和一致性。</li>
+<li>面向构件的编程一般要求具有：多态性（可以替换同接口的实现构件）、<strong>模块封装性（更高层次的隐藏）</strong>、独立部署性、安全性</li>
+<li>目前市面上的主流构件有以下三类：</li>
+</ol>
+<ul>
+<li>EJB（Enterprise Java Bean）是Sun公司提出的一种在Java平台的企业级构件模型，主要规定了三类构件bean，会话bean，实体bean和消息传递bean。使得企业开发能更加注重业务也就是实现这一些bean，提高工作效率，但是缺点是配置大于约定，配置过于复杂，对程序员要求高且不方便；</li>
+<li>COM是微软公司提出的，只能在Windows平台进行开发的构建技术，还衍生出DCOM和COM+的技术</li>
+<li>CORBA（Common Object Request Broker Architecture）公共对象请求代理架构，由OMG公司提出主要分为三个层次：ORB对象请求代理，针对异构的对象实现了不同的接口，定义了一条软总线能够将不同的对象转化成对上层统一的公共对象；公共对象基础服务，这一层在得到对象的基础上进行了一系列公共服务的抽象，例如并发控制、事务控制等；最后一层是对外的公共基础服务，此时可以对外暴露接口提供对象访问的服务了。</li>
+</ul>
+<h1 id="架构设计风格"><a href="#架构设计风格" class="headerlink" title="架构设计风格"></a>架构设计风格</h1><ol>
+<li>软件架构设计风格是在特定领域下软件架构设计的惯用模式。主要由软件结构，一个词汇表和一组约束构成。词汇表包含架构中构件和连接件的描述，约束定义了这些组件之间的关系。</li>
+<li>软件架构风格反应了在某特定领域下多种架构设计的共有结构和语义特性，能够指导子模块和子系统的有效集成和组成一个更大的系统。研究软件架构风格促进软件复用，能够将该领域已有的架构解决方案迁移到解决新的问题上。</li>
+<li>软件复用是研究软件架构的一个核心问题</li>
+<li>架构风格种类：数据流、调用-返回、独立构件、仓库、虚拟机</li>
+</ol>
+<h2 id="数据流风格"><a href="#数据流风格" class="headerlink" title="数据流风格"></a>数据流风格</h2><ol>
+<li>批处理风格：构件是一系列顺序排列的计算单元，构件之间通过数据进行连接，每个构件必须由上个构件处理完成之后才能开始处理，数据的传输是完整的。</li>
+<li>管道-过滤器风格：每个构件都有输入和输出，构件读取输入的数据流，经过处理得到输出数据流。要求数据流顺序，输入必须是上一个构件产生的输出流，可以把并行。过滤器为构件，管道为连接子。一般出现在早期的编译器软件架构中。</li>
+</ol>
+<h2 id="调用-返回风格"><a href="#调用-返回风格" class="headerlink" title="调用-返回风格"></a>调用-返回风格</h2><ol>
+<li>主函数-子函数风格：单线程模型，将复杂问题分解为可以单独处理的子问题。子函数解决子问题，通过主函数进行调用。函数为构件，相互调用为连接子。</li>
+<li>面向对象风格：对象即为构件，对象之间的相互作用，例如函数之间的方法调用和过程调用为连接子。</li>
+<li>层次架构：构建为每一个层次，连接子为每个层次之间的调用关系。每一层都进行封装，为上一层提供接口，同时使用下一层的服务。修改层次时只会影响相邻的两层。这样的优点是：将一个复杂问题分解为若干的子问题；越靠近底层越抽象；可复用。缺点是：调用无法跨层，效率底；也不一定所有的系统都能划分为层次结构。</li>
+</ol>
+<h2 id="独立构件风格"><a href="#独立构件风格" class="headerlink" title="独立构件风格"></a>独立构件风格</h2><ol>
+<li>进程通信：命名进程是构件，进程之间相互作用为连接子。一般有三种调用方式：点对点、同步&#x2F;异步方式，rpc</li>
+<li>隐式调用（事件驱动）：构件不直接调用过程，而是通过触发或者广播一到多个事件。构件的过程可以由多个触发源进行定义，当构件接收到触发，就会使用已经定义好的函数过程进行调用，从而达到隐式和解耦的功能。这样的优点是增大了软件的复用性，缺点是放弃了软件调用过程的控制权。</li>
+</ol>
+<h2 id="虚拟机风格"><a href="#虚拟机风格" class="headerlink" title="虚拟机风格"></a>虚拟机风格</h2><ol>
+<li>解释器风格：由解释引擎，存放被解释程序的缓存区，存储解释引擎解释状态的数据结构和程序解释执行的具体位置的存储器构成。优点是规则可以自定义，缺点是慢</li>
+<li>基于规则的系统：规则集，规则解释器，规则选择器，工作内存。一般用在ai和dss</li>
+</ol>
+<h2 id="数据风格"><a href="#数据风格" class="headerlink" title="数据风格"></a>数据风格</h2><ol>
+<li>数据库风格：两个构件，数据库和多个独立的数据处理单元</li>
+<li>黑板风格：知识源，黑板，控制。多个独立的知识处理单元，可以操作黑板进行演算。黑板是一个集中式数据库，可以通过知识源进行修改。一般适用于嵌入式系统、语音识别系统等复杂的没有固定解的系统</li>
+<li>超文本风格：基于网络的</li>
+</ol>
+<h1 id="层次架构风格"><a href="#层次架构风格" class="headerlink" title="层次架构风格"></a>层次架构风格</h1><ol>
+<li>两层C&#x2F;S：表示层和数据层，表示层也可以存储数据，还要保证一致性，现已不用</li>
+<li>三层C&#x2F;S：表示层、功能层和数据层，表示层仅作展示。优点：管理更清晰；可以并行开发；可以选择适应的环境和开发平台；保持了逻辑独立性</li>
+<li>三层B&#x2F;S：客户端变成浏览器，访问慢了，安全性也不强</li>
+<li>富互联网应用：小程序，看上去没有客户端，但是通过高速网络现场搭建，因此综合了B和C的优点</li>
+<li>MVC架构：模型、控制、视图。模型直接与视图交互，不安全</li>
+<li>MVP架构：模型、表示、视图。切断了模型与视图的直接交互，更安全</li>
+</ol>
+<h1 id="特定领域软件架构"><a href="#特定领域软件架构" class="headerlink" title="特定领域软件架构"></a>特定领域软件架构</h1><h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><ol>
+<li>特定领域软件架构DSSA（Domain Specific Software Architecture）是一组在特定领域下的软件开发构件集合，是一组在特定领域下获取系统的参考结构，参考需求和领域模型的开发环境，目标就是生成一个或多个领域应用。</li>
+<li>水平域和垂直域</li>
+<li>三个基本活动：领域架构分析：目标是获取领域模型，找领域专家来定义领域范围和定义领域特定元素；领域架构设计：目标是获取DSSA；领域架构实现：软件架构重用</li>
+<li>四个人员：领域专家、领域分析专家、领域设计专家、领域实现专家</li>
+<li>五个过程：定义领域范围；定义领域特有的元素；定义领域特有的设计和约束；定义领域模型和实现；搜集并开发可重用元素</li>
+<li>四个特征：有明确的问题域和解决域；适当程度的抽象；有可重用元素；在领域内有普遍性</li>
+<li>三个开发环境和五个产出：领域开发环境、特定领域下的应用开发环境，应用实际环境。产出：领域结构，领域需求，架构，开发工具，领域模型。</li>
+</ol>
+<h1 id="基于架构的软件开发方法"><a href="#基于架构的软件开发方法" class="headerlink" title="基于架构的软件开发方法"></a>基于架构的软件开发方法</h1><ol>
+<li>ABSD（Architecture Based Software Development）是由架构驱动，强调由软件业务，质量和功能需求指导软件架构设计。用视角和视图来描述软件的软件架构，以用例和质量属性场景来描述软件的需求。</li>
+<li>使用ABSD方法可以在软件模型定义明确之后立刻进行设计</li>
+<li>三个基础：功能的分解，需求分解到对应组件；软件架构风格；可重用的组件，软件模板</li>
+<li>六个阶段：架构需求、架构设计、架构文档化、架构复审、架构实现、架构演化</li>
+<li>架构需求三步：定义类图，类进行归类，产生包</li>
+<li>架构设计五步：提出架构模型，需求切分，构件之间联系，产生架构，架构评审</li>
+<li>架构文档化两个文档：架构规格说明书，测试架构需求的质量设计说明书</li>
+</ol>
+<h1 id="软件质量属性"><a href="#软件质量属性" class="headerlink" title="软件质量属性"></a>软件质量属性</h1><ol>
+<li>质量属性分为开发时和运行时</li>
+<li>八个质量属性和提升方法：<ul>
+<li>性能：优先级队列，并发，增加计算资源，减少开销</li>
+<li>可用性&#x2F;可靠性：容错容灾，心跳,ping\echo，选举</li>
+<li>安全性：入侵检测，用户认证，用户权限控制，追踪审计</li>
+<li>可修改性</li>
+<li>互操作性</li>
+<li>功能性</li>
+<li>可变性</li>
+</ul>
+</li>
+<li>质量属性场景六个要素：刺激源，刺激，场景，制品，响应，响应度量</li>
+<li>敏感点：为了实现某种特定的质量属性，一个或多个构件所具有的特性</li>
+<li>权衡点：影响多个质量属性的决策点，是多个质量属性的敏感点。</li>
+</ol>
+
+    
+    
+  </div>
+
+  
+
+  
+
+</article>
+  
+  <article class="post">
+  <header class="post-header">
+    <h1 class="post-title">
+      
       <a class="post-link" href="/2025/04/13/%E6%9D%82%E8%B0%88-%E4%B8%8B%E4%B8%80%E6%AD%A5%E7%9A%84%E6%96%B9%E5%90%91/">杂谈-下一步的方向</a>
       
     </h1>
@@ -1426,243 +1681,6 @@
 <h2 id="4-总结"><a href="#4-总结" class="headerlink" title="4 总结"></a>4 总结</h2><p>「i茅台」商城作为茅台酒线上销售的主要入口，从诞生的第一天开始就需要考虑如何有效地应对大流量高并发的考验，这要求我们在保证数据一致性的前提下，实现系统的高性能和高可用，其中高性能意味着更快的响应时间和更大的吞吐量，可以同时为更多的用户提供流畅的服务，而高可用则意味着系统需要在面临故障或异常情况时仍然保持可用性。</p>
 <p>为了实现系统的高性能和高可用，我们需要结合业务诉求、产品运营情况及系统现状进行分析，综合选取一些性能优化技术与高可用系统的设计方法，使系统在性能、可用性、安全性、可维护性等方面保持一种最佳的平衡状态。</p>
 <p>本质上，系统的架构和设计就是权衡和取舍的过程，权衡性能与可用性、成本与性能、安全性与便利性、扩展性与复杂性，不同的系统可能需要不同的权衡，本文希望通过这些实际的案例帮助大家更好地理解这些技术和策略以及背后的权衡过程，从而可以更好地应用在我们日常的设计与开发过程中。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2025/01/22/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week8/">网易牛马日志-week8</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2025-01-22
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>System.out.println(“I am back”);</p>
-</blockquote>
-<h2 id="需求10：俄罗斯印度公司的后端改造"><a href="#需求10：俄罗斯印度公司的后端改造" class="headerlink" title="需求10：俄罗斯印度公司的后端改造"></a>需求10：俄罗斯印度公司的后端改造</h2><h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>为了能尽快丰富页面实现seo，优先开放数据组刚挖掘出来的俄罗斯印度公司详细信息，当存量不足的时候再去按照原有逻辑开放普通公司。此外为了优化全球搜变动导致的页面失效，需要在出海项目的es里面保存一份副本，否则会影响谷歌收录。</p>
-<h3 id="改进结构"><a href="#改进结构" class="headerlink" title="改进结构"></a>改进结构</h3><div style="text-align: center;">
-  <img src="../img/netease/1736739033864.svg" alt="后端架构">
-</div>
-
-<p>分为两个方面取数据，全球搜和扩展es，扩展es洗了一些俄罗斯印度公司的拓展信息用于展示，与全球搜主键id关联，从而可以组装起来作为一个更大的bo。但是如果当公司开放之后，全球搜es有变动导致无法访问就会严重影响谷歌收录。所以需要更改保存逻辑，直接在每日新增中执行组装，如果此时全球搜有那就保留，且写回扩展索引中。如果没有就跳过，这样以来所有的信息全部都持久化到扩展es中，用公式写就是A（全球搜）+B（扩展）-&gt;AB（组装后的大对象）-&gt;写回扩展es。</p>
-<h3 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h3><ul>
-<li>sourceBuilder构造：查询指定国家，根据质量分数倒序排序，但是这样顺序开放会导致重复扫描的越来越多，后续一个小时有可能都跑不完了。</li>
-<li>查询开放公司的最大dataId，然后追加dataId，得到原始输入List。</li>
-<li>接下来要一个个去请求全球搜去组装一个更大的对象，如果返回有问题就过滤掉不入库，返回无问题就直接upsert拓展索引。</li>
-<li>最后作为开放公司写入数据库</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 【俄罗斯、印度】extendIndex组合全球搜base信息重新写入</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> country</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> param</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">upsertExtendDetailToDbAndEs</span><span class="params">(String country, String param)</span> &#123;</span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">    boolQuery.must(QueryBuilders.termQuery(<span class="string">&quot;standardCountry&quot;</span>, country));</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">            .query(boolQuery)</span><br><span class="line">            .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;companyId&quot;</span>,<span class="string">&quot;name&quot;</span>&#125;, <span class="literal">null</span>)</span><br><span class="line">            .sort(<span class="string">&quot;dataQualityScore&quot;</span>,SortOrder.DESC)</span><br><span class="line">            .size(Integer.parseInt(param));</span><br><span class="line">    <span class="comment">//从es中抽取指定数量的companyList</span></span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; originalCompanyList = loadCompanyToExtendIndex(companyExtendIndex, sourceBuilder, param);</span><br><span class="line">    <span class="comment">//过滤全球搜不开放的公司</span></span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; filterCompanyList = originalCompanyList.stream().filter(<span class="built_in">this</span>::filterAndUpsertCompanyExtendIndex).collect(Collectors.toList());</span><br><span class="line">    <span class="comment">//保存进db</span></span><br><span class="line">    saveBatch(filterCompanyList);</span><br><span class="line">    log.info(<span class="string">&quot;upsertExtendDetailToDbAndEs success record &#123;&#125;&quot;</span>,filterCompanyList.size());</span><br><span class="line">    <span class="keyword">return</span> filterCompanyList.size();</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 【其他国家】extendIndex组合全球搜base信息重新写入</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> param 补齐条数</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">upsertNormalDetailToDbAndEs</span><span class="params">(String param)</span> &#123;</span><br><span class="line">    <span class="comment">// 有域名的排前面(强制排序)</span></span><br><span class="line">    <span class="type">Script</span> <span class="variable">hasDomainScript</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;if(doc[&#x27;domainCount&#x27;].size()&gt;0 &amp;&amp; doc[&#x27;domainCount&#x27;].value&gt;=1) return 1; else return 0&quot;</span>);</span><br><span class="line">    <span class="comment">// 域名无效的后置(强制排序)</span></span><br><span class="line">    <span class="type">Script</span> <span class="variable">invalidDomainScript</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;if(doc[&#x27;domainStatus&#x27;].size()&gt;0 &amp;&amp; doc[&#x27;domainStatus&#x27;].value&gt;0) return 0; else return 1&quot;</span>);</span><br><span class="line">    <span class="comment">// 有邮箱前置</span></span><br><span class="line">    <span class="type">Script</span> <span class="variable">hasEmailScript</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Script</span>(<span class="string">&quot;if(doc[&#x27;emailCount&#x27;].size()&gt;0 &amp;&amp; doc[&#x27;emailCount&#x27;].value&gt;=1) return 1; else return 0&quot;</span>);</span><br><span class="line">    <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">    boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;overviewDescription&quot;</span>));</span><br><span class="line">    boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;name&quot;</span>));</span><br><span class="line">    boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;companyId&quot;</span>));</span><br><span class="line">    boolQuery.mustNot(QueryBuilders.termQuery(<span class="string">&quot;disable&quot;</span>, <span class="string">&quot;true&quot;</span>));</span><br><span class="line">    boolQuery.must(QueryBuilders.wildcardQuery(<span class="string">&quot;overviewDescription&quot;</span>, <span class="string">&quot;*&quot;</span>));</span><br><span class="line">    <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">            .query(boolQuery) <span class="comment">// 查询参数</span></span><br><span class="line">            .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;name&quot;</span>,<span class="string">&quot;companyId&quot;</span>&#125;,</span><br><span class="line">                    <span class="literal">null</span>)</span><br><span class="line">            .size(<span class="number">1000</span>)</span><br><span class="line">            <span class="comment">// 有无域名排序</span></span><br><span class="line">            .sort(SortBuilders.scriptSort(hasDomainScript, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))</span><br><span class="line">            <span class="comment">// 无效域名排序</span></span><br><span class="line">            .sort(SortBuilders.scriptSort(invalidDomainScript, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))</span><br><span class="line">            <span class="comment">// 有邮箱前置</span></span><br><span class="line">            .sort(SortBuilders.scriptSort(hasEmailScript, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC));</span><br><span class="line">    <span class="comment">//从es中抽取指定数量的companyList</span></span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; originalCompanyList = loadCompanyToExtendIndex(openCompanyIndex, sourceBuilder, param);</span><br><span class="line">    <span class="comment">//过滤全球搜不开放的公司</span></span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; filterCompanyList = originalCompanyList.stream().filter(<span class="built_in">this</span>::filterAndUpsertCompanyExtendIndex).collect(Collectors.toList());</span><br><span class="line">    <span class="comment">//保存进db</span></span><br><span class="line">    saveBatch(filterCompanyList);</span><br><span class="line">    log.info(<span class="string">&quot;upsertNormalDetailToDbAndEs success record &#123;&#125;&quot;</span>,filterCompanyList.size());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>查询索引并转换为数据库逻辑，输出是实际新增开放公司，小循环用set去重，大循环直接去数据库count&gt;0去重。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 通用新增开放公司逻辑</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> abstractIndex es索引</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sourceBuilder es查询条件</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> param 查询数量</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 实际新增开放公司List</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> &lt;T&gt;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> &lt;T&gt; List&lt;SiteMapCompanyEntity&gt; <span class="title function_">loadCompanyToExtendIndex</span><span class="params">(AbstractIndex&lt;T&gt; abstractIndex,SearchSourceBuilder sourceBuilder,String param)</span>&#123;</span><br><span class="line">    <span class="type">SiteMapCompanyEntity</span> <span class="variable">maxCompany</span> <span class="operator">=</span> getMaxDataId();</span><br><span class="line">    <span class="type">long</span> <span class="variable">maxDataId</span> <span class="operator">=</span> maxCompany == <span class="literal">null</span> ? <span class="number">1</span> : maxCompany.getDataId();</span><br><span class="line">    <span class="type">AtomicInteger</span> <span class="variable">count</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>();</span><br><span class="line">    count.incrementAndGet();</span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; addList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    abstractIndex.scrollSearch(sourceBuilder, searchHits -&gt; &#123;</span><br><span class="line">        Set&lt;String&gt; companyIdSets = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">        <span class="keyword">for</span> (SearchHit searchHit : searchHits) &#123;</span><br><span class="line">            <span class="keyword">if</span> (addList.size() &gt;= Integer.parseInt(param)) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            Map&lt;String, Object&gt; result = searchHit.getSourceAsMap();</span><br><span class="line">            <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> result.get(<span class="string">&quot;name&quot;</span>).toString();</span><br><span class="line">            <span class="type">String</span> <span class="variable">companyId</span> <span class="operator">=</span> result.get(<span class="string">&quot;companyId&quot;</span>).toString();</span><br><span class="line">            <span class="comment">//本轮去重</span></span><br><span class="line">            <span class="keyword">if</span> (companyIdSets.contains(companyId)) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            companyIdSets.add(companyId);</span><br><span class="line">            <span class="comment">//全局去重</span></span><br><span class="line">            <span class="keyword">if</span> (isOpeningCompany(companyId))&#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//数据库对象转换，包装首字母等</span></span><br><span class="line">            <span class="type">SiteMapCompanyEntity</span> <span class="variable">siteMapCompanyEntity</span> <span class="operator">=</span> convertIndexToDbEntity(name, companyId);</span><br><span class="line">            siteMapCompanyEntity.setDataId(maxDataId + count.longValue());</span><br><span class="line">            count.getAndIncrement();</span><br><span class="line">            addList.add(siteMapCompanyEntity);</span><br><span class="line">            log.info(<span class="string">&quot;loadCompanyToExtendIndex add record &#123;&#125;&quot;</span>,JSON.toJSONString(siteMapCompanyEntity));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">return</span> addList;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>最后在xxl-job里面定义定时任务，开两个定时任务，分别输入”Russia|1500”，”India|1500”</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 新增公司数据</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> param</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@XxlJob(&quot;addExtendToOpenDb&quot;)</span></span><br><span class="line"><span class="keyword">public</span> ReturnT&lt;String&gt; <span class="title function_">addExtendToOpenDb</span><span class="params">(String param)</span> &#123;</span><br><span class="line">    param = StringUtils.isEmpty(param) ? <span class="string">&quot;1500&quot;</span> : param;</span><br><span class="line">    XxlJobLogger.log(<span class="string">&quot;addExtendToOpenDb job start&quot;</span>);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        String[] params = param.split(<span class="string">&quot;\\|&quot;</span>);</span><br><span class="line">        <span class="comment">//带国家和数量</span></span><br><span class="line">        <span class="keyword">if</span> (params.length == <span class="number">2</span>) &#123;</span><br><span class="line">            <span class="type">int</span> <span class="variable">loadedSize</span> <span class="operator">=</span> siteMapCompanyService.upsertExtendDetailToDbAndEs(params[<span class="number">0</span>], params[<span class="number">1</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">remainSize</span> <span class="operator">=</span> Integer.parseInt(params[<span class="number">1</span>]) - loadedSize;</span><br><span class="line">            <span class="keyword">if</span>(remainSize &gt; <span class="number">0</span>)&#123;</span><br><span class="line">                siteMapCompanyService.upsertNormalDetailToDbAndEs(String.valueOf(remainSize));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (params.length == <span class="number">1</span>) &#123;</span><br><span class="line">            siteMapCompanyService.upsertNormalDetailToDbAndEs(String.valueOf(params[<span class="number">0</span>]));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        XxlJobLogger.log(<span class="string">&quot;addExtendToOpenDb error&quot;</span>);</span><br><span class="line">        log.error(<span class="string">&quot;addExtendToOpenDb error&quot;</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">    XxlJobLogger.log(<span class="string">&quot;addExtendToOpenDb job end&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> ReturnT.SUCCESS;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h2 id="需求11：AIGC能力——大模型总结网页"><a href="#需求11：AIGC能力——大模型总结网页" class="headerlink" title="需求11：AIGC能力——大模型总结网页"></a>需求11：AIGC能力——大模型总结网页</h2><h3 id="背景-1"><a href="#背景-1" class="headerlink" title="背景"></a>背景</h3><p>前面补充的数据还是没能影响seo，可能是因为数据不够独特，同质性太强。因此需要用ai总结一下，做出差异化的内容。</p>
-<h3 id="提示词"><a href="#提示词" class="headerlink" title="提示词"></a>提示词</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">The following text is taken from the official website of a company named: [bi-ehealthcare]. </span><br><span class="line">Based on the content provided, generate 6-8 self-questions and answers related to the company&#x27;s information. </span><br><span class="line">The question is information related to the company: the company&#x27;s products, industry, services, address and contact information (telephone, email, etc.), and other points of fact mentioned in the content provided, but not limited to this.</span><br><span class="line">Provide quality responses and avoid general responses such as &quot;Unfortunately, the text does not provide...&quot; . </span><br><span class="line">Avoid interference from privacy policies and cookies, and ensure that the total length of the reply is not less than 500 characters. In particular.</span><br><span class="line">Organize and translate your answers in English, as shown below:</span><br><span class="line">Q1: XXXX,</span><br><span class="line">A1: XXXX,</span><br><span class="line">Q2: XXXX,</span><br><span class="line">A2: XXXX</span><br></pre></td></tr></table></figure>
-
-<h3 id="大模型的原理（挖个坑、后续研究）"><a href="#大模型的原理（挖个坑、后续研究）" class="headerlink" title="大模型的原理（挖个坑、后续研究）"></a>大模型的原理（挖个坑、后续研究）</h3><p>输入的是提示词和域名，大模型会去根据域名获得html页面，然后根据python某些工具去递归挖掘子url和html，拼接token，结合RAG从而获得更大规模的输入，然后根据提示词去调用llama3.2，得到输出。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/12/25/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week5%EF%BC%88%E5%AD%A6%E4%B9%A0%E7%89%88%EF%BC%89/">网易牛马日志-week5（学习版）</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-12-25
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <h1 id="邮箱"><a href="#邮箱" class="headerlink" title="邮箱"></a>邮箱</h1><h2 id="邮箱注册"><a href="#邮箱注册" class="headerlink" title="邮箱注册"></a>邮箱注册</h2><p>用户视角：输入邮箱和密码（有校验）-&gt;填写个人信息-&gt;收到确认邮件-&gt;点击跳转链接</p>
-<h3 id="输入邮箱和密码（有校验）"><a href="#输入邮箱和密码（有校验）" class="headerlink" title="输入邮箱和密码（有校验）"></a>输入邮箱和密码（有校验）</h3><p>输入邮箱密码，前端通过正则表达式校验密码格式，后端请求&#x2F;email&#x2F;check来检查账号是否启用。这里启用指的是已经点击过验证邮件的或者用oauth已经校验过的。这里没校验过邮件的应该还是可以重新发起注册的。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> EmailSignUpCheckResp <span class="title function_">emailSignUpCheck</span><span class="params">(EmailSignupCheckReq emailSignupCheckReq, HttpServletRequest request)</span> &#123;</span><br><span class="line">    <span class="type">EmailSignUpCheckResp</span> <span class="variable">emailSignUpCheckResp</span> <span class="operator">=</span> EmailSignUpCheckResp.builder()</span><br><span class="line">            .emailSignUpCheckStatus(EmailSignUpCheckStatus.UN_SIGN_UP)</span><br><span class="line">            .build();</span><br><span class="line">    <span class="comment">// 校验注册邮箱</span></span><br><span class="line">    <span class="type">UserEntity</span> <span class="variable">user</span> <span class="operator">=</span> userServiceImpl.getUserEntityByLoginUsername(emailSignupCheckReq.getEmail());</span><br><span class="line">    <span class="keyword">if</span> (Objects.nonNull(user)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (UserState.OPEN.getCode() == user.getState()) &#123;</span><br><span class="line">            emailSignUpCheckResp.setEmailSignUpCheckStatus(EmailSignUpCheckStatus.ALREADY_VERIFIED);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            emailSignUpCheckResp.setEmailSignUpCheckStatus(EmailSignUpCheckStatus.ALREADY_SIGN_UP);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> emailSignUpCheckResp;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="注册逻辑-确认邮件的回调逻辑"><a href="#注册逻辑-确认邮件的回调逻辑" class="headerlink" title="注册逻辑+确认邮件的回调逻辑"></a>注册逻辑+确认邮件的回调逻辑</h3><ol>
-<li>查询用户信息：check校验的是是否有效。这里检查是否别的方式已经注册了（通过email字段查）</li>
-<li>检查密码强度</li>
-<li>邀请码（暂时不需要）</li>
-<li>保存用户信息（两张表，一张存用户实体，另一张存账号密码和盐）</li>
-<li>埋点上报</li>
-</ol>
-<p>这里最重要的是“保存用户信息”。在注册之后会入库账号密码，但是未激活（就是check检查的那个字段，只有点击了邮件链接才会接收到）。</p>
-<p>随后生成一个UUID作为参数传给邮件，同时缓存在redis中。在邮件里面放这个链接和参数，点击的时候自动就会去请求“&#x2F;verify&#x2F;email?cs&#x3D;”。<br>这个方法会解析加密参数，与redis中进行比较。校验成功后激活用户状态，最后走获取token的逻辑，那部分等讲登录的时候再说。</p>
-<h3 id="邮箱相关"><a href="#邮箱相关" class="headerlink" title="邮箱相关"></a>邮箱相关</h3><p>发送的是html，这里用到了FreeMarker，模板里面只有两个需要动态换的，一个是称呼一个是对应的重定向链接。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;String, Object&gt; templateParams = Maps.newHashMap();</span><br><span class="line">templateParams.put(<span class="string">&quot;accountName&quot;</span>, <span class="string">&quot;test&quot;</span>);</span><br><span class="line">templateParams.put(<span class="string">&quot;registerLink&quot;</span>, <span class="string">&quot;https://www.bilibili.com&quot;</span>);</span><br><span class="line"><span class="type">Resource</span> <span class="variable">resource</span> <span class="operator">=</span> resourceLoader.getResource(<span class="string">&quot;classpath:template/&quot;</span>+registerTemplate);</span><br><span class="line"><span class="type">byte</span>[] fileData = FileCopyUtils.copyToByteArray(resource.getInputStream());</span><br><span class="line"><span class="type">String</span> <span class="variable">template</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">String</span>(fileData, StandardCharsets.UTF_8);</span><br><span class="line">textPart.setContent(template, <span class="string">&quot;text/html;charset=utf-8&quot;</span>);</span><br><span class="line"><span class="keyword">try</span> (<span class="type">InputStream</span> <span class="variable">inputStream</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ByteArrayInputStream</span>(template.getBytes())) &#123;</span><br><span class="line"><span class="type">String</span> <span class="variable">content</span> <span class="operator">=</span> FreemarkerUtils.process(inputStream, templateParams);</span><br><span class="line">    System.out.println(content);</span><br><span class="line">&#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(e);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>然后发送邮件配置就完了，这里暂时用的是gmail，最后得搭建公司邮件服务器。</p>
-<h3 id="邮箱登录"><a href="#邮箱登录" class="headerlink" title="邮箱登录"></a>邮箱登录</h3><ol>
-<li>各种参数校验，包括上面一直在讲的激活状态。</li>
-<li>密码校验（数据库盐是Base64，可以加密解密的）： encode(用户输入+Base64Decode(数据库盐)) &#x3D;&#x3D; 数据库加密后的密码。</li>
-<li>校验成功则登录成功，首先解析ip到国家和省份保存。然后生成token作为session保存在redis里面，设定过期时间为7天。</li>
-<li>将token返回给前端，每次请求都要携带。</li>
-</ol>
-<h1 id="oauth"><a href="#oauth" class="headerlink" title="oauth"></a>oauth</h1><h2 id="谷歌code解析"><a href="#谷歌code解析" class="headerlink" title="谷歌code解析"></a>谷歌code解析</h2><p>类似微信小程序，前端先去请求谷歌登录，谷歌会返回一个code，后端拿到这个code去oauth里获得用户登录信息。拿这个信息去业务数据库里查询是否有记录来判断是注册还是登录。</p>
-<p>如果没有实际用户说明是注册，如果有还需要判断注册方式是否是oauth，分为其他方式注册和直接登录。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> OAuthLoginUser <span class="title function_">getAuthUserInfo</span><span class="params">(OAuthUserInfoReq req)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!oAuthRequestFactory.support().contains(req.getOAuthType().toUpperCase())) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;getAuthUserInfo, source not supported, req: &#123;&#125;&quot;</span>, req);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(<span class="string">&quot;unsupported oauth type&quot;</span>, BizError.ENUM_PARAM_ERR.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//拿着oauth去解析，获得用户数据</span></span><br><span class="line">    <span class="type">AuthRequest</span> <span class="variable">authRequest</span> <span class="operator">=</span> oAuthRequestFactory.create(req.getOAuthType());</span><br><span class="line">    AuthResponse&lt;AuthUser&gt; authResponse = authRequest.login(AuthCallback.builder().code(req.getCode()).build());</span><br><span class="line">    <span class="type">AuthUser</span> <span class="variable">authUserInfo</span> <span class="operator">=</span> authResponse.getData();</span><br><span class="line">    <span class="keyword">if</span> (Objects.isNull(authUserInfo)) &#123;</span><br><span class="line">        log.error(<span class="string">&quot;getAuthUserInfo, authUserInfo is null, req: &#123;&#125;&quot;</span>, req);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.COMMON_ERR.getName(), BizError.COMMON_ERR.getCode());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 缓存获取的用户信息</span></span><br><span class="line">    <span class="type">String</span> <span class="variable">accessCode</span> <span class="operator">=</span> CodeUtils.generateOAuthSignupCode();</span><br><span class="line">    redisManager.addOAuthUser(accessCode, authUserInfo);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 判断当前OAuth状态</span></span><br><span class="line">    <span class="type">OAuthType</span> <span class="variable">oAuthType</span> <span class="operator">=</span> OAuthType.of(req.getOAuthType());</span><br><span class="line">    <span class="type">String</span> <span class="variable">userIdentify</span> <span class="operator">=</span> authUserInfo.getUsername();</span><br><span class="line">    OAuthStatus oAuthStatus;</span><br><span class="line">    <span class="type">UserEntity</span> <span class="variable">user</span> <span class="operator">=</span> userServiceImpl.getUserEntityByLoginUsername(userIdentify);</span><br><span class="line">    <span class="comment">//用户实体表没有就是没注册</span></span><br><span class="line">    <span class="keyword">if</span> (Objects.nonNull(user)) &#123;</span><br><span class="line">        <span class="comment">//查指定枚举信息的</span></span><br><span class="line">        <span class="type">UserAuthEntity</span> <span class="variable">auth</span> <span class="operator">=</span> userAuthServiceImpl.getByIdentifier(userIdentify,</span><br><span class="line">                IdentityType.convert(oAuthType).getCode());</span><br><span class="line">        <span class="keyword">if</span> (Objects.nonNull(auth)) &#123;</span><br><span class="line">            <span class="comment">// 同种类型重复注册</span></span><br><span class="line">            oAuthStatus = OAuthStatus.LOGIN;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 已经存在其他方式注册</span></span><br><span class="line">            oAuthStatus = OAuthStatus.ANOTHER_SIGNUP_WAY;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        oAuthStatus = OAuthStatus.SIGNUP;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> OAuthLoginUser.convert(authUserInfo, accessCode, oAuthStatus);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>前端可能会根据三种枚举值来走登录、注册和提示逻辑。</p>
-<h3 id="oauth注册"><a href="#oauth注册" class="headerlink" title="oauth注册"></a>oauth注册</h3><p>注册逻辑基本一致，多了一个从redis中查询oauth的用户信息的过程（例如google保存的头像链接），如果没查到就是验证超时，如果查到了但是用户不匹配就抛异常。最后给token，然后删除oauth的验证信息。</p>
-<h3 id="oauth登录"><a href="#oauth登录" class="headerlink" title="oauth登录"></a>oauth登录</h3><p>基本一致，也是多了一个从redis里面拿accesscode的过程。</p>
-
-    
-    
-  </div>
-
-  
-
-  
-
-</article>
-  
-  <article class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      
-      <a class="post-link" href="/2024/12/25/%E7%BD%91%E6%98%93%E7%89%9B%E9%A9%AC%E6%97%A5%E5%BF%97-week5/">网易牛马日志-week5</a>
-      
-    </h1>
-
-    <div class="post-meta">
-      <span class="post-time">
-        2024-12-25
-      </span>
-      
-      
-      
-    </div>
-  </header>
-
-  
-
-  <div class="post-content">
-    
-    
-    
-
-    
-    <blockquote>
-<p>写在前面：经过一个月的实习，我逐渐觉得沟通能力和理解能力远比代码能力重要。不论是在科研组会上的哑口无言，还是在工作上对接的七嘴八舌，都暴露出了我语言能力的欠缺。我从初中开始就知道这是我的短板，但没想到有这么短。这也再次给我敲响了警钟，不管你是什么学术或者技术大师，学说话和听说话是最基本的。</p>
-</blockquote>
-<h2 id="需求7：【出海项目】ip限流"><a href="#需求7：【出海项目】ip限流" class="headerlink" title="需求7：【出海项目】ip限流"></a>需求7：【出海项目】ip限流</h2><p>注解+aop+lua+redis+滑动窗口限流算法</p>
-<h3 id="注解和aop"><a href="#注解和aop" class="headerlink" title="注解和aop"></a>注解和aop</h3><h4 id="注解"><a href="#注解" class="headerlink" title="注解"></a>注解</h4><p>根据多个时间单位配置限流器，定义了时间枚举类，按照毫秒存储持续时间（因为注解只能用枚举，不能用正常类）。</p>
-<blockquote>
-<p>正常是要传3个值的：次数，时间单位，超时时间（主要是给后面对redis设置expireTime）。这里为了方便超时时间与时间单位一致。</p>
-</blockquote>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//使用示例：1分钟限制10次，1小时限制500次</span></span><br><span class="line"><span class="meta">@IpRateLimit(limit = &#123;10,500&#125;, timeUnit = &#123;TimeUnit.MINUTE,TimeUnit.HOUR&#125;)</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//注解定义</span></span><br><span class="line"><span class="meta">@Retention(RetentionPolicy.RUNTIME)</span></span><br><span class="line"><span class="meta">@Target(ElementType.METHOD)</span></span><br><span class="line"><span class="keyword">public</span> <span class="meta">@interface</span> IpRateLimit &#123;</span><br><span class="line">    <span class="type">int</span>[] limit();  <span class="comment">// 限流值</span></span><br><span class="line">    TimeUnit[] timeUnit();  <span class="comment">// 时间单位</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Getter</span></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> <span class="title class_">TimeUnit</span> &#123;</span><br><span class="line">    YEAR(<span class="number">1</span>, <span class="string">&quot;YEAR&quot;</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">24</span> * <span class="number">30</span> * <span class="number">365</span>),</span><br><span class="line">    MONTH(<span class="number">2</span>, <span class="string">&quot;MONTH&quot;</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">24</span> * <span class="number">30</span>),</span><br><span class="line">    DAY(<span class="number">3</span>, <span class="string">&quot;DAY&quot;</span>, <span class="number">1000</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">24</span>),</span><br><span class="line">    HOUR(<span class="number">4</span>, <span class="string">&quot;HOUR&quot;</span>, <span class="number">1000</span> * <span class="number">60</span> * <span class="number">60</span>),</span><br><span class="line">    MINUTE(<span class="number">5</span>, <span class="string">&quot;MINUTE&quot;</span>, <span class="number">1000</span> * <span class="number">60</span>),</span><br><span class="line">    SECOND(<span class="number">6</span>, <span class="string">&quot;SECOND&quot;</span>, <span class="number">1000</span>),</span><br><span class="line">    ;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">int</span> code;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String name;</span><br><span class="line">    <span class="comment">//单位是毫秒</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> periodInMills;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="aop"><a href="#aop" class="headerlink" title="aop"></a>aop</h4><p>校验注解里两个数组长度必须相同，对每一个配置new一个限流器来执行redis脚本。（我在想这里每次限流就new一个开销会不会有点大，但是不能用@service，因为有状态的）</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@Aspect</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IpRateLimiterAspect</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> RedisLuaRateLimiter redisLuaRateLimiter;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Pointcut(&quot;@annotation(com.netease.cowork.sirius.it.data.overseas.server.frame.anno.IpRateLimit)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">rateLimiter</span><span class="params">()</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Before(&quot;rateLimiter() &amp;&amp; @annotation(ipLimiter)&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doBefore</span><span class="params">(JoinPoint joinPoint, IpRateLimit ipLimiter)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        <span class="type">int</span>[] limit = ipLimiter.limit();</span><br><span class="line">        TimeUnit[] timeUnits = ipLimiter.timeUnit();</span><br><span class="line">        <span class="keyword">if</span> (limit.length != timeUnits.length)&#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 获取用户ip</span></span><br><span class="line">        <span class="type">ServletRequestAttributes</span> <span class="variable">attributes</span> <span class="operator">=</span> (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();</span><br><span class="line">        <span class="keyword">assert</span> attributes != <span class="literal">null</span>;</span><br><span class="line">        <span class="type">HttpServletRequest</span> <span class="variable">request</span> <span class="operator">=</span> attributes.getRequest();</span><br><span class="line">        <span class="type">String</span> <span class="variable">ip</span> <span class="operator">=</span> request.getRemoteAddr();</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; limit.length; i++) &#123;</span><br><span class="line">            <span class="type">long</span> <span class="variable">periodInMills</span> <span class="operator">=</span> timeUnits[i].getPeriodInMills();</span><br><span class="line">            redisLuaRateLimiter = <span class="keyword">new</span> <span class="title class_">RedisLuaRateLimiter</span>(limit[i], periodInMills, periodInMills,timeUnits[i].getName());</span><br><span class="line">            <span class="keyword">if</span> (!redisLuaRateLimiter.tryAcquired(ip))&#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;操作频繁，请稍后重试&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="redis-lua实现滑动窗口限流算法"><a href="#redis-lua实现滑动窗口限流算法" class="headerlink" title="redis+lua实现滑动窗口限流算法"></a>redis+lua实现滑动窗口限流算法</h3><p>lua脚本在这里最大的作用就是解决并发问题，且保证原子性。分别说这个几个参数：</p>
-<ul>
-<li>KEYS[1]：String key &#x3D; prefix + ip。业务名称+ip。因为可能有多个业务都需要限流。</li>
-<li>ARGV[1]：now-periodInMills。时间校验的分界线，往后为需要计算的流量。</li>
-<li>ARGV[2]：now</li>
-<li>ARGV[3]：UUID.randomUUID()真正的value值，随便写一个</li>
-<li>ARGV[4]：expireInMills</li>
-<li>ARGV[5]：limit</li>
-</ul>
-<p>基本原理是zset的score存时间戳，ZREMRANGEBYSCORE这个方法会去除0到now-periodInMills的所有元素，剩下的就是要统计的元素。ZCARD用来统计当前元素数量，如果比count小就没有达到限流，ZADD设置value，score和超时时间。如果限流就返回特殊数字。<br>最后只用判断lua脚本执行是否是1来判断限流。</p>
-<p>其他的代码都是java操作lua的方法，核心如下。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//限流</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">REDIS_LIMIT_SCRIPT</span> <span class="operator">=</span> <span class="string">&quot;local removedCount = redis.call(&#x27;ZREMRANGEBYSCORE&#x27;, KEYS[1], 0, ARGV[1])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;local currentCount = redis.call(&#x27;ZCARD&#x27;, KEYS[1])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;if currentCount &lt; tonumber(ARGV[5]) then\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;    redis.call(&#x27;ZADD&#x27;, KEYS[1], ARGV[2], ARGV[3])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;    redis.call(&#x27;PEXPIRE&#x27;, KEYS[1], ARGV[4])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;    return 1\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;else\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;    return 0\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;end&quot;</span>;</span><br><span class="line"><span class="comment">//统计rate</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">REDIS_LIMIT_COUNT_SCRIPT</span> <span class="operator">=</span> <span class="string">&quot;local removedCount = redis.call(&#x27;ZREMRANGEBYSCORE&#x27;, KEYS[1], 0, ARGV[1])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;local currentCount = redis.call(&#x27;ZCARD&#x27;, KEYS[1])\n&quot;</span> +</span><br><span class="line">        <span class="string">&quot;return currentCount&quot;</span>;</span><br></pre></td></tr></table></figure>
-
-<p>结论是对比海关服务的限流，这种写lua的方法能快三倍，限流速度50ms，他们的150ms。而且配置也很简单。</p>
-<h2 id="需求8：【出海项目】sitemap与seo优化"><a href="#需求8：【出海项目】sitemap与seo优化" class="headerlink" title="需求8：【出海项目】sitemap与seo优化"></a>需求8：【出海项目】sitemap与seo优化</h2><blockquote>
-<p><strong>什么是seo？</strong></p>
-<p>搜索引擎优化，指的是通过合理手段和一些小技巧提升在谷歌上面的排名。这个出海项目最终要达到的效果是，在谷歌上查询一个公司，我们的界面要比这个公司靠前，从而获取自然流量，有了自然流量就可以变现了。<br>类似天眼查，每次去查询一个公司的官网，天眼查总能比官网靠前（其实也有可能是百度自家特殊关照）。</p>
-<p><strong>什么是sitemap？</strong></p>
-<p>sitemap.xml是一个站点地图，相当于给谷歌的爬虫一个指引，告诉他我的网站都有哪些路径需要你来访问的，这个地图一级只能有5w条，而我们的业务规模有6kw，所以采取两级索引，并采用gz进行压缩。<br>而我做的工作是定时更新这个sitemap并放到前端服务器上给爬虫来爬。</p>
-</blockquote>
-<h3 id="sitemap自底向上构建"><a href="#sitemap自底向上构建" class="headerlink" title="sitemap自底向上构建"></a>sitemap自底向上构建</h3><p>给了两张表，底层存公司，顶层存索引。我最初的想法是自底向上构建，每次更新去删除顶层，然后底层分页进行压缩，最后构建顶层。这样会有几个问题：</p>
-<ol>
-<li>深度分页问题：前面说了数据量最终大于6kw，如此大的数据量到了后面肯定更新不动的。想了半天索引优化最后mentor给否决了。</li>
-<li>删表问题：数据库不允许传空参数直接删表，而且开销很大。</li>
-<li>seo问题：虽然密集化了表但是可能会造成波动，例如某个公司的前几个失效了，这个公司变动到别的索引之下，可能会对seo产生影响，最好还是固定不变。</li>
-</ol>
-<h3 id="sitemap自顶向下构建"><a href="#sitemap自顶向下构建" class="headerlink" title="sitemap自顶向下构建"></a>sitemap自顶向下构建</h3><p>自顶向下构建就是直接算好id范围，数据库between一下就可以找到，把索引当作槽来用，填满了就放下一个。优点：</p>
-<ol>
-<li>没有深度分页问题，直接根据有索引的id查询，效率肯定是比limit高的。</li>
-<li>一级索引满了就开辟一个新的，效率也高。</li>
-</ol>
-<p>缺点：</p>
-<ol>
-<li>依赖顺序性，稍微中间跨度大了就会有问题。例如首先存了1-100，再从40000-40100。每页100条，此时来了10000-10100就不能保证一级索引的顺序了。</li>
-<li>一级索引的起始和终点会显得没有意义，中间有大量失效的，且不一定有序。</li>
-</ol>
-<p>最终采用了这种方式，es中的数据是不区分新旧的，所以得做一个唯一性校验。除此之外还有一个当前循环的唯一性校验。</p>
-<ul>
-<li>首先查询当前最大公司的id，通过AtomicInteger解决线程安全问题，从es来的新增数据加入，同时要校验是否是英文公司，并取出首字母。（这里写了一大堆字符串工具）</li>
-<li>这样做了重复性校验的话即使是失败了也能保证不会重复。</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getOpenCompanyIndex</span><span class="params">()</span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">BoolQueryBuilder</span> <span class="variable">boolQuery</span> <span class="operator">=</span> QueryBuilders.boolQuery();</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;summary.formatDomains&quot;</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.rangeQuery(<span class="string">&quot;emailCount&quot;</span>)</span><br><span class="line">                .gt(<span class="number">1</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;detail.productList&quot;</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;overviewDescription&quot;</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;detail.sic&quot;</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;detail.naics&quot;</span>));</span><br><span class="line">        boolQuery.must(QueryBuilders.existsQuery(<span class="string">&quot;customsItems&quot;</span>));</span><br><span class="line"></span><br><span class="line">        boolQuery.mustNot(QueryBuilders.termQuery(<span class="string">&quot;disable&quot;</span>, <span class="literal">true</span>));</span><br><span class="line">        <span class="type">SearchSourceBuilder</span> <span class="variable">sourceBuilder</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SearchSourceBuilder</span>()</span><br><span class="line">                .query(boolQuery) <span class="comment">// 查询参数</span></span><br><span class="line">                .fetchSource(<span class="keyword">new</span> <span class="title class_">String</span>[]&#123;<span class="string">&quot;name&quot;</span>,<span class="string">&quot;companyId&quot;</span>&#125;,</span><br><span class="line">                        <span class="literal">null</span>)</span><br><span class="line">                .size(<span class="number">1000</span>);</span><br><span class="line">        <span class="keyword">if</span> (openCompanyIndex == <span class="literal">null</span>) &#123;</span><br><span class="line">            log.error(<span class="string">&quot;openCompanyIndex is null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">SiteMapCompanyEntity</span> <span class="variable">maxCompany</span> <span class="operator">=</span> siteMapCompanyService.getMaxDataId();</span><br><span class="line">        <span class="type">long</span> <span class="variable">maxDataId</span> <span class="operator">=</span> maxCompany == <span class="literal">null</span> ? <span class="number">1</span> : maxCompany.getDataId();</span><br><span class="line">        Set&lt;String&gt; strings = <span class="keyword">new</span> <span class="title class_">HashSet</span>&lt;&gt;();</span><br><span class="line">        <span class="type">AtomicInteger</span> <span class="variable">count</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">AtomicInteger</span>();</span><br><span class="line">        openCompanyIndex.scrollSearch(sourceBuilder, searchHits -&gt; &#123;</span><br><span class="line">            List&lt;SiteMapCompanyEntity&gt; addList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">            <span class="keyword">for</span> (SearchHit searchHit : searchHits) &#123;</span><br><span class="line">                Map&lt;String, Object&gt; result = searchHit.getSourceAsMap();</span><br><span class="line">                <span class="type">SiteMapCompanyEntity</span> <span class="variable">siteMapCompanyEntity</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SiteMapCompanyEntity</span>();</span><br><span class="line">                <span class="type">String</span> <span class="variable">name</span> <span class="operator">=</span> result.get(<span class="string">&quot;name&quot;</span>).toString();</span><br><span class="line">                <span class="type">String</span> <span class="variable">companyId</span> <span class="operator">=</span> result.get(<span class="string">&quot;companyId&quot;</span>).toString();</span><br><span class="line">                <span class="comment">//本轮去重</span></span><br><span class="line">                <span class="keyword">if</span> (strings.contains(companyId)) &#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                strings.add(companyId);</span><br><span class="line">                <span class="comment">//全局去重</span></span><br><span class="line">                LambdaQueryWrapper&lt;SiteMapCompanyEntity&gt; lambdaQueryWrapper = <span class="keyword">new</span> <span class="title class_">LambdaQueryWrapper</span>&lt;&gt;();</span><br><span class="line">                lambdaQueryWrapper.eq(SiteMapCompanyEntity::getCompanyId, companyId);</span><br><span class="line">                <span class="keyword">if</span> (siteMapCompanyService.count(lambdaQueryWrapper) &gt; <span class="number">0</span>)&#123;</span><br><span class="line">                    <span class="keyword">continue</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                siteMapCompanyEntity.setCompanyId(companyId);</span><br><span class="line">                <span class="comment">//保留原始名称</span></span><br><span class="line">                siteMapCompanyEntity.setCompanyName(name);</span><br><span class="line">                siteMapCompanyEntity.setChangeFreq(ChangeFreqEnum.WEEKLY.getCode());</span><br><span class="line">                siteMapCompanyEntity.setDataPriority(<span class="number">1f</span>);</span><br><span class="line">                siteMapCompanyEntity.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                siteMapCompanyEntity.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                siteMapCompanyEntity.setDataId(maxDataId + count.longValue());</span><br><span class="line">                <span class="comment">//非英语公司</span></span><br><span class="line">                <span class="keyword">if</span> (!StringUtil.checkEnglishChar(name))&#123;</span><br><span class="line">                    siteMapCompanyEntity.setNavLetter(<span class="literal">null</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="type">String</span> <span class="variable">temp</span> <span class="operator">=</span> StringUtil.removeAllPattern(name);</span><br><span class="line">                    siteMapCompanyEntity.setNavLetter(temp.substring(<span class="number">0</span>, <span class="number">1</span>).toUpperCase());</span><br><span class="line">                &#125;</span><br><span class="line">                count.getAndIncrement();</span><br><span class="line">                addList.add(siteMapCompanyEntity);</span><br><span class="line">            &#125;</span><br><span class="line">            siteMapCompanyService.saveBatch(addList);</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">        &#125;);</span><br><span class="line">        log.info(String.valueOf(count));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (Throwable e)&#123;</span><br><span class="line">        log.error(String.valueOf(e));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>那怎么做生成的，根据公司的最大值最小值&#x2F;页面大小得到偏移量。根据这个偏移量去更新和查询，只关注最后一个索引块，如果没满就从这里开始加，更新最大值。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">generate</span><span class="params">()</span> &#123;</span><br><span class="line">    preprocess();</span><br><span class="line">    <span class="type">SiteMapCompanyEntity</span> <span class="variable">maxCompany</span> <span class="operator">=</span> siteMapCompanyService.getMaxDataId();</span><br><span class="line">    <span class="type">SiteMapCompanyEntity</span> <span class="variable">minCompany</span> <span class="operator">=</span> siteMapCompanyService.getMinDataId();</span><br><span class="line">    <span class="keyword">if</span> (maxCompany == <span class="literal">null</span> || minCompany == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    List&lt;CompletableFuture&lt;Void&gt;&gt; futures = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    Map&lt;Long,String&gt; siteMap = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">    <span class="type">long</span> <span class="variable">minDataId</span> <span class="operator">=</span> minCompany.getDataId();</span><br><span class="line">    <span class="type">long</span> <span class="variable">maxDataId</span> <span class="operator">=</span> maxCompany.getDataId();</span><br><span class="line">    <span class="type">long</span> <span class="variable">pageLength</span> <span class="operator">=</span> (<span class="type">long</span>) Math.ceil((<span class="type">double</span>) (maxDataId - minDataId + <span class="number">1</span>) / PAGE_SIZE);</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= pageLength; i++) &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">startDataId</span> <span class="operator">=</span> minDataId +  (i - <span class="number">1</span>) * PAGE_SIZE;</span><br><span class="line">        <span class="type">long</span> <span class="variable">endDataId</span> <span class="operator">=</span> minDataId + i * PAGE_SIZE - <span class="number">1</span>;</span><br><span class="line">        <span class="type">long</span> <span class="variable">page</span> <span class="operator">=</span> i;</span><br><span class="line">        CompletableFuture&lt;Void&gt; future = CompletableFuture.runAsync(() -&gt; &#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">gzip</span> <span class="operator">=</span> xmlCompanyMapGenerator.generateCompanyMap(startDataId, endDataId,page);</span><br><span class="line">            <span class="keyword">if</span> (!StringUtils.isEmpty(gzip)) &#123;</span><br><span class="line">                siteMap.put(page,gzip);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, EXECUTOR);</span><br><span class="line">        futures.add(future);</span><br><span class="line">    &#125;</span><br><span class="line">    CompletableFuture.allOf(futures.toArray(<span class="keyword">new</span> <span class="title class_">CompletableFuture</span>[<span class="number">0</span>])).join();</span><br><span class="line">    generateXML(siteMap);</span><br><span class="line">    <span class="type">long</span> <span class="variable">count</span> <span class="operator">=</span> siteMapTopService.count();</span><br><span class="line">    List&lt;SiteMapTopEntity&gt; insertList = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="variable">i</span> <span class="operator">=</span> Math.max(<span class="number">1</span>,count); i &lt;= pageLength; i++) &#123;</span><br><span class="line">        <span class="type">long</span> <span class="variable">startDataId</span> <span class="operator">=</span> minDataId +  (i - <span class="number">1</span>) * PAGE_SIZE;</span><br><span class="line">        <span class="type">long</span> <span class="variable">endDataId</span> <span class="operator">=</span> Math.min(minDataId + i * PAGE_SIZE - <span class="number">1</span>, maxDataId);</span><br><span class="line">        <span class="type">SiteMapTopEntity</span> <span class="variable">siteMapTopEntity</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SiteMapTopEntity</span>();</span><br><span class="line">        siteMapTopEntity.setStartDataId(startDataId);</span><br><span class="line">        siteMapTopEntity.setEndDataId(endDataId);</span><br><span class="line"></span><br><span class="line">        siteMapTopEntity.setCreateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        siteMapTopEntity.setUpdateTime(<span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        <span class="keyword">if</span> (count != <span class="number">0</span> &amp;&amp; i == count)&#123;</span><br><span class="line">            LambdaUpdateWrapper&lt;SiteMapTopEntity&gt; updateWrapper = <span class="keyword">new</span> <span class="title class_">LambdaUpdateWrapper</span>&lt;&gt;();</span><br><span class="line">            updateWrapper.eq(SiteMapTopEntity::getName,siteMap.get(i));</span><br><span class="line">            siteMapTopService.update(siteMapTopEntity,updateWrapper);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        siteMapTopEntity.setName(siteMap.get(i));</span><br><span class="line">        insertList.add(siteMapTopEntity);</span><br><span class="line">    &#125;</span><br><span class="line">    siteMapTopService.saveBatch(insertList);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>第一周首先上了3w数据，未来数据量大了肯定要分库分表的，以后的事情以后再说。</p>
-<h2 id="需求9：【出海项目】一些零碎的小需求"><a href="#需求9：【出海项目】一些零碎的小需求" class="headerlink" title="需求9：【出海项目】一些零碎的小需求"></a>需求9：【出海项目】一些零碎的小需求</h2><h3 id="【接口】根据首字母和页码返回数据"><a href="#【接口】根据首字母和页码返回数据" class="headerlink" title="【接口】根据首字母和页码返回数据"></a>【接口】根据首字母和页码返回数据</h3><p>就是简单的分页问题，但是有一些字符串处理。我写了一大堆字符串工具。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> PageResp&lt;CompanyUrlResp&gt; <span class="title function_">getCompanyUrl</span><span class="params">(String navLetter, Integer pageNum)</span> &#123;</span><br><span class="line">    LambdaQueryWrapper&lt;SiteMapCompanyEntity&gt; queryWrapper = <span class="keyword">new</span> <span class="title class_">LambdaQueryWrapper</span>&lt;&gt;();</span><br><span class="line">    <span class="keyword">if</span> (StringUtils.isNotEmpty(navLetter)) &#123;</span><br><span class="line">        <span class="comment">//非英文国家</span></span><br><span class="line">        <span class="keyword">if</span> (navLetter.equals(<span class="string">&quot;Other&quot;</span>)) &#123;</span><br><span class="line">            queryWrapper.isNull(SiteMapCompanyEntity::getNavLetter);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!navLetter.matches(<span class="string">&quot;^[a-zA-Z]$&quot;</span>)) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.PARAM_ERR.getName(), BizError.PARAM_ERR.getCode());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            queryWrapper.eq(SiteMapCompanyEntity::getNavLetter, navLetter.toUpperCase());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.PARAM_ERR.getName(), BizError.PARAM_ERR.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    queryWrapper.eq(SiteMapCompanyEntity::getStatus, CompanyStatus.ACTIVE.getCode());</span><br><span class="line"></span><br><span class="line">    IPage&lt;SiteMapCompanyEntity&gt; page = <span class="keyword">new</span> <span class="title class_">Page</span>&lt;&gt;(pageNum, COMPANY_URL_PAGE_SIZE);</span><br><span class="line">    IPage&lt;SiteMapCompanyEntity&gt; userPage = siteMapCompanyService.page(page, queryWrapper);</span><br><span class="line">    List&lt;SiteMapCompanyEntity&gt; userList = userPage.getRecords();</span><br><span class="line">    <span class="comment">//组装返回结果</span></span><br><span class="line">    PageResp&lt;CompanyUrlResp&gt; pageResp = <span class="keyword">new</span> <span class="title class_">PageResp</span>&lt;&gt;();</span><br><span class="line">    pageResp.setPageNo(pageNum);</span><br><span class="line">    pageResp.setPageSize(COMPANY_URL_PAGE_SIZE);</span><br><span class="line">    pageResp.setTotalPage(userPage.getPages());</span><br><span class="line">    pageResp.setTotalSize(userPage.getTotal());</span><br><span class="line">    pageResp.setContent(userList.stream().map(item -&gt; &#123;</span><br><span class="line">        <span class="type">CompanyUrlResp</span> <span class="variable">companyUrlResp</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">CompanyUrlResp</span>();</span><br><span class="line">        companyUrlResp.setCompanyId(item.getCompanyId());</span><br><span class="line">        companyUrlResp.setCompanyName(StringUtil.firstLetterToUpperCaseByBlank(item.getCompanyName()));</span><br><span class="line">        <span class="keyword">if</span> (!StringUtil.checkEnglishChar(item.getCompanyName()))&#123;</span><br><span class="line">            companyUrlResp.setCompanyFormatName(<span class="string">&quot;Non-English-Company&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">temp</span> <span class="operator">=</span> StringUtil.formatCompanyNameToUrl(item.getCompanyName());</span><br><span class="line">            companyUrlResp.setCompanyFormatName(temp);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> companyUrlResp;</span><br><span class="line">    &#125;).collect(Collectors.toList()));</span><br><span class="line">    <span class="keyword">return</span> pageResp;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="【接口】公司详情获取"><a href="#【接口】公司详情获取" class="headerlink" title="【接口】公司详情获取"></a>【接口】公司详情获取</h3><p>修改了mentor的一点逻辑，做了一点校验：</p>
-<ul>
-<li>因为查的是全球搜的数据，有可能未公开，校验只有开启的公司才能查询。</li>
-<li>如果没有登录，domain隐蔽，这里看threadlocal有没有东西就好了。</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">base</span><span class="params">(String companyId)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (!siteMapCompanyService.isOpeningCompany(companyId)) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">BizException</span>(BizError.NON_OPENING_COMPANY.getName(), BizError.NON_OPENING_COMPANY.getCode());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>&#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">url</span> <span class="operator">=</span> host+<span class="string">&quot;/api/auth/global/overseas/base&quot;</span>;</span><br><span class="line">        Map&lt;String, String&gt; map = <span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;();</span><br><span class="line">        map.put(<span class="string">&quot;companyId&quot;</span>, companyId);</span><br><span class="line">        map.put(<span class="string">&quot;appKey&quot;</span>, appKey);</span><br><span class="line">        map.put(<span class="string">&quot;appSecret&quot;</span>, appSecret);</span><br><span class="line">        map.put(<span class="string">&quot;timestamp&quot;</span>, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">        map = OpenApiUtil.packageSign(map, appKey, appSecret);</span><br><span class="line">        <span class="type">String</span> <span class="variable">resut</span> <span class="operator">=</span> OkHttpUtil.get(url, map);</span><br><span class="line">        <span class="keyword">if</span> (StringUtils.isNotBlank(resut)) &#123;</span><br><span class="line">            <span class="comment">// 图片链接转换</span></span><br><span class="line">            resut = ImagePathConvert.convert(resut);</span><br><span class="line">            <span class="type">JSONObject</span> <span class="variable">jsonObject</span> <span class="operator">=</span> JSON.parseObject(resut);</span><br><span class="line">            <span class="type">String</span> <span class="variable">dataResult</span> <span class="operator">=</span> jsonObject.getString(<span class="string">&quot;data&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> loginAuth(JSON.parseObject(dataResult, CompanyBaseVO.class));</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;<span class="keyword">catch</span> (Exception e)&#123;</span><br><span class="line">        log.info(<span class="string">&quot;demo error&quot;</span>, e);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> CompanyBaseVO <span class="title function_">loginAuth</span><span class="params">(CompanyBaseVO companyBaseVO)</span>&#123;</span><br><span class="line">    <span class="type">UserInfoToken</span> <span class="variable">userInfoToken</span> <span class="operator">=</span> UserContext.getContent().getUserInfoToken();</span><br><span class="line">    <span class="comment">//未登录</span></span><br><span class="line">    <span class="keyword">if</span> (userInfoToken == <span class="literal">null</span>) &#123;</span><br><span class="line">        companyBaseVO.setDomain(<span class="string">&quot;*****&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> companyBaseVO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
     
     
